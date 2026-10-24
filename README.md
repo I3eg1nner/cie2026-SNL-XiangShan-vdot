@@ -89,8 +89,8 @@ NEMU↔RTL 协同仿真、RVV 1.0 基线实现与延迟加速比分析。所有�
 | `docs/_plan/` | `MASTER_PLAN.md`（唯一事实来源）、`HANDOFF_TODO.md`（交接与后续工作）、阶段一/二独立验收审计与整改记录（`ACCEPTANCE_*.md` 为历史记录，不随后续修订改写） |
 | `docs/_recon/` | 动手前的源码侦察笔记（昆明湖 V2 向量集成点、NEMU/difftest、vdot 语义调研） |
 | `docs/stage1/` | 环境版本锁定、部署报告、`vadd.vv` 执行过程分析、仿真平台搭建报告；`figures/` 6 张波形图 |
-| `docs/stage2/` | `10` 设计文档、`11` RTL 实现说明、`12` 基础功能测试报告、`13` 参考模型与测试向量说明 |
-| `docs/stage3/` | `20` NEMU 指令扩展说明、`21` 协同仿真验证报告、`22` 基线实现与延迟加速分析；`figures/` 4 张数据图 |
+| `docs/stage2/` | `10` 设计文档、`11` RTL 实现说明、`12` 基础功能测试报告、`13` 参考模型与测试向量说明；`figures/` 3 张 vdot 功能波形图 |
+| `docs/stage3/` | `20` NEMU 指令扩展说明、`21` 协同仿真验证报告、`22` 基线实现与延迟加速分析；`figures/` 4 张数据图 + 3 张延迟实测波形图 |
 | `docs/ppt/` | 答辩材料目录（**当前为空**，见局限性） |
 | `rtl/patch/` | 对上游的正式交付：`0001-xiangshan-vdot.patch`、`0002-yunsuan-vdot.patch` |
 | `rtl/chisel/` | 打完补丁后全部新增/修改 Chisel 源码的只读副本（`MANIFEST.md`），由 `scripts/tools/sync_rtl_sources.sh` 重建与校验 |

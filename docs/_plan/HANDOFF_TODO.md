@@ -188,7 +188,7 @@ JDK **17**（JDK 21/25 会失败）、mill **0.12.3**（XiangShan）与 **0.11.1
 
 | 项 | 说明 | 建议 |
 |---|---|---|
-| 审计 I-3（阶段二部分） | 阶段二/三的波形尚无 PNG 截图，只有 VCD 与文本轨迹（阶段一已补 6 张） | 用 `scripts/tools/vcd_plot.py` 为 `logs/stage2/waveform/`、`logs/stage3/waveform/` 出图并嵌入 `docs/stage2/12`、`docs/stage3/22` |
+| ~~审计 I-3（阶段二部分）~~ **已处理** | 阶段二 3 张（`docs/stage2/figures/`，嵌入 `12` §10.2–10.4）、阶段三 3 张（`docs/stage3/figures/fig5–7`，嵌入 `22` §4.2）已由 `scripts/tools/make_stage23_figures.sh` 从入库 VCD 生成 | — |
 | `bench/results/latency_fu.csv` 措辞 | vwredsum/vredsum/vmul/vmacc 行写「数值比对 0 笔一致」，文档写「未建模」，含义一致但措辞冲突 | 修改生成脚本的输出文案后重跑 `scripts/40_run_bench.sh` |
 | 指令计数口径 | 设计文档按 6→1（不含 vsetvli），P7 按 6→2（含 vsetvli），已在设计文档加注 | PPT 与录屏统一使用 6→2（3.00×，实测口径） |
 | 守卫命名 | 方案文档称 `dotLmulIllegal`，代码为 `dotEmulIllegal`，已加注 | 无需改代码 |

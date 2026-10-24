@@ -48,11 +48,13 @@ from vcd_extract import VCD  # noqa: E402
 # 中文标签需要 CJK 字体；按可用性依次回退。
 plt.rcParams["font.sans-serif"] = [
     "Heiti TC", "Songti SC", "STHeiti", "PingFang SC",
-    "Arial Unicode MS", "Noto Sans CJK SC", "DejaVu Sans",
+    "Arial Unicode MS", "Noto Sans CJK SC", "WenQuanYi Zen Hei",
+    "Droid Sans Fallback", "DejaVu Sans",
 ]
 plt.rcParams["font.monospace"] = [
     "Menlo", "DejaVu Sans Mono", "Courier New",
     "Heiti TC", "Songti SC", "Arial Unicode MS",   # 等宽字体缺中文字形时的回退
+    "Noto Sans CJK SC", "WenQuanYi Zen Hei",       # Linux 上的中文回退
 ]
 plt.rcParams["axes.unicode_minus"] = False
 
