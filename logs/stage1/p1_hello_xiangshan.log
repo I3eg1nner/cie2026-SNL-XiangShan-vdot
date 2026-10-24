@@ -1,0 +1,125 @@
+==============================================================
+ 2026CIE 阶段一 1.1 环境验证   2026-10-24T10:24:50Z UTC
+ 团队标识 cie2026-vdot
+==============================================================
+
+### [0] 宿主机取本机 IP（真实网络接口，非人为填写）
+$ route -n get default | awk '/interface:/{print $2}'
+en1
+$ ipconfig getifaddr $(route -n get default | awk '/interface:/{print $2}')
+192.168.30.213
+$ ifconfig $(route -n get default | awk '/interface:/{print $2}') | grep 'inet '
+	inet 192.168.30.213 netmask 0xfffffe00 broadcast 192.168.31.255
+
+### [1] 容器内交叉编译验证程序（tests/riscv/hello）
+$ riscv64-linux-gnu-gcc --version
+riscv64-linux-gnu-gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+$ make clean && make NEMU_HOME=/work/work/NEMU HOST_IP=192.168.30.213
+NEMU_HOME          = /work/work/NEMU
+NEMU_COMMIT        = 90908390002f
+CONFIG_MBASE       = 0x80000000
+CONFIG_UARTLITE_MMIO = 0x40600000
+VLEN               = 128
+HOST_IP            = 192.168.30.213
+GEN  build/nemu_config.h
+GEN  build/hello.ld
+riscv64-linux-gnu-gcc -march=rv64gcv_zve64x -mabi=lp64d -mcmodel=medany -ffreestanding -nostdlib -nostartfiles -fno-builtin -fno-pic -fno-tree-vectorize -O2 -g -Wall -Wextra -Ibuild -nostdlib -nostartfiles -Wl,--build-id=none -Wl,-Map,build/hello.map -T build/hello.ld -o build/hello.elf start.S hello.c
+/usr/lib/gcc-cross/riscv64-linux-gnu/13/../../../../riscv64-linux-gnu/bin/ld: warning: build/hello.elf has a LOAD segment with RWX permissions
+LD   build/hello.elf
+riscv64-linux-gnu-objcopy -O binary build/hello.elf build/hello.bin
+BIN  build/hello.bin  (3520 bytes)
+riscv64-linux-gnu-objdump -d -M no-aliases build/hello.elf > build/hello.dis
+DIS  build/hello.dis
+
+### [2] 证据：产物是 RISC-V 机器码，字符串与串口写操作都在程序里
+$ file build/hello.elf
+build/hello.elf: ELF 64-bit LSB executable, UCB RISC-V, RVC, double-float ABI, version 1 (SYSV), dynamically linked, interpreter /lib/ld-linux-riscv64-lp64d.so.1, with debug_info, not stripped
+
+$ ls -l build/hello.bin
+-rwxr-xr-x 1 root root 3520 Oct 24 10:24 build/hello.bin
+
+$ riscv64-linux-gnu-readelf -h build/hello.elf | grep -E "Machine|Entry"
+  Machine:                           RISC-V
+  Entry point address:               0x80000000
+
+$ strings -t x build/hello.bin | grep "hello xiangshan"   (验证串只存在于程序的只读数据里)
+    bd0 hello xiangshan, I am cie2026-vdot, IP address 192.168.30.213
+
+$ grep -n -B4 -A4 40600004 build/hello.dis   (putch 被内联：lui 0x40600 + addi 4 得到 TX FIFO 地址，再 sb 写字节)
+28-    8000003e:	406006b7          	lui	a3,0x40600
+29-    80000042:	03000713          	addi	a4,zero,48
+30-    80000046:	00000797          	auipc	a5,0x0
+31-    8000004a:	78278793          	addi	a5,a5,1922 # 800007c8 <main+0x59c>
+32:    8000004e:	0691                	c.addi	a3,4 # 40600004 <_start-0x3f9ffffc>
+33-    80000050:	0785                	c.addi	a5,1
+34-    80000052:	00e68023          	sb	a4,0(a3)
+35-    80000056:	0007c703          	lbu	a4,0(a5)
+36-    8000005a:	fb7d                	c.bnez	a4,80000050 <put_hex+0x12>
+--
+
+$ grep -n -B2 -A3 vadd.vv build/hello.dis   (RVV 1.0 向量加法自检段)
+526-    80000670:	02030087          	vle8.v	v1,(t1)
+527-    80000674:	020e0107          	vle8.v	v2,(t3)
+528:    80000678:	021101d7          	vadd.vv	v3,v1,v2
+529-    8000067c:	020701a7          	vse8.v	v3,(a4)
+530-    80000680:	4401                	c.li	s0,0
+531-    80000682:	4841                	c.li	a6,16
+
+### [3] 在 NEMU 上实际执行（独立解释器，batch 模式）
+$ $NEMU_HOME/build/riscv64-nemu-interpreter -b --log=build/nemu-run.log build/hello.bin
+--------------------- 以下为模拟器实际输出 ---------------------
+Welcome to [1;41m[1;33mriscv64[0m-NEMU!
+For help, type "help"
+======================================================================
+ cie2026-vdot / 2026CIE RISC-V vdot  --  Stage-1 environment check
+----------------------------------------------------------------------
+ build config (baked in from the NEMU build that runs this program)
+   NEMU defconfig  : riscv64-xs-kmhv2_defconfig
+   NEMU commit     : 90908390002f
+   image base      : 0x0000000080000000  (CONFIG_MBASE)
+   serial MMIO     : 0x40600000  (CONFIG_UARTLITE_MMIO, UARTLITE)
+   NEMU VLEN macro : 128 bit
+----------------------------------------------------------------------
+ machine state read back from the simulator via csrr
+   mvendorid       : 0x0000086f
+   marchid         : 0x00000019
+   mimpid          : 0x00000000
+   misa            : 0x80000000003411af (RV64 ABCDFHIMSUV)
+   vlenb           : 16 byte -> VLEN = 128 bit
+   VLEN cross-check: MATCH (csrr vlenb == NEMU VLEN macro)
+----------------------------------------------------------------------
+ RVV 1.0 self-test : vsetivli t0,16,e8,m1,ta,ma ; vadd.vv v3,v1,v2
+     vs2(v1) = [-8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7]
+     vs1(v2) = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31]
+     vd (v3) = [-7, -4, -1, 2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35, 38]
+     result  = PASS (16/16 lanes match the C reference)
+======================================================================
+hello xiangshan, I am cie2026-vdot, IP address 192.168.30.213
+
+--------------------- 模拟器输出结束 ---------------------
+NEMU 进程退出码 = 0
+
+### [4] NEMU 自身运行日志（--log=build/nemu-run.log）
+[1;34m[src/isa/riscv64/init.c:266,init_isa] NEMU will start from pc 0x10000000[0m
+[1;34m[src/device/io/port-io.c:35,add_pio_map_with_diff] Add port-io map 'uart16550' at [0x00000000000003f8, 0x0000000000000417][0m
+[1;34m[src/device/io/port-io.c:35,add_pio_map_with_diff] Add port-io map 'uartlite' at [0x00000000000003f8, 0x0000000000000404][0m
+[1;34m[src/device/io/port-io.c:35,add_pio_map_with_diff] Add port-io map 'screen' at [0x0000000000000100, 0x0000000000000107][0m
+[1;34m[src/device/io/port-io.c:35,add_pio_map_with_diff] Add port-io map 'keyboard' at [0x0000000000000060, 0x0000000000000063][0m
+[1;34m[src/device/sdcard.c:137,init_sdcard] Can not find sdcard image: [0m
+[1;34m[src/monitor/image_loader.c:219,load_img] Loading image (checkpoint/bare metal app/bbl) from cmdline: build/hello.bin
+[0m
+[1;34m[src/monitor/image_loader.c:264,load_img] Read 3520 bytes from file build/hello.bin to 0x0xf8003bc00000[0m
+[1;34m[src/monitor/monitor.c:63,welcome] Debug: [1;32mOFF[0m[0m
+[1;34m[src/monitor/monitor.c:68,welcome] Build time: 10:21:58, Oct 24 2026[0m
+[1;34m[/work/work/NEMU/src/isa/riscv64/include/../instr/special.h:38,execute] nemu_trap case 0[0m
+[1;34m[src/cpu/cpu-exec.c:1080,cpu_exec] nemu: [1;32mHIT GOOD TRAP[0m at pc = 0x0000000080000038[0m
+[1;34m[src/cpu/cpu-exec.c:1086,cpu_exec] trap code:0[0m
+[1;34m[src/cpu/cpu-exec.c:178,monitor_statistic] host time spent = 621 us[0m
+[1;34m[src/cpu/cpu-exec.c:180,monitor_statistic] total guest instructions = 8115[0m
+[1;34m[src/cpu/cpu-exec.c:186,monitor_statistic] vst count = 1, vst unit count = 1, vst unit optimized count = 0[0m
+[1;34m[src/cpu/cpu-exec.c:189,monitor_statistic] simulation frequency = 13067632 instr/s[0m
+[1;34m[src/utils/state.c:30,is_exit_status_bad] NEMU exit with good state: 2, halt ret: 0[0m
+
+==============================================================
+ 结束 2026-10-24T10:24:51Z UTC
+==============================================================

@@ -307,3 +307,50 @@ $ file work/tools/bin/espresso && espresso --help
 01 1
 .e
 espresso smoke-test exit=0
+
+==============================================================
+[18:36:42] 幂等性验证：重跑 scripts/00_setup_env_host.sh
+==============================================================
+
+[1;34m==> [18:36:42] 0/6 检查运行环境[0m
+    uname    : Darwin 24.5.0 arm64
+    macOS    : 15.5 (build 24F74)
+    CPU 核数 : 10
+    物理内存 : 16 GB
+    brew     : Homebrew 7.0.10
+
+[1;34m==> [18:36:43] 1/6 安装 Homebrew 包：verilator / openjdk@17 / gnu-sed / cmake[0m
+    已安装，跳过: verilator
+    已安装，跳过: openjdk@17
+    已安装，跳过: gnu-sed
+    已安装，跳过: cmake
+
+[1;34m==> [18:36:44] 2/6 安装 mill（严格按各仓库 .mill-version 指定的版本）[0m
+    已存在，跳过: mill-0.11.1
+    已存在，跳过: mill-0.12.3
+
+[1;34m==> [18:36:44] 3/6 构建 arm64 原生 espresso（逻辑最小化器）[0m
+    已存在原生 espresso，跳过
+    espresso : Mach-O 64-bit executable arm64
+
+[1;34m==> [18:36:44] 4/6 生成环境变量脚本 scripts/env_host.sh[0m
+    已写出 /Users/i3eg1nner/code/cie/scripts/env_host.sh
+
+[1;34m==> [18:36:44] 5/6 检查上游仓库[0m
+    XiangShan: a4eeaabb4c12349259094a8b55f3ba1c03a9d993 (kunminghu-v2)
+    yunsuan  : 955921186e34bb8915806582a238181a6dc3435c
+
+[1;34m==> [18:36:44] 6/6 版本核对[0m
+macOS            15.5
+brew             Homebrew 7.0.10
+verilator        Verilator 5.052 2026-09-05 rev vUNKNOWN-built20260905
+java             openjdk version "17.0.21.0.2" 2026-10-22
+JAVA_HOME        /opt/homebrew/opt/openjdk@17
+cmake            cmake version 4.4.3
+gsed             gsed (GNU sed) 4.10
+espresso         /Users/i3eg1nner/code/cie/work/tools/bin/espresso (Mach-O 64-bit executable arm64)
+mill(启动)     /Users/i3eg1nner/code/cie/work/tools/mill/mill
+mill(yunsuan)    Mill Build Tool version 0.11.1
+
+[1;32m环境搭建完成。后续构建前请执行： source /Users/i3eg1nner/code/cie/scripts/env_host.sh[0m
+exit=0

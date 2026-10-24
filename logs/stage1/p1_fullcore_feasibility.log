@@ -202,3 +202,89 @@ $ grep -n 'JVM_XMX' work/XiangShan-kmhv2/Makefile   # 目标分支 kunminghu-v2�
 85:MILL_BUILD_ARGS = -Djvm-xmx=$(JVM_XMX) -Djvm-xss=$(JVM_XSS)
 
 本机 Docker Linux VM 总内存 = 8217575424 B = 7.65 GiB，远低于官方默认 JVM_XMX=40G。
+
+### [8] amd64 模拟的后端是 Rosetta 还是 qemu-user
+$ docker run --rm --platform linux/amd64 ubuntu:24.04 bash -c 'ls -d /run/rosetta 2>/dev/null; ls /proc/sys/fs/binfmt_misc 2>/dev/null; echo ---; cat /proc/self/maps | head -3'
+no /run/rosetta
+---
+555555554000-555555556000 r--p 00000000 00:42 293732                     /usr/bin/head
+555555556000-55555555c000 r-xp 00002000 00:42 293732                     /usr/bin/head
+55555555c000-55555555e000 r--p 00008000 00:42 293732                     /usr/bin/head
+
+### [9] gsim（Verilator 替代品）的 arm64 预编译资产是否真的可下载
+$ curl -s .../releases/latest | 取 ARM64 资产的 browser_download_url 与大小
+release: master-2026-10-13-91c79cd
+  gsim-clang19.1.7-ARM64       size=16042024  https://github.com/OpenXiangShan/gsim/releases/download/master-2026-10-13-91c79cd/gsim-clang19.1.7-ARM64
+  gsim-clang19.1.7-X64         size=16448208  https://github.com/OpenXiangShan/gsim/releases/download/master-2026-10-13-91c79cd/gsim-clang19.1.7-X64
+  gsim-clang21.1.8-ARM64       size=15850336  https://github.com/OpenXiangShan/gsim/releases/download/master-2026-10-13-91c79cd/gsim-clang21.1.8-ARM64
+  gsim-clang21.1.8-X64         size=16337520  https://github.com/OpenXiangShan/gsim/releases/download/master-2026-10-13-91c79cd/gsim-clang21.1.8-X64
+
+$ curl -sIL -o /dev/null -w '%{http_code} %{size_download}
+' <ARM64 资产 URL>  (只发 HEAD，不下载)
+URL = https://github.com/OpenXiangShan/gsim/releases/download/master-2026-10-13-91c79cd/gsim-clang19.1.7-ARM64
+HTTP 200, content-length=0
+
+$ grep -n aarch64 work/xs-env/install-scripts/gsim.sh   (官方脚本本身就支持 arm64)
+21:    x86_64) GSIM_ARCH="X64" ;;
+22:    aarch64) GSIM_ARCH="ARM64" ;;
+26:GSIM_FILE=$(curl -s --retry 3 https://api.github.com/repos/OpenXiangShan/gsim/releases/latest | grep "name" | grep "gsim-clang${LLVM_VERSION}\.[0-9]\+\.[0-9]\+-${GSIM_ARCH}" | cut -d '"' -f 4)
+29:    echo "Failed to get the gsim file name for ${GSIM_ARCH} from GitHub API"
+33:echo "Installing gsim ${GSIM_LATEST_VERSION} for ${GSIM_ARCH}..."
+
+===============================================================
+### [10] 结论（基于以上实测证据）
+===============================================================
+前置声明：按既定要求，本次**没有真的去跑 40 GB 堆的全核构建**，以下结论来自
+"官方公开的资源要求 + 本机实测资源与模拟能力"的对照，不是一次失败构建的事后
+解释。任何未实际执行的步骤均已在此标注。
+
+(1) 「官方镜像 ghcr.io/openxiangshan/xs-env 只有 amd64」—— 结论成立。
+    见 [2]：manifest list 里只有一个 linux/amd64 的真实镜像 manifest，另一个
+    platform 为 unknown/unknown 的条目是 OCI 构建证明(attestation)，不是可运行
+    镜像。没有 linux/arm64 条目。
+
+(2) 但「amd64-only」本身并不构成硬性阻塞 —— 本机 Docker 可以模拟运行 amd64。
+    见 [4]：docker run --platform linux/amd64 ubuntu:24.04 正常启动，容器内
+    uname -m = x86_64。
+    见 [5]：同一 CPU 密集负载的实测代价
+        纯整数 bash 算术循环 400k 次 : arm64 0.575 s  vs amd64 0.969 s  → 约 1.7x
+        sha256sum 400 MiB            : arm64 0.231 s  vs amd64 0.935 s  → 约 4.0x
+      （sha256sum 这一项偏向高估：arm64 侧用到了 SHA-2 硬件扩展，amd64 侧在模拟中
+        没有等价加速，故以 1.7x 的纯整数结果为准更公允。）
+    见 [8]：容器内看不到 /run/rosetta，也没有 binfmt_misc 挂载点可供容器直接观察，
+      因此**无法在容器内直接证实**后端是 Rosetta 还是 qemu-user；但 1.7x 的量级
+      明显优于 qemu-user 典型的 10x 以上，更像 Rosetta。此项标注为"未能直接取证"。
+
+(3) 真正的阻塞是内存，不是指令集架构。
+    见 [7]：香山官方 Makefile 中 JVM_XMX ?= 40G，kunminghu-v2 与 kunminghu-v3
+      两个分支一致（work/XiangShan-kmhv2/Makefile:81，work/XiangShan/Makefile:101）。
+      官方 release CI 即使把堆压到 JVM_XMX=10g，也仍要额外 fallocate 32 GiB swap
+      （release.yml:175,189）。
+    见 [1]：本机 Docker Linux VM 总内存 8217575424 B = 7.65 GiB（宿主物理内存
+      16 GiB）。连官方 CI 降配后的 10 g 堆都放不下，更不用说默认的 40 G。
+    Verilator 把全核 XSTop 的 Verilog 编成 C++ 再编译，其 C++ 编译阶段的内存与
+    机时开销同样是数十 GiB / 数十核时量级。
+    => 本机不具备「mill 精化全核 + Verilator 全核 emu」的条件。
+
+(4) gsim 可以作为 arm64 上的 Verilator 替代仿真器，但解决不了上面的内存问题。
+    见 [9]：OpenXiangShan/gsim 最新 release(master-2026-10-13-91c79cd) 提供
+      gsim-clang19.1.7-ARM64 / gsim-clang21.1.8-ARM64 预编译二进制，URL 返回
+      HTTP 200，可直接下载；官方 xs-env 的 install-scripts/gsim.sh:22 本来就把
+      aarch64 映射到 ARM64 资产。
+    但 gsim 替代的是"把 Verilog 变成可执行仿真器"这一步，**前一步**的 mill/Chisel
+    全核精化（吃 JVM 堆的那一步）依然要做，内存门槛不变。
+
+(5) 最终判定
+    - 全核 XiangShan RTL 仿真（L4 的全核 difftest）：**本机不可行，未执行**。
+      原因：Docker VM 7.65 GiB << 官方要求的 40 G JVM 堆（降配 10 g + 32 G swap 亦不够）。
+    - 可行且已落地的替代路径：
+        L0 mill 精化单个功能单元 + 生成 Verilog（硬件侧工程师在宿主机原生 arm64 执行）
+        L1 YunSuan 官方独立 FU 测试平台 + Verilator（规模远小于全核）
+        L2 NEMU 独立执行（本报告已验证可行：两种形态均构建成功并实跑）
+        L3 NEMU 实现作为参考模型与 FU 级 RTL 协同比对
+      这正是 MASTER_PLAN D3 的分层验证策略，证据链与本调查一致。
+    - 若后续确需全核：需要一台 ≥64 GiB 内存的 x86_64 Linux 机器，直接用官方
+      ghcr.io/openxiangshan/xs-env 镜像；本机的 amd64 模拟能力只能解决"架构"
+      问题，解决不了"内存"问题。
+===============================================================
+采集结束: 2026-10-24T10:29:06Z UTC

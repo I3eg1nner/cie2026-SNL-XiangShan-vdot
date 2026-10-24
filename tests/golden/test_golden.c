@@ -26,7 +26,8 @@ static const char *k_expect_fields =
   "vd_in_hex(32) vd_expected_hex(32) v0_hex(32) status";
 
 typedef struct {
-    long total, roundtrip_fail, diff_checked, diff_fail, diff_skipped;
+    long total, roundtrip_fail, diff_checked, diff_fail, diff_skipped,
+         diff_executed;
 } stat_t;
 
 static int vreg_eq(const vreg128_t *a, const vreg128_t *b)
@@ -56,7 +57,7 @@ static int run_file(const char *path, stat_t *st)
     int policy = -1;
     int fields_seen = 0;
     long file_total = 0, file_rt_fail = 0, file_df_fail = 0;
-    long file_df_ok = 0, file_df_skip = 0;
+    long file_df_ok = 0, file_df_skip = 0, file_df_exec = 0;
 
     if (!f) { fprintf(stderr, "cannot open %s\n", path); return 2; }
 
@@ -127,6 +128,7 @@ static int run_file(const char *path, stat_t *st)
                                       vstart, vl, vm ? NULL : &v0,
                                       (int)vta, (int)vma);
             file_df_ok++;
+            if (got_st == VDOT_OK) file_df_exec++;   /* 两侧都真正算了一遍 */
             if (bl_st != got_st || !vreg_eq(&vd_bl, &vd_got)) {
                 dump_case(path, lineno, "diff(ref vs baseline)",
                           &vd_bl, &vd_got, bl_st, got_st);
@@ -141,12 +143,14 @@ static int run_file(const char *path, stat_t *st)
         file_rt_fail++;
     }
     printf("  %-34s cases=%-6ld roundtrip_fail=%-4ld diff_checked=%-6ld "
-           "diff_fail=%-4ld diff_skipped=%ld\n",
-           path, file_total, file_rt_fail, file_df_ok, file_df_fail, file_df_skip);
+           "diff_executed=%-6ld diff_fail=%-4ld diff_skipped=%ld\n",
+           path, file_total, file_rt_fail, file_df_ok, file_df_exec,
+           file_df_fail, file_df_skip);
 
     st->total          += file_total;
     st->roundtrip_fail += file_rt_fail;
     st->diff_checked   += file_df_ok;
+    st->diff_executed  += file_df_exec;
     st->diff_fail      += file_df_fail;
     st->diff_skipped   += file_df_skip;
     return 0;
@@ -214,6 +218,8 @@ int main(int argc, char **argv)
     printf("  total cases            : %ld\n", st.total);
     printf("  roundtrip failures     : %ld\n", st.roundtrip_fail);
     printf("  differential checked   : %ld\n", st.diff_checked);
+    printf("  of which both executed : %ld   (双方都真正完成了一次运算)\n",
+           st.diff_executed);
     printf("  differential failures  : %ld\n", st.diff_fail);
     printf("  differential skipped   : %ld\n", st.diff_skipped);
     printf("  long-vector failures   : %d\n", longfail);

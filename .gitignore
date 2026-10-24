@@ -16,3 +16,4 @@ tests/golden/*.o
 tests/golden/test_golden
 tests/golden/vdot_cli
 *.dSYM/
+tests/golden/example_cxx

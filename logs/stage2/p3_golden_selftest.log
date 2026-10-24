@@ -1,0 +1,85 @@
+==========================================================
+ P3 参考模型与测试向量 —— 宿主端自检真实运行记录
+==========================================================
+host : Darwin 24.5.0 arm64
+date : 2026-10-24T10:36:02Z UTC
+cc   : Apple clang version 17.0.0 (clang-1700.0.13.5)
+repo : /Users/i3eg1nner/code/cie
+
+--- [0] 参考模型以 C++ 方式编译（供 Verilator/YunSuan 测试平台引用） ---
+c++ -std=c++17 -O2 -Wall -Wextra -x c++ -c vdot_ref.c -o /tmp/vdot_ref_cxx.o
+c++ -std=c++17 -O2 -Wall -Wextra example_cxx_consumer.cpp -x c++ vdot_ref.c \
+	    -o example_cxx
+./example_cxx /Users/i3eg1nner/code/cie/tests/vectors/boundary.txt
+/Users/i3eg1nner/code/cie/tests/vectors/boundary.txt: 103 cases, 0 mismatch
+./example_cxx /Users/i3eg1nner/code/cie/tests/vectors/vdot4a_random.txt
+/Users/i3eg1nner/code/cie/tests/vectors/vdot4a_random.txt: 10000 cases, 0 mismatch
+C++ consumption of vdot_ref.h + corpus: OK
+
+--- [0b] GCC 方言检查（真 GCC 前端，非 macOS 的 clang 别名） ---
+riscv64-elf-gcc -std=c11 -O2 -Wall -Wextra -Wpedantic -ffreestanding -march=rv64gc -mabi=lp64d -S vdot_ref.c -o /dev/null
+riscv64-elf-gcc -std=c11 -O2 -Wall -Wextra -Wpedantic -ffreestanding -march=rv64gc -mabi=lp64d -S /Users/i3eg1nner/code/cie/bench/baseline/baseline_ref.c -o /dev/null
+GCC(16.2.0) C11 dialect check: OK
+
+--- [1][2][3] 回环 + 差分 + 长向量循环自检 ---
+== vdot golden model self-test ==
+-- per-file results --
+  /Users/i3eg1nner/code/cie/tests/vectors/positive.txt cases=40     roundtrip_fail=0    diff_checked=40     diff_executed=40     diff_fail=0    diff_skipped=0
+  /Users/i3eg1nner/code/cie/tests/vectors/negative.txt cases=44     roundtrip_fail=0    diff_checked=44     diff_executed=44     diff_fail=0    diff_skipped=0
+  /Users/i3eg1nner/code/cie/tests/vectors/boundary.txt cases=103    roundtrip_fail=0    diff_checked=100    diff_executed=94     diff_fail=0    diff_skipped=3
+  /Users/i3eg1nner/code/cie/tests/vectors/random.txt cases=10000  roundtrip_fail=0    diff_checked=10000  diff_executed=8459   diff_fail=0    diff_skipped=0
+  /Users/i3eg1nner/code/cie/tests/vectors/vdotacc_positive.txt cases=40     roundtrip_fail=0    diff_checked=40     diff_executed=40     diff_fail=0    diff_skipped=0
+  /Users/i3eg1nner/code/cie/tests/vectors/vdotacc_negative.txt cases=44     roundtrip_fail=0    diff_checked=44     diff_executed=44     diff_fail=0    diff_skipped=0
+  /Users/i3eg1nner/code/cie/tests/vectors/vdotacc_boundary.txt cases=103    roundtrip_fail=0    diff_checked=100    diff_executed=94     diff_fail=0    diff_skipped=3
+  /Users/i3eg1nner/code/cie/tests/vectors/vdotacc_random.txt cases=10000  roundtrip_fail=0    diff_checked=10000  diff_executed=8428   diff_fail=0    diff_skipped=0
+  /Users/i3eg1nner/code/cie/tests/vectors/vdot4a_positive.txt cases=40     roundtrip_fail=0    diff_checked=40     diff_executed=40     diff_fail=0    diff_skipped=0
+  /Users/i3eg1nner/code/cie/tests/vectors/vdot4a_negative.txt cases=44     roundtrip_fail=0    diff_checked=44     diff_executed=44     diff_fail=0    diff_skipped=0
+  /Users/i3eg1nner/code/cie/tests/vectors/vdot4a_boundary.txt cases=115    roundtrip_fail=0    diff_checked=112    diff_executed=112    diff_fail=0    diff_skipped=3
+  /Users/i3eg1nner/code/cie/tests/vectors/vdot4a_random.txt cases=10000  roundtrip_fail=0    diff_checked=10000  diff_executed=10000  diff_fail=0    diff_skipped=0
+  /Users/i3eg1nner/code/cie/tests/vectors/vstart_relaxed.txt cases=90     roundtrip_fail=0    diff_checked=13     diff_executed=13     diff_fail=0    diff_skipped=77
+-- long vector loop --
+  long-vector loop equivalence: 19 sizes, 0 mismatch
+-- summary --
+  total cases            : 30663
+  roundtrip failures     : 0
+  differential checked   : 30577
+  of which both executed : 27452   (双方都真正完成了一次运算)
+  differential failures  : 0
+  differential skipped   : 86
+  long-vector failures   : 0
+RESULT: PASS
+test_golden exit_code=0
+
+--- [4] 故障注入：人为改坏实现，自检必须报错 ---
+  inject #1 [参考模型：int8 改为零扩展（丢掉符号）]: 被检出 (exit=1, 失配行数>=42958)  OK
+  inject #2 [参考模型：vta=1 时 tail 写 0 而不是全 1]: 被检出 (exit=1, 失配行数>=23316)  OK
+  inject #3 [基线仿真：vwredsum.vs 丢掉标量初值（vs1[0]）]: 被检出 (exit=1, 失配行数>=7945)  OK
+FAULT-INJECTION: PASS (3/3 被检出)
+fault_inject exit_code=0
+
+--- [5] RVV 1.0 基线：宿主编译 + RISC-V 汇编/intrinsics 交叉编译 ---
+cc -std=c11 -O2 -Wall -Wextra -Wshadow -Wpedantic -Wstrict-prototypes -c baseline_ref.c       -o build/baseline_ref.host.o
+cc -std=c11 -O2 -Wall -Wextra -Wshadow -Wpedantic -Wstrict-prototypes -c baseline_intrinsics.c -o build/baseline_intrinsics.host.o
+host build: OK
+riscv64-elf-gcc -march=rv64gcv -mabi=lp64d -ffreestanding -O2 -Wall -Wextra -c baseline_rvv.S        -o build/baseline_rvv.o
+riscv64-elf-gcc -march=rv64gcv -mabi=lp64d -ffreestanding -O2 -Wall -Wextra -c baseline_intrinsics.c -o build/baseline_intrinsics.o
+--- vdot 自定义指令编码自校验（期望 e61101d7 / ea1101d7 / ee1101d7）---
+Contents of section .rodata:
+ 0000 d70111e6 d70111ea d70111ee           ............    
+riscv build: OK
+
+--- [6] 测试向量语料清单 ---
+tests/vectors/positive.txt                                     40 cases  8221 bytes
+tests/vectors/negative.txt                                     44 cases  9024 bytes
+tests/vectors/boundary.txt                                    103 cases  20269 bytes
+tests/vectors/random.txt                                    10000 cases  1874071 bytes
+tests/vectors/vdotacc_positive.txt                             40 cases  8354 bytes
+tests/vectors/vdotacc_negative.txt                             44 cases  9167 bytes
+tests/vectors/vdotacc_boundary.txt                            103 cases  20586 bytes
+tests/vectors/vdotacc_random.txt                            10000 cases  1904511 bytes
+tests/vectors/vdot4a_positive.txt                              40 cases  8331 bytes
+tests/vectors/vdot4a_negative.txt                              44 cases  9132 bytes
+tests/vectors/vdot4a_boundary.txt                             115 cases  22678 bytes
+tests/vectors/vdot4a_random.txt                             10000 cases  1880801 bytes
+tests/vectors/vstart_relaxed.txt                               90 cases  17661 bytes
+

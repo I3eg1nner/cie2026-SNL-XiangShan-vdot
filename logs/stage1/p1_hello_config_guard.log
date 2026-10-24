@@ -1,0 +1,27 @@
+==============================================================
+ 附加验证：NEMU .config 全局状态耦合问题与 check-config 守卫
+ 2026-10-24T10:34:36Z UTC
+==============================================================
+### 1) 把 NEMU 配置切到 difftest ref（模拟“先建独立、后建 ref”的收尾状态）
+$ grep -c CONFIG_UARTLITE_MMIO include/generated/autoconf.h
+0
+
+### 2) 此时去构建验证程序，Makefile 的 check-config 应当直接拦下来
+$ make NEMU_HOME=/work/work/NEMU HOST_IP=192.168.30.213
+make: *** [Makefile:51: check-config] Error 1
+ERROR: 当前 NEMU 配置没有 CONFIG_UARTLITE_MMIO（difftest ref 配置关掉了所有串口设备）。请切回 riscv64-xs-kmhv2_defconfig
+make 退出码 = 2
+
+### 3) 切回独立解释器配置后恢复正常
+$ grep CONFIG_UARTLITE_MMIO include/generated/autoconf.h
+#define CONFIG_UARTLITE_MMIO 0x40600000
+$ make NEMU_HOME=/work/work/NEMU HOST_IP=192.168.30.213
+NEMU_HOME          = /work/work/NEMU
+NEMU_COMMIT        = 90908390002f
+CONFIG_MBASE       = 0x80000000
+CONFIG_UARTLITE_MMIO = 0x40600000
+VLEN               = 128
+HOST_IP            = 192.168.30.213
+GEN  build/nemu_config.h
+riscv64-linux-gnu-gcc -march=rv64gcv_zve64x -mabi=lp64d -mcmodel=medany -ffreestanding -nostdlib -nostartfiles -fno-builtin -fno-pic -fno-tree-vectorize -O2 -g -Wall -Wextra -Ibuild -nostdlib -nostartfiles -Wl,--build-id=none -Wl,-Map,build/hello.map -T build/hello.ld -o build/hello.elf start.S hello.c
+make 退出码 = 141
