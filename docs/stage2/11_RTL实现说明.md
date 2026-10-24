@@ -8,6 +8,8 @@
 | 语义唯一事实来源 | `tests/golden/vdot_ref.c` + `vdot_ref.h`（裁定 S-1…S-9） |
 | 基线 | XiangShan `kunminghu-v2` @ `a4eeaab`，`yunsuan` @ `9559211` |
 | 实现工作树 | `work/XiangShan-vdot`（与 pristine 基线 `work/XiangShan-kmhv2` 隔离） |
+| **行号基准（全文唯一）** | 本文出现的**每一处** `文件:行号`，行号都以**实现工作树**为准，即「pristine 基线 + §3 列出的三份补丁」之后的文件状态。全文不使用第二套基准；凡在上游文件中引用的行号，均已按补丁的行偏移换算到该基准 |
+| 行号的离线核对方式 | 三份补丁涉及的全部 Chisel 源码已逐字节复制到 `rtl/chisel/`（清单与每个文件的行数见 `rtl/chisel/MANIFEST.md`），因此**不需要 `work/` 也能按行号核对**；副本由 `scripts/tools/sync_rtl_sources.sh` 从「基线 + 补丁」重建，`--check` 模式可验证副本未漂移。C++ 侧（`test_driver.cpp`、`vpu_constant.h` 等）不在该目录，按 `tests/unit/yunsuan_vdot_testbench.patch` 核对 |
 | 架构参数 | VLEN = 128，ELEN = 64，XLEN = 64，LMUL = 1 |
 
 ---
@@ -33,7 +35,7 @@
 
 ```
 XiangShan backend（mill 工程 xiangshan，mill 0.12.3）
-└── VFEX0 / VIMacU(VimacCfg)             src/main/scala/xiangshan/backend/fu/wrapper/VIMacU.scala   [改 +93/-12]
+└── VFEX0 / VIMacU(VimacCfg)             src/main/scala/xiangshan/backend/fu/wrapper/VIMacU.scala   [改 +84/-9]
       ├── VIMacSrcTypeModule                   [改] vdot 三条指令强制 src=s8 / vd=e32
       ├── VecDataSplitModule × 3               [复用，未改]
       ├── VIMac64b × 2            yunsuan      [仅加只读输出端口 prod16]
@@ -53,7 +55,7 @@ YunSuan（mill 工程 YunSuan，mill 0.11.1）
 ├── decode/Instructions.scala             [改 +11]  object Xsvdot 的三条 BitPat
 ├── decode/VecDecoder.scala               [改 +9]   opivv 表三行
 ├── decode/DecodeUnit.scala               [改 +5]   vmaInsts 登记三条
-└── decode/VecExceptionGen.scala          [改 +25]  dotRedInst/dot4aInst、SEW 判定、vdIsSingleElem、vdEew
+└── decode/VecExceptionGen.scala          [改 +34/-4]  dotRedInst/dot4aInst、SEW/LMUL 判定、vdIsSingleElem、vdEew
 ```
 
 ---
@@ -112,12 +114,12 @@ val prod16 = Output(Vec(8, UInt(16.W)))   // IO Bundle 新增
 io.prod16 := sum_wo                        // for 循环之后新增一行
 ```
 
-`sum_wo`（`VIMac64b.scala:187`）是第二级流水（S1）末尾 8 个 `Adder_16b` 的输出。在
+`sum_wo`（`VIMac64b.scala:192`）是第二级流水（S1）末尾 8 个 `Adder_16b` 的输出。在
 `sew=8 / widen=0 / isMacc=0 / isSub=0 / isFixP=0` 条件下它就是 8 个**完整的 16 位二补码有符号乘积**：
 
 1. `partProd(33)`（oldVd 注入）在 `isMacc=0` 时为 0；
-2. `sew=8` 时 Wallace 的进位掩码 `h7fff7fff…`（`:138`）与 `cin_wo(i) := Mux(sewS1.is8, false.B, …)`（`:198`）共同保证 8 个 16 位 lane 完全独立；
-3. 反向验证：既有 `vmulh.vv` 在 `sew=8` 时直接取 `walOut` 每 16 位 lane 的 `[15:8]`（`:221`），而 `vmulh` 的定义就是「有符号乘积的高半」—— 这只有在 lane 内是完整 16 位有符号乘积时才成立。
+2. `sew=8` 时 Wallace 的进位掩码 `h7fff7fff…`（`:143`）与 `cin_wo(i) := Mux(sewS1.is8, false.B, …)`（`:203`）共同保证 8 个 16 位 lane 完全独立；
+3. 反向验证：既有 `vmulh.vv` 在 `sew=8` 时直接取 `walOut` 每 16 位 lane 的 `[15:8]`（`:228`），而 `vmulh` 的定义就是「有符号乘积的高半」—— 这只有在 lane 内是完整 16 位有符号乘积时才成立。
 
 **对既有指令零影响的硬证据**：见 §7.1，重新生成的 `VIMac.sv` 与阶段一存档的基线 `rtl/verilog/baseline/VIMac.sv` 在去掉源码行号注释后**逐字节相同**。
 
@@ -237,7 +239,7 @@ private val dotActiveEn = Mux(isDot4a, ~0.U(16.W), dotMaskGen.io.out.activeEn)
 #### (c) 树的接线与流水对齐
 
 ```scala
-private val fireS1 = GatedValidRegNext(io.in.valid)      // 与 VIMac64b.scala:33 完全同拍
+private val fireS1 = GatedValidRegNext(io.in.valid)      // 与 VIMac64b.scala:38 完全同拍
 vdotTree.io.fire       := fireS1
 vdotTree.io.prod       := VecInit(vimacs.flatMap(m => (0 until 8).map(b => m.io.prod16(b))))
 vdotTree.io.activeEn   := RegEnable(dotActiveEn, io.in.valid)
@@ -327,30 +329,42 @@ T2             : vdS2 / vsmul（vdot 不用）                 | Fold L2 + Acc +
 
 ## 3. 改动文件清单（行数）
 
+> **本节三张表的每一个数字都由 `git apply --numstat <补丁>` 实测得到**，不是人工统计。
+> 复算方法（在仓库根目录执行，不写入任何工作树）：
+>
+> ```bash
+> git apply --numstat rtl/patch/0002-yunsuan-vdot.patch        # 表 3.1
+> git apply --numstat rtl/patch/0001-xiangshan-vdot.patch      # 表 3.2
+> git apply --numstat tests/unit/yunsuan_vdot_testbench.patch  # 表 3.3
+> ```
+>
+> 输出的三列依次是「新增行数 / 删除行数 / 文件路径」。表中「改动」列写成 `+增 / −删`；
+> 新建文件只有新增行，其行数即该文件的总行数（与 `rtl/chisel/MANIFEST.md` 的行数列一致）。
+
 ### 3.1 `rtl/patch/0002-yunsuan-vdot.patch`（YunSuan RTL）
 
 | 文件 | 改动 | 说明 |
 |---|---|---|
-| `src/main/scala/yunsuan/encoding/Opcode/VimacOpcode.scala` | +4 | `vdot` opcode + `isVdot` |
-| `src/main/scala/yunsuan/package.scala` | +17 | `VimacType.vdot/vdotacc/vdot4a` + 5 个判定 |
-| `src/main/scala/yunsuan/vector/vectorIMAC/VIMac64b.scala` | +7 | `prod16` 只读抽头 |
+| `src/main/scala/yunsuan/encoding/Opcode/VimacOpcode.scala` | +4 / −0 | `vdot` opcode + `isVdot` |
+| `src/main/scala/yunsuan/package.scala` | +17 / −0 | `VimacType.vdot/vdotacc/vdot4a` + 5 个判定 |
+| `src/main/scala/yunsuan/vector/vectorIMAC/VIMac64b.scala` | +7 / −0 | `prod16` 只读抽头 |
 | `src/main/scala/yunsuan/vector/vectorIMAC/VDotTree.scala` | **新建 161 行** | 可重构蝶形折叠加法树 + Verilog 出口 |
 | `src/main/scala/yunsuan/vector/vectorIMAC/VDotTop.scala` | **新建 150 行** | L1 平台用的 FU 顶层 + Verilog 出口 |
-| 小计 | 3 文件改动 +28 行 / 2 文件新建 311 行 | |
+| **小计** | 3 文件改动 **+28 / −0**，2 文件新建 **311 行** —— 全补丁合计 **339 插入 / 0 删除** | |
 
 ### 3.2 `rtl/patch/0001-xiangshan-vdot.patch`（XiangShan）
 
 | 文件 | 改动 | 说明 |
 |---|---|---|
-| `src/main/scala/xiangshan/backend/fu/wrapper/VIMacU.scala` | +93 / −12 | 类型生成、掩码生成、树例化、累加选择、RedTailGen、输出复用 |
-| `src/main/scala/xiangshan/backend/decode/VecExceptionGen.scala` | +35 / −3 | SEW 判定、**LMUL 判定（P4 阶段补）**、`vdIsSingleElem`、`vdEew` |
-| `src/main/scala/xiangshan/backend/decode/Instructions.scala` | +11 | `object Xsvdot` |
-| `src/main/scala/xiangshan/backend/decode/VecDecoder.scala` | +9 | `opivv` 三行 |
-| `src/main/scala/xiangshan/backend/decode/DecodeUnit.scala` | +5 | `vmaInsts` |
+| `src/main/scala/xiangshan/backend/fu/wrapper/VIMacU.scala` | +84 / −9 | 类型生成、掩码生成、树例化、累加选择、RedTailGen、输出复用 |
+| `src/main/scala/xiangshan/backend/decode/VecExceptionGen.scala` | +34 / −4 | SEW 判定、**LMUL 判定（P4 阶段补）**、`vdIsSingleElem`、`vdEew` |
+| `src/main/scala/xiangshan/backend/decode/Instructions.scala` | +11 / −0 | `object Xsvdot` |
+| `src/main/scala/xiangshan/backend/decode/VecDecoder.scala` | +9 / −0 | `opivv` 三行 |
+| `src/main/scala/xiangshan/backend/decode/DecodeUnit.scala` | +5 / −0 | `vmaInsts` |
 | `src/test/scala/xiangshan/backend/fu/VIMacUTest.scala` | **新建 49 行** | `VIMacUMain` 精化/Verilog 出口 |
 | `src/test/scala/xiangshan/backend/fu/VIMacUHarness.scala` | **新建 164 行**（P4 阶段补） | `VIMacU` 直驱验证用的窄 IO 包装 + Verilog 出口 |
 | `src/test/scala/xiangshan/backend/decode/VecExceptionGenTest.scala` | **新建 89 行**（P4 阶段补） | `VecExceptionGen` 定向测试用的窄 IO 包装 + Verilog 出口 |
-| 小计 | 5 文件 +153 / −15，3 文件新建 302 行（`git diff --stat` 实测 445 插入 / 13 删除） | |
+| **小计** | 5 文件改动 **+143 / −13**（5+11+9+34+84 = 143，0+0+0+4+9 = 13），3 文件新建 **302 行**（49+164+89）—— 全补丁合计 **445 插入 / 13 删除** | |
 
 > **P4 阶段的后续改动**：`VecExceptionGen.scala` 增加了 `dotEmulIllegal`（拦截 `vlmul != 0`，
 > 见下方 §10 第 8 条的更新），并新增两个测试入口。`rtl/patch/0001-xiangshan-vdot.patch`
@@ -362,12 +376,13 @@ T2             : vdS2 / vsmul（vdot 不用）                 | Fold L2 + Acc +
 
 | 文件 | 改动 | 说明 |
 |---|---|---|
-| `src/test/scala/top/VectorSimTop.scala` | +44 / −7 | `VDOT_latency`、`VPUTestFuType.vdot`、`unknown()` 阈值、延迟表、`VDotTop` 例化与连线、结果仲裁表 |
-| `src/test/csrc/include/vpu_constant.h` | +15 / −3 | `VDot (10)`、`ALL_FUTYPES`、`VDOT_*_OPTYPES` |
-| `src/test/csrc/include/gm_common.h` | +10 | `class VGMDot` |
-| `src/test/csrc/include/test_driver.h` | +10 | `VGMDot vdot;` + 定向语料回放成员 |
-| `src/test/csrc/test_driver.cpp` | +118 / −4 | `gen_random_optype` / **`gen_random_sew`** / `gen_random_vecinfo` / `get_expected_output` / `YS_VDOT_VECTORS` 语料回放；**另含 `YS_FUTYPE`/`YS_FUOPTYPE` 环境变量选择（原 `yunsuan_testdriver_env_select.patch` 的内容）** |
+| `src/test/scala/top/VectorSimTop.scala` | +41 / −3 | `VDOT_latency`、`VPUTestFuType.vdot`、`unknown()` 阈值、延迟表、`VDotTop` 例化与连线、结果仲裁表 |
+| `src/test/csrc/include/vpu_constant.h` | +13 / −2 | `VDot (10)`、`ALL_FUTYPES`、`VDOT_*_OPTYPES` |
+| `src/test/csrc/include/gm_common.h` | +10 / −0 | `class VGMDot` |
+| `src/test/csrc/include/test_driver.h` | +14 / −0 | `VGMDot vdot;` + 定向语料回放成员 |
+| `src/test/csrc/test_driver.cpp` | +127 / −2 | `gen_random_optype` / **`gen_random_sew`** / `gen_random_vecinfo` / `get_expected_output` / `YS_VDOT_VECTORS` 语料回放；**另含 `YS_FUTYPE`/`YS_FUOPTYPE` 环境变量选择（原 `yunsuan_testdriver_env_select.patch` 的内容）** |
 | `src/test/csrc/golden_model/vector_dot.cpp` | **新建 102 行** | 薄壳参考模型，`#include "vdot_ref.c"` |
+| **小计** | 5 文件改动 **+205 / −7**（41+13+10+14+127 = 205，3+2+0+0+2 = 7），1 文件新建 **102 行** —— 全补丁合计 **307 插入 / 7 删除** | |
 
 > **两个补丁不要重复应用**：`yunsuan_vdot_testbench.patch` 是对 pristine `yunsuan@9559211` 的完整 diff，
 > 已经包含 `yunsuan_testdriver_env_select.patch` 的全部内容。
@@ -397,7 +412,7 @@ case VDot: return (input.fuOpType == VDOT4A_VV) ? 2 : 0; break;
 ```
 
 可行性依据：`get_random_input()` 的非 cvt 分支里 `gen_random_optype()` 在 `gen_random_sew()` **之前**调用
-（`test_driver.cpp:414-416`），所以 `gen_random_sew` 可以安全地依赖 `input.fuOpType`。
+（`test_driver.cpp:513-515`），所以 `gen_random_sew` 可以安全地依赖 `input.fuOpType`。
 
 ### 4.2 参考模型如何保证「不重写语义」
 
@@ -536,7 +551,7 @@ $ diff <(sed -E 's@//.*@@; s/[[:space:]]+$//' rtl/verilog/baseline/VIMac.sv) \
 
 ### 7.3 没有碰的公共判据
 
-- `VecExceptionGen.scala:275` 的 `vstartIllegal = isVArith && (vstart =/= 0)` **未改动**（裁定 R-05/R-06）。
+- `VecExceptionGen.scala:305` 的 `vstartIllegal = isVArith && (vstart =/= 0)` **未改动**（裁定 R-05/R-06）。
 - `VimacOpcode` 的 5 个 `isXxx` 判定 **未改动**。
 - `FuConfig.VimacCfg.latency = CertainLatency(2)` **未改动**，唤醒/写回时序不变。
 
@@ -598,7 +613,7 @@ LMUL>1 的方案（新增 `UopSplitType.VEC_VDOT`）见设计文档 §8.3，**�
 
 5. **时序是估算，不是综合结果**。设计文档 §3.6 的逻辑级数估算（S1 ≈ 24 级、S2 ≈ 21 级）**本阶段没有也无法验证**——本机没有综合工具与工艺库。`latency = 2` 的可行性目前只有「结构上与 SEW=64 工况同量级」这一静态论证支撑。风险登记 R-TIMING 仍然有效，保底方案 C（`latency = 3`）的切换成本是 1 行 `FuConfig` + 1 级寄存器。P7 必须回填真实数据。
 
-6. **面积/功耗未量化**。§5.3 的 13.7% 新增逻辑占比是「全加器等价」结构计数，不是面积报告。`VDotTree.sv` 有 419 行 Verilog、`VDotTop.sv` 1444 行、`VIMacU.v` 4876 行，可作为规模的粗略参照，但不能当面积结论。
+6. **面积/功耗未量化**。设计文档（`10_vdot指令设计文档.md`）§5.3 的 13.7% 新增逻辑占比是「全加器等价」结构计数，不是面积报告。`VDotTree.sv` 有 419 行 Verilog、`VDotTop.sv` 1444 行、`VIMacU.v` 4876 行，可作为规模的粗略参照，但不能当面积结论。
 
 7. **未实现的优化**：冗余 lane 操作数门控、非 vdot 指令执行时对 `VDotTree.prod` 输入端的门控（设计文档 §8.1）。两者都是纯功耗项。
 
@@ -613,7 +628,58 @@ LMUL>1 的方案（新增 `UopSplitType.VEC_VDOT`）见设计文档 §8.3，**�
 
 ---
 
-## 11. 给下一位同学（P4 测试工程师）
+## 11. 波形证据的交付范围（`.gitignore` 决策）
+
+`.gitignore` 第 8–10 行把 `*.vcd` / `*.fst` / `*.fsdb` **默认全部排除**（否则 `work/` 与
+`**/build/` 下每次仿真产生的临时波形都会污染仓库）。此前只给 `logs/stage1/waveform/*.vcd`
+开了例外，于是阶段二、阶段三的波形虽然被报告逐个数值引用，却进不了交付仓库
+——评委拿到的仓库里没有这些文件，只能选择相信报告。本节记录对此作出的决策与理由。
+
+### 11.1 决策
+
+波形证据按三层交付，**三层都入库**：
+
+| 层 | 内容 | 是否入库 | 作用 |
+|---|---|---|---|
+| ① 文本轨迹 | `logs/*/waveform/*_signal_trace.txt` | **是**（始终） | 可 `grep` / `diff` / 脚本比对的机读证据；报告里「某信号第 N 拍等于 X」靠它核对，不用开波形查看器 |
+| ② 波形图 | `docs/stage1/figures/*.png`、`docs/stage3/figures/*.png` | **是**（始终） | 评委与答辩直接看的可视证据 |
+| ③ 原始 VCD | `logs/stage1,2,3/waveform/*.vcd` | **是**（逐目录开例外） | ①② 的源头。有它，任何人都能用 GTKWave 或 `scripts/tools/vcd_extract.py` 自行复核 ①② 的每一个取值，而**不需要重建仿真器** |
+
+入库的 VCD 共 **8 份、10.5 MB**（单份最大 1.85 MB）：
+
+| 目录 | 份数 | 体积 | 被谁逐值引用 | 重新生成命令 |
+|---|---:|---:|---|---|
+| `logs/stage1/waveform/` | 2 | 2.7 MB | `docs/stage1/02_向量加法指令执行过程分析.md` §5/§6/§11.2（21 条波形证据 + 6 张图） | `WAVE=1 bash scripts/10_build_yunsuan_sim.sh` |
+| `logs/stage2/waveform/` | 3 | 2.4 MB | `docs/stage2/12_基础功能测试报告.md` §10（12 个数值） | `bash scripts/tools/capture_vdot_waves.sh` |
+| `logs/stage3/waveform/` | 3 | 5.4 MB | `docs/stage3/22_基线实现与延迟加速分析.md` §6（3×12 笔事务的延迟） | `bash scripts/40_run_bench.sh` |
+
+判据只有两条，缺一不可：**(a) 有文档逐个数值引用它**；**(b) 单份 ≤ 2 MB**。
+两条都满足才开例外，所以 `.gitignore` 里写的是**逐目录白名单**而不是放宽 `*.vcd` 本身
+——构建树里的临时波形（`work/*/build/*.vcd`，每跑一次就多一份）仍然一律排除。
+
+### 11.2 为什么不是「只留文本轨迹」
+
+文本轨迹的可核对性其实强于截图（它是逐时刻的数值表），但它是**抽取结果**：
+抽哪些信号、按什么时刻约定采样，都由 `vcd_extract.py` 的参数决定。
+只交付抽取结果，等于要求评委相信抽取过程本身。把 10.5 MB 的源头一并交付，
+证据链才从「报告 → 轨迹 → VCD」完整闭合，代价可以忽略。
+
+### 11.3 为什么不是「全都不留，让评委自己跑」
+
+三份波形的重新生成都要先重建带 `--trace` 的 Verilator 仿真器（`EMU_TRACE=1`），
+在本机是分钟级、且依赖完整工具链。作为**证据**它必须随仓库走；
+作为**可复现性**它仍然可重建 —— 上表第 5 列给出了每一份的原样重建命令，两者不矛盾。
+
+### 11.4 仓库体积
+
+交付仓库（不含 `.gitignore` 排除的 `work/` 与 `.git/`）实测 **62.6 MB**，其中波形相关
+（8 份 VCD + 4 份文本轨迹 + 全部 PNG 图）合计 **12.4 MB**，远低于「几百 MB」的上限。
+`*.fst` / `*.fsdb` 的例外是预留的（当前一份都没有）：若将来改用 FST 压缩格式，
+同一套判据与目录白名单继续适用。
+
+---
+
+## 12. 给下一位同学（P4 测试工程师）
 
 1. **一条命令起步**：`bash scripts/11_build_vdot_sim.sh`。它会同步参考模型、构建 emu、跑冒烟测试。`BUILD_ONLY=1` 只构建。
 2. **跑完整语料**：

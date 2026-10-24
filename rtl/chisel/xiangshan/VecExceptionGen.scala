@@ -205,6 +205,17 @@ class VecExceptionGen(implicit p: Parameters) extends XSModule{
   // vdot / vdotacc 只定义在 SEW=8，vdot4a 只定义在 SEW=32，其余 SEW 一律非法
   private val dotEewIllegal = dotRedInst && (SEW =/= 0.U) || dot4aInst && (SEW =/= 2.U)
 
+  // vdot 指令族本版本固定 LMUL = 1（总体方案裁定 S-6），其余 vlmul 取值一律视为保留。
+  // 归约形态（vdot/vdotacc）在 LMUL>1 时需要跨寄存器组的多 uop 累加链，本版本未实现，
+  // 若不拦截会静默算错；逐元素形态（vdot4a）虽然语义上可平凡扩展，但参考模型
+  // tests/golden/vdot_ref.c 与 NEMU 实现均固定 LMUL=1
+  // （nemu/patch/0001-add-vdot-instruction-family.patch 的 vdot_check()：
+  //  `if (vtype->vlmul != 0) longjmp_exception(EX_II);`），
+  // 三条指令统一拦截才能保证 RTL / NEMU / 参考模型三方语义逐位一致。
+  // 注意这里用 io.vtype.vlmul 的原始编码判 0（= LMUL 1），而不是上面归一化过的 LMUL
+  // （LMUL = Cat(~vlmul(2), vlmul(1,0))，LMUL=1 对应 4.U）。
+  private val dotEmulIllegal = (dotRedInst || dot4aInst) && (io.vtype.vlmul =/= 0.U)
+
   private val eewIllegal = fpEewIllegal || intExtEewIllegal || wnEewIllegal || dotEewIllegal
 
   // 4. EMUL Illegal
@@ -226,7 +237,7 @@ class VecExceptionGen(implicit p: Parameters) extends XSModule{
 
   private val lsSegIllegal = (lsStrideInst || lsIndexInst) && inst.NF =/= 0.U && (segRegNum > 8.U || segRegMax > 32.U)
   
-  private val emulIllegal = lsEmulIllegal || intExtEmulIllegal || wnEmulIllegal || gather16EmulIllegal || lsSegIllegal
+  private val emulIllegal = lsEmulIllegal || intExtEmulIllegal || wnEmulIllegal || gather16EmulIllegal || lsSegIllegal || dotEmulIllegal
 
   // 5. Reg Number Align
   private val vs1IsMask = maskArithmeticInst || vcompress

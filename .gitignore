@@ -18,6 +18,30 @@ tests/golden/vdot_cli
 *.dSYM/
 tests/golden/example_cxx
 
-# 例外：阶段一的真实波形属于交付证据，必须纳入版本管理
+# ---------------------------------------------------------------------------
+# 波形证据的交付策略（详见 docs/stage2/11_RTL实现说明.md §11「波形证据的交付范围」）
+#
+#   默认拒绝：上面第 8–10 行把 *.vcd / *.fst / *.fsdb 全部排除，构建树里的临时波形
+#             （work/、**/build/ 下）一律不会误入仓库。
+#   逐目录放行：只有被分析/测试文档**逐个数值引用**的波形才开例外。三类证据的关系是
+#             ① 文本轨迹 *_signal_trace.txt —— 始终入库，可 grep、可 diff、可机读；
+#             ② PNG 波形图 docs/*/figures/ —— 始终入库，评委直接看；
+#             ③ 原始 VCD —— 作为 ①② 的可核验源头入库，前提是体积小（单份 ≤ 2 MB）
+#                且确有文档引用。三个阶段合计 8 份 10.5 MB。
+#   每一份 VCD 都可按文档里的命令原样重新生成，入库只是为了免去评委重建仿真器。
+# ---------------------------------------------------------------------------
+
+# 阶段一：vadd.vv 执行过程分析（docs/stage1/02 §5/§6 与 6 张波形图的源头）
+# 重新生成： WAVE=1 bash scripts/10_build_yunsuan_sim.sh
 !logs/stage1/waveform/*.vcd
 !logs/stage1/waveform/*.fst
+
+# 阶段二：vdot 三条指令的功能波形（docs/stage2/12 §10 逐值引用）
+# 重新生成： bash scripts/tools/capture_vdot_waves.sh
+!logs/stage2/waveform/*.vcd
+!logs/stage2/waveform/*.fst
+
+# 阶段三：P7 延迟实测波形（docs/stage3/22 §6 逐笔引用 12×3 个事务）
+# 重新生成： bash scripts/40_run_bench.sh
+!logs/stage3/waveform/*.vcd
+!logs/stage3/waveform/*.fst
