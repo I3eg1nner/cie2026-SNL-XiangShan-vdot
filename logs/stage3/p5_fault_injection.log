@@ -1,6 +1,6 @@
 ==============================================================
  cie2026-vdot / P5-T3  NEMU vdot 故障注入自测
- 2026-10-24T11:53:37Z UTC
+ 2026-10-24T12:09:22Z UTC
 ==============================================================
 被改坏的文件 : /work/work/NEMU/src/isa/riscv64/instr/rvv/vdot.c
 测试镜像     : /work/tests/riscv/vdot/build/vdot_test.bin

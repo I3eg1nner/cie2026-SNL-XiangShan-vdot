@@ -1,5 +1,5 @@
 ==============================================================
- [3] 独立解释器上跑完整共享语料   2026-10-24T11:56:06Z UTC
+ [3] 独立解释器上跑完整共享语料   2026-10-24T12:02:55Z UTC
 ==============================================================
 $ make clean && make NEMU_HOME=/work/work/NEMU
 NEMU_HOME            = /work/work/NEMU
@@ -98,13 +98,13 @@ NEMU 进程退出码 = 0
 [1;34m[/work/work/NEMU/src/isa/riscv64/include/../instr/special.h:38,execute] nemu_trap case 0[0m
 [1;34m[src/cpu/cpu-exec.c:1080,cpu_exec] nemu: [1;32mHIT GOOD TRAP[0m at pc = 0x0000000080000042[0m
 [1;34m[src/cpu/cpu-exec.c:1086,cpu_exec] trap code:0[0m
-[1;34m[src/cpu/cpu-exec.c:178,monitor_statistic] host time spent = 58841 us[0m
+[1;34m[src/cpu/cpu-exec.c:178,monitor_statistic] host time spent = 54351 us[0m
 [1;34m[src/cpu/cpu-exec.c:180,monitor_statistic] total guest instructions = 5505161[0m
 [1;34m[src/cpu/cpu-exec.c:186,monitor_statistic] vst count = 30710, vst unit count = 30710, vst unit optimized count = 0[0m
-[1;34m[src/cpu/cpu-exec.c:189,monitor_statistic] simulation frequency = 93559949 instr/s[0m
+[1;34m[src/cpu/cpu-exec.c:189,monitor_statistic] simulation frequency = 101289047 instr/s[0m
 [1;34m[src/utils/state.c:30,is_exit_status_bad] NEMU exit with good state: 2, halt ret: 0[0m
 ==============================================================
- [4] difftest 参考共享库上跑同一套共享语料   2026-10-24T11:56:15Z UTC
+ [4] difftest 参考共享库上跑同一套共享语料   2026-10-24T12:03:05Z UTC
 ==============================================================
 ref 配置关掉了全部串口设备，故使用静默变体 vdot_test_quiet.bin：
   计算与比对逻辑完全相同，只是不输出，结果以 main 的返回值
@@ -118,10 +118,10 @@ $ $NEMU_HOME/tools/ref-so-runner/runner --so $NEMU_HOME/build/riscv64-nemu-inter
 [1;34m[src/cpu/cpu-exec.c:180,monitor_statistic] total guest instructions = 5504928[0m
 [1;34m[src/cpu/cpu-exec.c:186,monitor_statistic] vst count = 30710, vst unit count = 30710, vst unit optimized count = 0[0m
 [1;34m[src/cpu/cpu-exec.c:192,monitor_statistic] Finish running in less than 1 us and can not calculate the simulation frequency[0m
-host time spent = 355744 us
+host time spent = 365847 us
 total guest instructions = 5504928
 vst count = 30710, vst unit count = 30710, vst unit optimized count = 0
-simulation frequency = 15474408 instr/s
+simulation frequency = 15047077 instr/s
 ------------------- .so 输出结束 -------------------
 runner 退出码 = 0  （0 = HIT GOOD TRAP = 失败条数为 0）
 

@@ -1,44 +1,44 @@
-=== 运行时间 2026-10-24 19:45:35 CST ===
+=== 运行时间 2026-10-24 20:00:52 CST ===
 === emu: /Users/i3eg1nner/code/cie/work/XiangShan-vdot/yunsuan/build/emu ===
 
---- (a) 定向 vdot.vv   : fuType=10 (VDot -> VDotTop), fuOpType=0, SEW=8  , 2000 条随机 ---
-Emu compiled at Oct 24 2026, 19:36:42
+--- (a) 定向 vdot.vv   : fuType=10 (VDot -> VDotTop), fuOpType=0, SEW=8  , 20000 条随机 ---
+Emu compiled at Oct 24 2026, 20:00:10
 Set Test Type Res: fuType:10 fuOpType:0 (pick_fuType=1 pick_fuOpType=1)
 Using seed = 0
 EMU EXCEEDED LIMIT
-HAS Executed Cycles:8019 Operations:2000
-EMU has executed 86 ms.
+HAS Executed Cycles:80019 Operations:20000
+EMU has executed 785 ms.
 exit=0
 
---- (b) 定向 vdotacc.vv: fuType=10, fuOpType=1, SEW=8  , 2000 条随机 ---
-Emu compiled at Oct 24 2026, 19:36:42
+--- (b) 定向 vdotacc.vv: fuType=10, fuOpType=1, SEW=8  , 20000 条随机 ---
+Emu compiled at Oct 24 2026, 20:00:10
 Set Test Type Res: fuType:10 fuOpType:1 (pick_fuType=1 pick_fuOpType=1)
 Using seed = 1
 EMU EXCEEDED LIMIT
-HAS Executed Cycles:8019 Operations:2000
-EMU has executed 85 ms.
+HAS Executed Cycles:80019 Operations:20000
+EMU has executed 797 ms.
 exit=0
 
---- (c) 定向 vdot4a.vv : fuType=10, fuOpType=2, SEW=32 , 2000 条随机 ---
-Emu compiled at Oct 24 2026, 19:36:42
+--- (c) 定向 vdot4a.vv : fuType=10, fuOpType=2, SEW=32 , 20000 条随机 ---
+Emu compiled at Oct 24 2026, 20:00:10
 Set Test Type Res: fuType:10 fuOpType:2 (pick_fuType=1 pick_fuOpType=1)
 Using seed = 2
 EMU EXCEEDED LIMIT
-HAS Executed Cycles:8019 Operations:2000
-EMU has executed 84 ms.
+HAS Executed Cycles:80019 Operations:20000
+EMU has executed 799 ms.
 exit=0
 
 --- (d) 三条指令混合随机：fuType=10，optype 随机 ---
-Emu compiled at Oct 24 2026, 19:36:42
+Emu compiled at Oct 24 2026, 20:00:10
 Set Test Type Res: fuType:10 fuOpType:225 (pick_fuType=1 pick_fuOpType=0)
 Using seed = 3
 EMU EXCEEDED LIMIT
-HAS Executed Cycles:8019 Operations:2000
-EMU has executed 86 ms.
+HAS Executed Cycles:80019 Operations:20000
+EMU has executed 875 ms.
 exit=0
 
---- (e-positive) 定向语料回放 /Users/i3eg1nner/code/cie/tests/vectors/positive.txt（40 行，非 OK 用例自动跳过）---
-Emu compiled at Oct 24 2026, 19:36:42
+--- (e-positive) 定向语料回放 /Users/i3eg1nner/code/cie/tests/vectors/positive.txt（40 条 OK 用例，非 OK 用例自动跳过）---
+Emu compiled at Oct 24 2026, 20:00:10
 [vdot-vectors] loaded 40 cases from /Users/i3eg1nner/code/cie/tests/vectors/positive.txt (skipped 0 non-OK, 0 unparsed)
 [vdot-vectors] run with -O 40 to execute every case exactly once
 Set Test Type Res: fuType:7 fuOpType:225 (pick_fuType=0 pick_fuOpType=0)
@@ -49,8 +49,8 @@ HAS Executed Cycles:179 Operations:40
 EMU has executed 3 ms.
 exit=0
 
---- (e-negative) 定向语料回放 /Users/i3eg1nner/code/cie/tests/vectors/negative.txt（44 行，非 OK 用例自动跳过）---
-Emu compiled at Oct 24 2026, 19:36:42
+--- (e-negative) 定向语料回放 /Users/i3eg1nner/code/cie/tests/vectors/negative.txt（44 条 OK 用例，非 OK 用例自动跳过）---
+Emu compiled at Oct 24 2026, 20:00:10
 [vdot-vectors] loaded 44 cases from /Users/i3eg1nner/code/cie/tests/vectors/negative.txt (skipped 0 non-OK, 0 unparsed)
 [vdot-vectors] run with -O 44 to execute every case exactly once
 Set Test Type Res: fuType:7 fuOpType:225 (pick_fuType=0 pick_fuOpType=0)
@@ -58,26 +58,26 @@ Using seed = 7
 [vdot-vectors] all 44 cases consumed
 EMU EXCEEDED LIMIT
 HAS Executed Cycles:195 Operations:44
-EMU has executed 3 ms.
+EMU has executed 2 ms.
 exit=0
 
---- (e-boundary) 定向语料回放 /Users/i3eg1nner/code/cie/tests/vectors/boundary.txt（103 行，非 OK 用例自动跳过）---
-Emu compiled at Oct 24 2026, 19:36:42
+--- (e-boundary) 定向语料回放 /Users/i3eg1nner/code/cie/tests/vectors/boundary.txt（94 条 OK 用例，非 OK 用例自动跳过）---
+Emu compiled at Oct 24 2026, 20:00:10
 [vdot-vectors] loaded 94 cases from /Users/i3eg1nner/code/cie/tests/vectors/boundary.txt (skipped 9 non-OK, 0 unparsed)
 [vdot-vectors] run with -O 94 to execute every case exactly once
 Set Test Type Res: fuType:7 fuOpType:225 (pick_fuType=0 pick_fuOpType=0)
 Using seed = 7
 [vdot-vectors] all 94 cases consumed
 EMU EXCEEDED LIMIT
-HAS Executed Cycles:431 Operations:103
-EMU has executed 5 ms.
+HAS Executed Cycles:395 Operations:94
+EMU has executed 4 ms.
 exit=0
 
 --- (f) 上游既有功能单元回归（证明改动没有破坏原有 FU）---
-Emu compiled at Oct 24 2026, 19:36:42
+Emu compiled at Oct 24 2026, 20:00:10
 Set Test Type Res: fuType:5 fuOpType:0 (pick_fuType=1 pick_fuOpType=1)
 Using seed = 0
 EMU EXCEEDED LIMIT
 HAS Executed Cycles:6019 Operations:2000
-EMU has executed 65 ms.
+EMU has executed 68 ms.
 exit=0

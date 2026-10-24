@@ -118,9 +118,9 @@ NEMU **没有**用 ysyx 教学版的 `INSTPAT` 宏；香山版用的是
 |---|---|---:|---|---|---|
 | ① | `src/isa/riscv64/Kconfig:147-156` | +11 | 新增 `config CUSTOM_XVDOT`，`depends on RVV`，`default n` | 非标准指令必须可开关，默认关闭不影响上游其他配置 | `CUSTOM_XVEXP2`（`Kconfig:133-138`） |
 | ② | `src/isa/riscv64/include/isa-all-instr.h:155-159` 与 `:502` | +8/-1 | `#define XVDOT_INSTR_TERNARY(f) f(vdot_vv) f(vdotacc_vv) f(vdot4a_vv)`，并在 `INSTR_TERNARY(f)` 列表末尾追加 `XVDOT_INSTR_TERNARY(f)` | 注册进 `INSTR_LIST`，才会生成 `EXEC_ID_*` / `table_*` / 跳转表项（见 §1.3） | `XVEXP2_INSTR_TERNARY`（`:143-147`） |
-| ③ | `src/isa/riscv64/instr/rvv/decode.h:214-220` | +8 | 在 `vopivv` 表里加三条 `def_INSTR_TAB`（funct6 = `111001`/`111010`/`111011`），用 `#ifdef CONFIG_CUSTOM_XVDOT` 包住 | 让 funct6 匹配到对应的 `table_vdot_*` | 同表的 `vwredsum`（`:208`）等 |
+| ③ | `src/isa/riscv64/instr/rvv/decode.h:214-220` | +8 | 在 `vopivv` 表里加三条 `def_INSTR_TAB`（funct6 = `111001`/`111010`/`111011`），用 `#ifdef CONFIG_CUSTOM_XVDOT` 包住 | 让 funct6 匹配到对应的 `table_vdot_*` | 同表的 `vwredsum`（`:207`）等 |
 | ④ | `src/isa/riscv64/instr/rvv/vcompute.h:1355-1370` | +17 | 三个 `def_EHelper(vdot_vv/vdotacc_vv/vdot4a_vv)`，各自展开成 `VDOT_ARITH(VDOT/VDOTACC/VDOT4A)` | 提供解释器真正调用的 `exec_*` 函数 | `def_EHelper(vredsum){REDUCTION(...)}`（`vcompute.h:260`）、`def_EHelper(vmacc){ARITH(...)}`（`:868`） |
-| ⑤ | `src/isa/riscv64/instr/rvv/vcompute_impl.h:69-71 / :90-92 / :120-122` | +11 | `enum op_t` 末尾追加 `VDOT, VDOTACC, VDOT4A`；声明 `void vdot_instr(int, Decode*)`；新增宏 `VDOT_ARITH(opcode)` | 与 `ARITH()/REDUCTION()` 同构的微操作码 + 派发宏 | `#define REDUCTION(...)`（同文件 `:118`） |
+| ⑤ | `src/isa/riscv64/instr/rvv/vcompute_impl.h:69-71 / :90-92 / :120-122` | +11 | `enum op_t` 末尾追加 `VDOT, VDOTACC, VDOT4A`；声明 `void vdot_instr(int, Decode*)`；新增宏 `VDOT_ARITH(opcode)` | 与 `ARITH()/REDUCTION()` 同构的微操作码 + 派发宏 | `#define REDUCTION(...)`（同文件 `:117`） |
 | ⑥ | `src/isa/riscv64/instr/rvv/vdot.c`（**新增**） | +201 | 执行引擎：`vdot_check()` / `vdot_get_i8()` / `vdot_reduce()` / `vdot4a_exec()` / `vdot_instr()` | 三条指令的目的 EEW（32）与源 EEW（8）不同，通用的 `arithmetic_instr()` 统一 EEW 模型表达不了，必须单写 | 结构逐段对照 `reduction_instr()`（`vcompute_impl.c:1529`）与 `arithmetic_instr()`（`:488`） |
 | ⑦ | `configs/riscv64-xs-kmhv2_defconfig:36` | +1 | `CONFIG_CUSTOM_XVDOT=y` | 独立解释器形态（L2 跑测试程序） | — |
 | ⑧ | `configs/riscv64-xs-kmhv2-ref_defconfig:34` | +1 | `CONFIG_CUSTOM_XVDOT=y` | **difftest 参考库形态**；若 ref 不实现 vdot，P6 协同仿真毫无意义 | — |
@@ -165,36 +165,37 @@ EOF
 
 | 行为 | 复用的框架设施（上游，未改动） | 在 `vdot.c` 中的位置 | 对应裁定 |
 |---|---|---|---|
-| 向量单元是否使能 / `vtype.vill` | `require_vector(true)`（`vcompute_impl.c:358`，内部 `require_vector_vs()` 查 `mstatus.vs`，`:266`） | 经 `vector_reduction_check()` / `vector_vvv_check()` 间接调用（`vdot.c:53-70`） | — |
+| 向量单元是否使能 / `vtype.vill` | `require_vector(true)`（`vcompute_impl.c:358`，内部 `require_vector_vs()` 查 `mstatus.vs`，`:266`） | 经 `vector_reduction_check()` / `vector_vvv_check()` 间接调用（`vdot.c:54-74`） | — |
 | 掩码寄存器与 `vd` 冲突检查 | `require_vm(s)`（`vcompute_impl.c:332`：`vm==0 && vd==v0` → `EX_II`） | 仅 `vdot4a` 走（经 `vector_vvv_check()`）。归约形态**刻意不查** —— RVV 1.0 §5.3 允许归约的标量结果写 v0，上游 `vredsum` 用的 `vector_reduction_check()`（`:464`）同样不查 | — |
 | 寄存器组对齐 | `require_aligned()`（`vcompute_impl.c:342`） | 由 `vector_reduction_check()` / `vector_vvv_check()` 代办 | — |
-| **`vstart != 0` → Illegal Instruction** | `check_vstart_exception(s)`（`vcommon.c:20-24`，直接 `longjmp_exception(EX_II)`） | `vdot.c:93`（仅归约形态）；`vdot4a` **不调用** | **S-1 / S-7** |
-| **`vstart >= vl`（含 `vl == 0`）→ 连 tail 都不写** | `check_vstart_ignore(s)`（`vcommon.c:8-18`，顺便把 `vstart` 清 0 并置脏） | `vdot.c:94` 与 `:140` | **S-5** |
-| `vl` 主循环范围 | 与上游完全一致的 `for (idx = vstart->val; idx < vl->val; idx++)` | `vdot.c:107`、`:145` | — |
-| prestart（`i < vstart` 保持不变） | 由主循环起点自然实现（上游同款写法） | `vdot.c:145` | **S-7**（Q3） |
-| `vm` / `v0` 掩码取位 | `get_mask(0, idx)`（`vreg_impl.c:63`，按 RVV §4.5 取 v0 的第 idx 比特） | `vdot.c:108`、`:146` | — |
-| 归约：inactive **源**元素排除出求和 | 与 `reduction_instr()`（`vcompute_impl.c:1540-1543`）逐字相同的 `continue` | `vdot.c:108-111` | R4 |
-| 归约忽略 `vma` | 代码里根本不读 `vtype->vma`（归约没有 inactive 的**目的**元素） | `vdot.c:107-112` | **S-2** |
-| 逐元素：inactive 目的元素按 `vma` | 与 `arithmetic_instr()`（`vcompute_impl.c:560-575`）同构：`vma=1` 写全 1，`vma=0` 保持 | `vdot.c:146-152` | Q5 |
-| 归约 tail（`vta=1`） | `set_vreg_tail(vd)`（`vreg_impl.c:286`，把整个寄存器置全 1）再写元素 0 —— 与 `reduction_instr()` `:1563-1569` 完全一致 | `vdot.c:117-122` | **S-3**、R6 |
-| 逐元素 tail（`vta=1`） | `get_vlen_max(vsew, vlmul, 0)`（`vreg_impl.c:106`）求 VLMAX，再逐元素写全 1 —— 与 `arithmetic_instr()` `:992-1000` 一致 | `vdot.c:168-176` | Q6 |
-| 元素读写与 EEW 换算 | `get_vreg()` / `set_vreg()`（`vreg_impl.c:135` / `:178`）。源用 `vsew=0`（EEW=8，`SIGNED` 已按 `(int64_t)(int8_t)` 扩展），目的用 `vsew=2`（EEW=32，写回时自动截断 → 2^32 模回绕） | `vdot.c:73-77`、`:121`、`:177` | 溢出回绕 |
-| 结束时 `vstart = 0` | 归约形态 `vstart->val = 0`（同 `reduction_instr():1571`）；逐元素形态 `rtl_li + vcsr_write(IDXVSTART, 0)`（同 `arithmetic_instr():1007-1008`） | `vdot.c:124`、`:178-179` | R9 |
-| `mstatus.VS` 置脏 | `vp_set_dirty()` | `vdot.c:95/118/123/141/180` | difftest CSR 比对必需 |
+| **`vstart != 0` → Illegal Instruction** | `check_vstart_exception(s)`（`vcommon.c:20-24`，直接 `longjmp_exception(EX_II)`） | `vdot.c:100`（仅归约形态）；`vdot4a` **不调用** | **S-1 / S-7** |
+| **`vstart >= vl`（含 `vl == 0`）→ 连 tail 都不写** | `check_vstart_ignore(s)`（`vcommon.c:8-18`，顺便把 `vstart` 清 0 并置脏） | `vdot.c:101` 与 `:147` | **S-5** |
+| `vl` 主循环范围 | 与上游完全一致的 `for (idx = vstart->val; idx < vl->val; idx++)` | `vdot.c:114`、`:152` | — |
+| prestart（`i < vstart` 保持不变） | 由主循环起点自然实现（上游同款写法） | `vdot.c:152` | **S-7**（Q3） |
+| `vm` / `v0` 掩码取位 | `get_mask(0, idx)`（`vreg_impl.c:63`，按 RVV §4.5 取 v0 的第 idx 比特） | `vdot.c:115`、`:153` | — |
+| 归约：inactive **源**元素排除出求和 | 与 `reduction_instr()`（`vcompute_impl.c:1541-1543`）逐字相同的 `continue` | `vdot.c:115-118` | R4 |
+| 归约忽略 `vma` | 代码里根本不读 `vtype->vma`（归约没有 inactive 的**目的**元素） | `vdot.c:114-119` | **S-2** |
+| 逐元素：inactive 目的元素按 `vma` | 与 `arithmetic_instr()`（`vcompute_impl.c:564-576`）同构：`vma=1` 写全 1，`vma=0` 保持 | `vdot.c:153-159` | Q5 |
+| 归约 tail（`vta=1`） | `set_vreg_tail(vd)`（`vreg_impl.c:286`，把整个寄存器置全 1）再写元素 0 —— 与 `reduction_instr()` `:1563-1569` 完全一致 | `vdot.c:124-129` | **S-3**、R6 |
+| 逐元素 tail（`vta=1`） | `get_vlen_max(vsew, vlmul, 0)`（`vreg_impl.c:106`）求 VLMAX，再逐元素写全 1 —— 与 `arithmetic_instr()` `:992-1000` 一致 | `vdot.c:175-183` | Q6 |
+| 元素读写与 EEW 换算 | `get_vreg()` / `set_vreg()`（`vreg_impl.c:135` / `:178`）。源用 `vsew=0`（EEW=8，`SIGNED` 已按 `(int64_t)(int8_t)` 扩展），目的用 `vsew=2`（EEW=32，写回时自动截断 → 2^32 模回绕） | `vdot.c:80-84`、`:128`、`:184` | 溢出回绕 |
+| 结束时 `vstart = 0` | 归约形态 `vstart->val = 0`（同 `reduction_instr():1571`）；逐元素形态 `rtl_li + vcsr_write(IDXVSTART, 0)`（同 `arithmetic_instr():1007-1008`） | `vdot.c:131`、`:185-186` | R9 |
+| `mstatus.VS` 置脏 | `vp_set_dirty()` | `vdot.c:102/125/130/148/187` | difftest CSR 比对必需 |
 | `vxsat` / `vcsr` | **不调用** `update_vcsr()` —— 本指令族不饱和（溢出证明见 D2），不应改 `vxsat` | — | 溢出分析 |
 
 ### 3.1 实现骨架（`vdot.c`）
 
 ```
-vdot_instr(opcode, s)                     vdot.c:183
-  ├─ vdot_check(s, opcode)                vdot.c:53
+vdot_instr(opcode, s)                     vdot.c:190
+  ├─ vdot_check(s, opcode)                vdot.c:54
   │    ├─ 归约形态 : vector_reduction_check(s, 0)   ← vcompute_impl.c:464
   │    │             + vtype.vsew != 0  -> EX_II    （R1：要求 SEW=8）
   │    ├─ 逐元素形态: vector_vvv_check(s, true)     ← vcompute_impl.c:407
   │    │             + vtype.vsew != 2  -> EX_II    （Q1：要求 SEW=32）
-  │    └─ vtype.vlmul != 0 -> EX_II                 （S-6：本版本固定 LMUL=1）
-  ├─ VDOT / VDOTACC -> vdot_reduce(s, accumulate)   vdot.c:92
-  └─ VDOT4A         -> vdot4a_exec(s)               vdot.c:139
+  │    ├─ vtype.vlmul != 0 -> EX_II                 （S-6：本版本固定 LMUL=1）
+  │    └─ vstart > VLMAX-1 -> EX_II                 （S-9：§3.7 reserved，建议 trap）
+  ├─ VDOT / VDOTACC -> vdot_reduce(s, accumulate)   vdot.c:99
+  └─ VDOT4A         -> vdot4a_exec(s)               vdot.c:146
 ```
 
 `vdot_reduce()` 与上游 `reduction_instr()` 的**唯一结构性差异**是：上游用
@@ -256,7 +257,7 @@ vdot_instr(opcode, s)                     vdot.c:183
 
 被测指令的机器码由位域宏 `VENC(funct6, vm)` 现场拼出，并用 `_Static_assert` 锚定到
 6 个具体值，程序启动时也会把它们打印出来（日志 `p5_vdot_tests.log:62-65`），
-镜像反汇编里能逐条找到（`p5_vdot_tests.log:71-76`）。
+镜像反汇编里能逐条找到（`p5_vdot_tests.log:44-49`）。
 
 **一个真实踩的坑：裸机镜像必须 `-no-pie`。** Ubuntu 的 gcc 默认 `-pie`，
 `-fno-pic` 只影响代码生成、不影响链接，产出的 ELF 仍带 `.rela.dyn` 动态重定位。
@@ -304,7 +305,7 @@ section in this file"。这正是"不能失败的测试毫无价值"的一个具
 
 ### 4.4 实测结果（真实日志）
 
-**独立解释器** `build/riscv64-nemu-interpreter`（`logs/stage3/p5_vdot_tests.log:78-93`）：
+**独立解释器** `build/riscv64-nemu-interpreter`（`logs/stage3/p5_vdot_tests.log:70-90`）：
 
 ```
 suite                      cases    pass    fail   must-trap
@@ -322,20 +323,21 @@ vstart_relaxed(strict)         90      90       0          77
 random                      10000   10000       0        1541
 vdotacc_random              10000   10000       0        1572
 vdot4a_random               10000   10000       0           0
+vstart_range(extra)            47      47       0          39
 ---------------------------------------------------------------------
-TOTAL cases=30663 pass=30663 fail=0
-  must-trap cases (status != OK) = 3211 , trapped with mcause=2 = 3211
+TOTAL cases=30710 pass=30710 fail=0
+  must-trap cases (status != OK) = 3250 , trapped with mcause=2 = 3250
   missing-trap=0  unexpected-trap=0  wrong-mcause=0  value-mismatch=0  vl-readback-mismatch=0
 RESULT: PASS
 ```
 
-NEMU 侧佐证（`p5_vdot_tests.log:97-101`）：
+NEMU 侧佐证（`p5_vdot_tests.log:99-103`）：
 `HIT GOOD TRAP at pc = 0x0000000080000042`、
-`total guest instructions = 5495017`、`vst count = 30663`
-（30663 次向量 store = 逐条回读了 30663 次 `vd`，不存在"循环没跑"的可能）。
+`total guest instructions = 5505161`、`vst count = 30710`
+（30710 次向量 store = 逐条回读了 30710 次 `vd`，不存在"循环没跑"的可能）。
 
 **difftest 参考共享库** `build/riscv64-nemu-interpreter-so`
-（`p5_vdot_tests.log:110-124`）：ref 配置关掉了全部串口设备
+（`p5_vdot_tests.log:106-130`）：ref 配置关掉了全部串口设备
 （`configs/riscv64-xs-kmhv2-ref_defconfig:190` `# CONFIG_HAS_UARTLITE is not set`），
 因此改用静默变体 `vdot_test_quiet.bin`（计算与比对逻辑完全相同，只是不输出，
 结果以 `main` 的返回值 = 失败条数经 `nemu_trap` 作为 `halt_ret` 报告），
@@ -344,16 +346,17 @@ NEMU 侧佐证（`p5_vdot_tests.log:97-101`）：
 ```
 nemu: HIT GOOD TRAP at pc = 0x0000000080000042
 trap code:0
-total guest instructions = 5494795
-vst count = 30663, vst unit count = 30663, vst unit optimized count = 0
+total guest instructions = 5504928
+vst count = 30710, vst unit count = 30710, vst unit optimized count = 0
 runner 退出码 = 0
 ```
 
-`trap code:0` ⇔ `main` 返回 0 ⇔ 30663 条用例 0 失配。**这是 `.so` 侧也正确实现了
+`trap code:0` ⇔ `main` 返回 0 ⇔ 30710 条用例 0 失配。**这是 `.so` 侧也正确实现了
 vdot 的功能性证据**，不是「符号存在」之类的间接推断。
 
 **覆盖情况对照赛题 2.3.x / P5 验收标准 3**：全部定向 suite（正数 120 / 负数 132 /
-边界 321 条）+ 30000 条随机（远超「≥10000 随机」要求），0 失配。
+边界 321 / vstart 越界 47 条）+ 30000 条随机（远超「≥10000 随机」要求）+
+`vstart_relaxed` 90 条，合计 30710 条，0 失配。
 
 ### 4.5 patch 在干净副本上的验证
 
@@ -364,7 +367,9 @@ vdot 的功能性证据**，不是「符号存在」之类的间接推断。
 解释器重跑全部语料：
 
 ```
-TOTAL cases=30663 pass=30663 fail=0
+TOTAL cases=30710 pass=30710 fail=0
+  must-trap cases (status != OK) = 3250 , trapped with mcause=2 = 3250
+  missing-trap=0  unexpected-trap=0  wrong-mcause=0  value-mismatch=0  vl-readback-mismatch=0
 RESULT: PASS
 PATCH-VERIFY: OK
 ```
@@ -373,32 +378,38 @@ PATCH-VERIFY: OK
 
 ## 5. 故障注入证据
 
-「30663 条全 PASS」本身不能证明测试有效 —— 也可能是比对逻辑形同虚设。
+「30710 条全 PASS」本身不能证明测试有效 —— 也可能是比对逻辑形同虚设。
 `tests/riscv/vdot/fault_inject.sh` 把 `work/NEMU/src/isa/riscv64/instr/rvv/vdot.c`
-人为改坏 4 次，每次重新编译 NEMU 并重跑完整语料，要求**每次都必须 FAIL**。
+人为改坏 5 次，每次重新编译 NEMU 并重跑完整语料，要求**每次都必须 FAIL**。
 完整日志：`logs/stage3/p5_fault_injection.log`。
 
 | # | 注入内容 | 实测结果 | 日志行 |
 |---|---|---|---|
-| 1 | 丢掉源操作数的符号扩展（`SIGNED` → `UNSIGNED`，并删掉 `rtl_sext`） | `pass=9070 fail=21593`，`value-mismatch=21593` → **被检出** | `:10-30` |
-| 2 | 归约主循环 `vl` 差一（`idx < vl` → `idx + 1 < vl`） | `pass=18584 fail=12079` → **被检出** | `:33-52` |
-| 3 | 忽略掩码（`vm=0` 时不再排除 inactive 元素，`vdot4a` 也不再做 `vma` 处理） | `pass=20310 fail=10353` → **被检出** | `:55-86` |
-| 4 | **破坏裁定 S-1**：删掉归约形态的 `check_vstart_exception(s)` | `pass=27461 fail=3202`，其中 `missing-trap=3202`、`must-trap 3211 条只 trap 了 9 条`（剩下 9 条是 `ERR_SEW` 类，与 vstart 无关） → **被检出** | `:89-108` |
-| — | 还原源码并重新编译后复测 | `TOTAL pass=30663 fail=0  RESULT: PASS` | `:114-117` |
+| 1 | 丢掉源操作数的符号扩展（`SIGNED` → `UNSIGNED`，并删掉 `rtl_sext`） | `pass=9117 fail=21593`，`value-mismatch=21593` → **被检出** | `:10-30` |
+| 2 | 归约主循环 `vl` 差一（`idx < vl` → `idx + 1 < vl`） | `pass=18631 fail=12079` → **被检出** | `:33-52` |
+| 3 | 忽略掩码（`vm=0` 时不再排除 inactive 元素，`vdot4a` 也不再做 `vma` 处理） | `pass=20357 fail=10353` → **被检出** | `:55-86` |
+| 4 | **破坏裁定 S-1**：删掉归约形态的 `check_vstart_exception(s)` | `pass=27508 fail=3202`，其中 `missing-trap=3202`；3250 条 must-trap 只剩 48 条还 trap（都是 `ERR_SEW` 与 `vdot4a` 越界，与 vstart≠0 无关） → **被检出** | `:89-108` |
+| 5 | **破坏裁定 S-9**：删掉 `vstart` 越界检查 | `pass=30684 fail=26`，`missing-trap=26`（正是 `vdot4a` 且 `vstart ∈ [4,15]` 的那 26 条） → **被检出** | `:111-132` |
+| — | 还原源码并重新编译后复测 | `TOTAL pass=30710 fail=0  RESULT: PASS` | `:136-141` |
 
 ```
-FAULT-INJECTION: 4/4 被检出
+FAULT-INJECTION: 5/5 被检出
 还原后复测: PASS
 FAULT-INJECTION: PASS
 ```
 
-注入 #4 专门针对 S-1，是 P5/赛题 2.3.3「`vstart≠0` 触发非法指令」这一项的直接证据：
+注入 #4 专门针对 S-1，是 P5 / 赛题 2.3.3「`vstart≠0` 触发非法指令」这一项的直接证据：
 若 NEMU 静默计算而不抛异常，测试立刻报出 3202 条 `missing-trap`。
+注入 #5 针对 S-9，只有补充定向语料（§4.3）能把它检出 —— 这正说明补那 47 条是必要的。
 
 脚本的注入方式是 Python 精确字符串替换并 `assert` 命中次数为 1，
 源码一旦变动、注入点失配，脚本会报「注入失败」并整体 FAIL，**不允许"假装注入成功"**。
+脚本结束时（含异常退出，用 `trap ... EXIT`）把 `vdot.c` 还原并重新编译，
+日志末尾的 `diff` 为空即证明工作区已回到干净状态。
 
----
+**故障注入的实际收益**：它不只是"走过场"。本阶段 inject #1 第一次运行就暴露了
+测试程序自身的一个真 bug（裸机镜像被链接成 PIE，`switch` 指针表没有被重定位，
+见 §4.2 末尾）—— 干净实现下失败打印路径永远不会执行，这条死路本来会一直藏着。
 
 ## 6. 复现命令
 
@@ -410,14 +421,14 @@ FAULT-INJECTION: PASS
 ```
 
 脚本 `set -euo pipefail` 且幂等：patch 已应用时用 `git apply --check --reverse`
-判定并跳过。日志用 `tee` 落到 `logs/stage3/`：
-`p5_nemu_build.log`(359 行) / `p5_vdot_tests.log`(128 行) /
-`p5_fault_injection.log`(123 行) / `p5_patch_verify.log`(51 行)。
+判定并跳过（日志会写「patch 已处于已应用状态…跳过」）。日志用 `tee` 落到 `logs/stage3/`：
 
-> 注：归档的 `p5_nemu_build.log:8` 显示「patch 已处于已应用状态…跳过」，
-> 这是因为归档那次运行时工作区已经打过 patch（脚本幂等性生效）。
-> 从零开始的首次运行会显示「patch 应用成功」；
-> 从干净副本应用 patch 的完整过程另见 `p5_patch_verify.log:1-30`。
+| 日志 | 行数 | 关键证据行 |
+|---|---:|---|
+| `p5_nemu_build.log` | 267 | `:8` patch 应用成功；`:31` / `:50` 两种形态的 `#define CONFIG_CUSTOM_XVDOT 1`；`:43` / `:150` 两份 `vdot.o` |
+| `p5_vdot_tests.log` | 130 | `:44-49` 镜像里的 6 条自定义编码；`:70-90` 分 suite 统计与 `RESULT: PASS`；`:106-130` ref `.so` 侧实跑 |
+| `p5_fault_injection.log` | 147 | `:144-146` `FAULT-INJECTION: 5/5 被检出` / `PASS` |
+| `p5_patch_verify.log` | 51 | 干净副本上 `git apply --check` → 构建 → 全语料 PASS → `PATCH-VERIFY: OK` |
 
 ---
 
@@ -425,55 +436,89 @@ FAULT-INJECTION: PASS
 
 1. **ref 库已带 vdot**：`riscv64-xs-kmhv2-ref_defconfig:34` 已置 `CONFIG_CUSTOM_XVDOT=y`，
    `build/obj-riscv64-nemu-interpreter-so/src/isa/riscv64/instr/rvv/vdot.o` 确实被编译并链接
-   （`p5_nemu_build.log:142,242`），且已用 `tools/ref-so-runner` 功能性验证过
-   （`p5_vdot_tests.log:110-124`）。协同仿真直接 `--diff .../riscv64-nemu-interpreter-so` 即可。
+   （`p5_nemu_build.log:50,150`），且已用 `tools/ref-so-runner` 功能性验证过
+   （`p5_vdot_tests.log:106-130`）。协同仿真直接 `--diff .../riscv64-nemu-interpreter-so` 即可。
 2. **向量寄存器自动参与比对**：`vr[32]` 落在 `DIFFTEST_REG_SIZE` 区间内，
    `CONFIG_DIFFTEST_CHECK_VCSR=y`（ref defconfig）使 `vstart/vl/vtype/vxsat/...` 也参与比对。
    本实现每条路径都调了 `vp_set_dirty()`，并在结束时把 `vstart` 清零，
    不会在 CSR 比对上制造假失配。
 3. **REF 侧「非重写」的证据链**：本实现与 `tests/golden/vdot_ref.c` 是两份独立代码，
-   已在 30663 条语料上逐位一致（§4.4）。因此 RTL 测试平台继续使用 `vdot_ref.c` 作为
+   已在 30710 条语料上逐位一致（§4.4）。因此 RTL 测试平台继续使用 `vdot_ref.c` 作为
    C++ golden model 是成立的 —— 它与 NEMU 实际执行的语义等价，且等价性有实测支撑。
    若 P6 的验收口径要求「REF 侧字面上就是 NEMU 的代码」，最直接的做法是走
    **真 difftest 通路**（`.so` + `--diff`），那样 REF 侧就是 NEMU 本体，无需任何转述。
-4. **RTL 必须与之对齐的两条额外约束**（语料未覆盖，属本实现的显式选择）：
-   * `vtype.vlmul != 0`（LMUL ≠ 1）→ Illegal Instruction；
-   * `vtype.vsew` 不匹配（vdot/vdotacc 要求 8，vdot4a 要求 32）→ Illegal Instruction。
-     若 RTL 对这两种情况的处理不同，difftest 会在这两类激励上报失配。
-5. **不要给 vdot 打 difftest skip**：`work/difftest/src/test/csrc/difftest/refproxy.h:313-317`
+4. **RTL 必须与之对齐的三条约束**：
+   * `vtype.vsew` 不匹配（vdot/vdotacc 要求 8，vdot4a 要求 32）→ Illegal Instruction
+     （共享语料里有 9 条 `ERR_SEW` 用例覆盖）；
+   * `vstart` 超出当前 SEW 的最大元素下标（vdot/vdotacc > 15、vdot4a > 3）→
+     Illegal Instruction（裁定 S-9，由本阶段补充的 `extra_vectors/vstart_range.txt`
+     47 条覆盖）；
+   * `vtype.vlmul != 0`（LMUL ≠ 1）→ Illegal Instruction（裁定 S-6；
+     **语料未覆盖**，属本实现的显式选择，见 §8.1）。
+     若 RTL 对这几种情况的处理不同，difftest 会在相应激励上报失配。
+5. **跑 difftest 时推荐先用 `tools/ref-so-runner` 自检一遍**：
+   `make -C tests/riscv/vdot run-ref`，几百毫秒内就能确认当前 `.so` 的 vdot 行为正确，
+   避免把 REF 侧的问题误判成 RTL 的问题。
+6. **不要给 vdot 打 difftest skip**：`work/difftest/src/test/csrc/difftest/refproxy.h:313-317`
    有 `if (vecwen) assert(0)`，向量指令本就不支持 skip。vdot 不访存，无需 skip。
 
 ---
 
 ## 8. 局限性（如实标注）
 
-1. **LMUL 只支持 1**。裁定 S-6 固定 `LMUL = 1`（VLEN=128、SEW=8 时恰为单 uop，
-   正是赛题场景）。本实现把 `vlmul != 0` 直接判为 Illegal Instruction，而不是
-   "尽力而为地算个结果"——这样任何越界使用都会立刻暴露，不会静默产生错误数据。
-   LMUL>1 对 `vdot4a` 是平凡的逐元素扩展，对 `vdot/vdotacc` 是跨寄存器组归约，
-   均属自然扩展点，但**本版本未实现、未测试**。
-2. **语料未覆盖 `ERR_VL` 与 `ERR_VSTART_RANGE`**。`tests/vectors/` 里只出现
-   `OK` / `ILLEGAL_VSTART` / `ERR_SEW` 三种状态（实测统计）。
-   * `ERR_VL`（`vl > VLMAX`）架构上不可达 —— `vsetvl` 会把 `vl` 钳到 VLMAX（`vreg_impl.c:34-61`）；
-   * `ERR_VSTART_RANGE`（裁定 S-9，`vstart > VLMAX-1`）对 `vdot/vdotacc` 被 S-1 完全覆盖
-     （任何 `vstart != 0` 都已经非法）；对 `vdot4a`（VLMAX=4，`vstart ∈ {4..15}`）
-     参考模型会返回 `ERR_VSTART_RANGE`，而**本 NEMU 实现不抛异常，而是走
-     `check_vstart_ignore()` 的"`vstart >= vl` 则不写回"路径**。
-     由于语料里没有这类用例，这处差异**未被测试覆盖**，在此显式记录：
-     这是一个与参考模型的已知行为差异，影响范围是 `vdot4a` 且 `vstart ∈ [4,15]`
-     这一组架构上「reserved」的配置。如需对齐，应在 `vdot_check()` 里补一条
-     `vstart > VLMAX-1 → EX_II`，并请参考模型侧生成对应语料后重测。
-3. **本层只验证指令语义，不验证微架构**。NEMU 不建模流水线、发射队列与 cache 时序，
-   L2 层能回答"算得对不对"，回答不了"几个周期、怎么拆 uop" —— 后者由 L1（YunSuan FU
-   Verilator 仿真）与 P7 负责。
-4. **汇编器不认识这三条助记符**。测试程序用 `.word` 发射（编码由位域宏现场拼出 +
-   `_Static_assert` 锚定）。为 binutils 增加助记符不在本阶段范围内。
-5. **未做 difftest 全核协同仿真**。本文只证明 `.so` 本身能正确执行 vdot；
-   DUT↔REF 的逐周期比对属 P6，全核香山 Verilator 仿真在本机不可行的论证见
-   `docs/stage1/01_环境部署报告.md` §6.2。
-6. **`vdot_test.c` 里有一处对 NEMU 行为的隐式依赖**：trap handler 固定 `mepc += 4`。
-   这对本测试成立（被测指令都是 4 字节 `.word`），但不是通用的异常处理实现。
-7. **宿主平台单一**：全部实测均在 macOS 15.5 / Apple Silicon 上的
-   `linux/arm64` Docker 容器（Ubuntu 24.04 + GCC 13.3）内完成，**未在 x86_64 Linux 上验证**。
-   NEMU 本身无架构相关代码路径（见 `docs/stage1/01_环境部署报告.md` §2.2 与
-   `docs/_recon/nemu-difftest-env.md` §A.8），但这是推断而非实测。
+### 8.1 LMUL 只支持 1
+
+裁定 S-6 固定 `LMUL = 1`（VLEN=128、SEW=8 时恰为单 uop，正是赛题场景）。
+本实现把 `vlmul != 0` 直接判为 Illegal Instruction，而不是"尽力而为地算个结果"——
+这样任何越界使用都会立刻暴露，不会静默产生错误数据。
+LMUL>1 对 `vdot4a` 是平凡的逐元素扩展，对 `vdot/vdotacc` 是跨寄存器组归约，
+均属自然扩展点，但**本版本未实现**；参考模型同样固定 LMUL=1（S-6），
+因此**语料里没有 LMUL≠1 的用例，这条行为未被测试覆盖**。
+若将来 RTL 实现了 LMUL>1，需要同时扩展参考模型、重新生成语料、再改本实现。
+
+### 8.2 `ERR_VL` 未被覆盖（且架构上不可达）
+
+参考模型的 8 个状态码中，`ERR_VL`（`vl > VLMAX`）在本层不可能出现 ——
+`vsetvl` 会把 `vl` 钳到 VLMAX（`src/isa/riscv64/instr/rvv/vreg_impl.c:34-61`），
+测试程序每条用例都回读 `csrr vl` 并与语料比对（统计项 `vl-readback-mismatch`，实测 0），
+因此这是"防调用方写错"的保护性状态，不是可测的架构行为。
+`ERR_ARG` / `ERR_POLICY` / `ERR_OP` 同理，属参考模型的 API 保护，与指令语义无关。
+
+### 8.3 本层只验证指令语义，不验证微架构
+
+NEMU 不建模流水线、发射队列与 cache 时序，L2 层能回答"算得对不对"，
+回答不了"几个周期、怎么拆 uop" —— 后者由 L1（YunSuan FU Verilator 仿真）与 P7 负责。
+
+### 8.4 汇编器不认识这三条助记符
+
+测试程序用 `.word` 发射（编码由位域宏现场拼出 + `_Static_assert` 锚定）。
+为 binutils 增加助记符不在本阶段范围内；这也意味着**本阶段没有验证"汇编器能把
+`vdot.vv v3, v2, v1` 汇编成正确编码"**，只验证了"给定编码，NEMU 的行为正确"。
+
+### 8.5 未做 difftest 全核协同仿真
+
+本文只证明 `.so` 本身能正确执行 vdot（§4.4），DUT↔REF 的逐周期比对属 P6；
+全核香山 Verilator 仿真在本机不可行的论证见 `docs/stage1/01_环境部署报告.md` §6.2。
+
+### 8.6 测试程序的两处隐式假设
+
+* trap handler 固定 `mepc += 4`（`tests/riscv/vdot/start.S`）。对本测试成立
+  （被测指令都是 4 字节 `.word`），但不是通用的异常处理实现；
+* 测试只用固定的寄存器组合 `vd=v3, vs2=v2, vs1=v1`，**没有遍历寄存器编号**，
+  也没有覆盖 `vd == vs1` / `vd == vs2` 这类重叠情形（归约与逐元素指令在 LMUL=1
+  下读写同一元素位置，重叠是安全的，但未实测）。
+
+### 8.7 宿主平台单一
+
+全部实测均在 macOS 15.5 / Apple Silicon 上的 `linux/arm64` Docker 容器
+（Ubuntu 24.04 + GCC 13.3）内完成，**未在 x86_64 Linux 上验证**。
+NEMU 本身无架构相关代码路径（见 `docs/stage1/01_环境部署报告.md` §2.2 与
+`docs/_recon/nemu-difftest-env.md` §A.8），但这是推断而非实测。
+
+### 8.8 与上游其他 defconfig 的关系
+
+只给 `riscv64-xs-kmhv2_defconfig` 与 `riscv64-xs-kmhv2-ref_defconfig` 打开了
+`CONFIG_CUSTOM_XVDOT`。NEMU 的其余 kmhv2 变体
+（`-ref-debug` / `-dual-ref` / `-dual-ref-debug` / `-fastref`）与所有非 kmhv2 配置
+**保持关闭**（Kconfig `default n`），需要时自行加一行 `CONFIG_CUSTOM_XVDOT=y`
+或 `make menuconfig` 勾选即可。

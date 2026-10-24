@@ -22,7 +22,7 @@
 | `VIMacU`（含 vdot）单 FU 精化出 Verilog | **通过**，4876 行 | `rtl/verilog/vdot/VIMacU.v` |
 | `DecodeUnit`（含三条新指令）精化出 Verilog | **通过** | `rtl/verilog/vdot/DecodeUnit.v` |
 | 对既有 `vmul`/`vmacc`/`vsmul` 的影响 | **生成的 Verilog 逐字节相同**（去掉源码行号注释后 diff 为 0 行） | §7.1 |
-| L1 冒烟测试（三条指令 × 2000 随机 + 混合 2000 + 定向语料 178 条） | **全部 PASS** | `logs/stage2/p4_smoke_test.log` |
+| L1 冒烟测试（三条指令各 20000 随机 + 混合 20000 + 定向语料 178 条，合计 80178 条） | **全部 PASS，0 失配** | `logs/stage2/p4_smoke_test.log` |
 | 故障注入自测（人为改坏一位） | **按预期 BADTRAP** | `logs/stage2/p4_fault_inject.log` |
 | `FuConfig` / `FuType` / `Parameters` / Dispatch / IQ / WbArbiter | **一行未改**（与设计文档 §5.1 第 15 项一致） | §6 文件清单 |
 
@@ -493,10 +493,10 @@ cp /path/to/tests/golden/vdot_ref.{c,h} src/test/csrc/golden_model/
 | L0 | `mill -i xiangshan.compile`（clean 后完整编译 382 源文件，77 s） | exit=0 | 同上 |
 | L0 | `mill -i xiangshan.test.compile`（21 源文件，含 `VIMacUMain`） | exit=0 | 同上 |
 | L0 | `VDotTree.sv` / `VDotTop.sv` / `VIMac.sv` / `VIMacU.v` / `DecodeUnit.v` 生成 | 全部 exit=0 | `logs/stage2/p4_verilog_emit.log` |
-| L1 | `vdot.vv` 2000 条随机（SEW=8） | `EMU EXCEEDED LIMIT`，Operations:2000 | `logs/stage2/p4_smoke_test.log` |
-| L1 | `vdotacc.vv` 2000 条随机（SEW=8） | 同上 | 同上 |
-| L1 | `vdot4a.vv` 2000 条随机（SEW=32） | 同上 | 同上 |
-| L1 | 三条指令混合 2000 条随机 | 同上 | 同上 |
+| L1 | `vdot.vv` 20000 条随机（SEW=8） | `EMU EXCEEDED LIMIT`，Operations:20000 | `logs/stage2/p4_smoke_test.log` |
+| L1 | `vdotacc.vv` 20000 条随机（SEW=8） | `EMU EXCEEDED LIMIT`，Operations:20000 | 同上 |
+| L1 | `vdot4a.vv` 20000 条随机（SEW=32） | `EMU EXCEEDED LIMIT`，Operations:20000 | 同上 |
+| L1 | 三条指令混合 20000 条随机 | `EMU EXCEEDED LIMIT`，Operations:20000 | 同上 |
 | L1 | 定向语料 `positive.txt` 40 条 / `negative.txt` 44 条 / `boundary.txt` 94 条（跳过 9 条 `ILLEGAL_VSTART`） | 全部 `EMU EXCEEDED LIMIT` | 同上 |
 | L1 | 既有 FU 回归 `VIAluFWrapper` 2000 条 | `EMU EXCEEDED LIMIT` | 同上 |
 | L1 | 波形（`vdot.vv`，含 `vdotTree` 层次） | 1.2 MB VCD，37161 行 | `logs/stage2/waveform/vdotvv_vdottop_fuType10_seed1.vcd` |
@@ -562,7 +562,7 @@ LMUL>1 的方案（新增 `UopSplitType.VEC_VDOT`）见设计文档 §8.3，**�
 | 2 | §4.6 `RedTailGen` | 「`Mux(outVl === 0.U, outOldVd, …)`，S-1 保证 `vstart>=vl` 退化为 `vl==0`」 | 实现为 `Mux(outVstart >= outVl, outOldVd, …)` | 与参考模型 `vdot_ref.c:94` 的 `if (vstart >= vl) return;` 逐字对应。在 XiangShan 上 `vstart` 架构上恒为 0，两者等价；在 L1 平台 `vstart` 是可自由驱动的输入端口，用完整判据才能与参考模型对齐。代价是一个 8 位比较器 |
 | 3 | §4.5 掩码 | 只描述了归约形态的 `ByteMaskTailGen` 接线 | 额外加了 `dotActiveEn = Mux(isDot4a, ~0.U(16.W), …)` | 文档没写 `vdot4a` 的 activeEn 取值。`vdot4a` 的掩码粒度是 32 位目的元素、由 `Mgu` 处理，若复用 SEW=8 的 activeEn 会把乘积错误地按源元素掩掉。全 1 是唯一正确取值 |
 | 4 | §4.4.3 / §8.1 | 「建议在 P3 实现冗余 lane 门控与 `prod` 输入端操作数门控」 | **未实现** | 纯功耗优化，不影响功能，且会给 S1 增加 1 级 AND。本机没有功耗分析工具（D3 分层验证），做了也无法量化收益。留给 P7 综合后按实测决定，已登记在 §10 |
-| 5 | §6 D1/D3 | 「新建 `VDotSpec.scala` chiseltest 用例」「`DecodeTest.scala` 新增译码断言」 | **未实现**（改为 L1 Verilator 差分 + 语料回放） | 上游 chiseltest 6.0.0 在本机不可用：它生成的 C++ 用 `WData`，而 Verilator 5.052 已移除该类型（`docs/stage1/03_仿真平台搭建报告.md` §8.1 已记录，`make test` 本就不通过）。L1 平台（Verilator + C++ golden model）覆盖面更广（已跑 8000+ 随机 + 178 定向），是等价且更强的替代 |
+| 5 | §6 D1/D3 | 「新建 `VDotSpec.scala` chiseltest 用例」「`DecodeTest.scala` 新增译码断言」 | **未实现**（改为 L1 Verilator 差分 + 语料回放） | 上游 chiseltest 6.0.0 在本机不可用：它生成的 C++ 用 `WData`，而 Verilator 5.052 已移除该类型（`docs/stage1/03_仿真平台搭建报告.md` §8.1 已记录，`make test` 本就不通过）。L1 平台（Verilator + C++ golden model）覆盖面更广（已跑 80000 随机 + 178 定向），是等价且更强的替代 |
 | 6 | §6 A5 | 只要求 `VerilogVDotTree` | 额外加了 `VerilogVDotTop` 与 `xiangshan.backend.fu.VIMacUMain` | 前者是 L1 DUT 的顶层，后者让 XiangShan 侧的 vdot 改动能真正**精化**（而不只是通过 Scala 类型检查）并产出可读 Verilog，直接支撑 P3 验收标准第 1、2 条 |
 | 7 | §9 测试平台 | 只要求随机激励 | 额外实现了 `YS_VDOT_VECTORS` 定向语料回放 | P4 的 30663 条共享语料需要能直接喂给 RTL；没有这个通道，定向用例只能手写 hex，既易错又无法与 `tests/vectors/` 对齐 |
 | 8 | §6 C2 | `uopSplitType` 用默认 `VEC_VVV` | 一致，但**`vl` 随机范围在 L1 驱动里放宽到 `[0, vlmax]`** | 上游 `gen_random_vecinfo` 用 `rand()%vlmax + 1`，永远取不到 `vl=0`。裁定 S-5 对 `vl=0` 有明确规定（连 tail 都不写），参考模型和 RTL 都实现了，应该测到 |
@@ -573,7 +573,7 @@ LMUL>1 的方案（新增 `UopSplitType.VEC_VDOT`）见设计文档 §8.3，**�
 
 ## 10. 局限性
 
-1. **掩码/尾部成形在两处分别实现**。`VIMacU`（XiangShan 侧）用 `ByteMaskTailGen` + `Mgu` + `RedTailGen`；`VDotTop`（YunSuan 侧，L1 用）用手写的等价逻辑。**L1 的 8000+ 随机 + 178 定向用例验证的是 `VDotTop` 这一侧**。两边的算术通路（`VIMac64b.prod16` + `VDotTree` + `accOperand`）完全相同、是同一份源码，但成形逻辑是两份实现，存在走样的可能。根因是 `ByteMaskTailGen`/`Mgu` 属于 `xiangshan` 工程、YunSuan 工程看不见。缓解：两份实现都逐条对照 `vdot_ref.c` 的行为表写成；`VIMacU` 的成形逻辑由 `VIMacU.v` 的精化结果证明可综合，但**其功能正确性只能由全核 difftest 验证，本机未执行**（见第 2 条）。
+1. **掩码/尾部成形在两处分别实现**。`VIMacU`（XiangShan 侧）用 `ByteMaskTailGen` + `Mgu` + `RedTailGen`；`VDotTop`（YunSuan 侧，L1 用）用手写的等价逻辑。**L1 的 80000 随机 + 178 定向用例验证的是 `VDotTop` 这一侧**。两边的算术通路（`VIMac64b.prod16` + `VDotTree` + `accOperand`）完全相同、是同一份源码，但成形逻辑是两份实现，存在走样的可能。根因是 `ByteMaskTailGen`/`Mgu` 属于 `xiangshan` 工程、YunSuan 工程看不见。缓解：两份实现都逐条对照 `vdot_ref.c` 的行为表写成；`VIMacU` 的成形逻辑由 `VIMacU.v` 的精化结果证明可综合，但**其功能正确性只能由全核 difftest 验证，本机未执行**（见第 2 条）。
 
 2. **全核层面未验证**。`mill xiangshan.runMain top.TopMain`（全 SoC 精化）与 `make emu`（全核 Verilator）在本机 16 GB 内存下不可行（官方要求 `-Xmx40G`，见 `docs/stage1/03_仿真平台搭建报告.md` §7.1、`MASTER_PLAN.md` D3）。因此：
    - 译码 → uop 拆分 → 发射 → `VIMacU` → 写回的**全链路未在真实流水线上跑过**；
@@ -586,7 +586,7 @@ LMUL>1 的方案（新增 `UopSplitType.VEC_VDOT`）见设计文档 §8.3，**�
 
 5. **时序是估算，不是综合结果**。设计文档 §3.6 的逻辑级数估算（S1 ≈ 24 级、S2 ≈ 21 级）**本阶段没有也无法验证**——本机没有综合工具与工艺库。`latency = 2` 的可行性目前只有「结构上与 SEW=64 工况同量级」这一静态论证支撑。风险登记 R-TIMING 仍然有效，保底方案 C（`latency = 3`）的切换成本是 1 行 `FuConfig` + 1 级寄存器。P7 必须回填真实数据。
 
-6. **面积/功耗未量化**。§5.3 的 13.7% 新增逻辑占比是「全加器等价」结构计数，不是面积报告。`VDotTree.sv` 有 33591 字节、242 行 Verilog（`VIMacU.v` 整体 4876 行），可作为规模的粗略参照，但不能当面积结论。
+6. **面积/功耗未量化**。§5.3 的 13.7% 新增逻辑占比是「全加器等价」结构计数，不是面积报告。`VDotTree.sv` 有 419 行 Verilog、`VDotTop.sv` 1444 行、`VIMacU.v` 4876 行，可作为规模的粗略参照，但不能当面积结论。
 
 7. **未实现的优化**：冗余 lane 操作数门控、非 vdot 指令执行时对 `VDotTree.prod` 输入端的门控（设计文档 §8.1）。两者都是纯功耗项。
 
