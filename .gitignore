@@ -10,3 +10,9 @@ work/
 *.fsdb
 .DS_Store
 __pycache__/
+
+# 本地编译产物
+tests/golden/*.o
+tests/golden/test_golden
+tests/golden/vdot_cli
+*.dSYM/

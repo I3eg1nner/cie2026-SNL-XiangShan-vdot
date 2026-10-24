@@ -65,10 +65,26 @@ build_ref() {
     file build/riscv64-nemu-interpreter-so
 }
 
+# 两种形态共用同一个 build/ 目录但产物名不同，可以共存；
+# 但 .config / include/generated 只反映"最后一次配置"。
+# 运行 RISC-V 程序用的是独立解释器，且 tests/riscv/hello 的 Makefile 要从
+# include/generated/autoconf.h 里取 CONFIG_MBASE / CONFIG_UARTLITE_MMIO，
+# 所以 all 模式最后把配置恢复成独立解释器配置。
+restore_standalone_config() {
+    echo
+    echo "######## [C] 把工作区配置恢复为独立解释器（供运行 RISC-V 程序使用）########"
+    echo "\$ make riscv64-xs-kmhv2_defconfig"
+    make riscv64-xs-kmhv2_defconfig
+    echo "\$ make -j\$(nproc)"
+    make -j"$(nproc)"
+    echo "--- 恢复后 include/generated/autoconf.h 的关键项 ---"
+    grep -E 'CONFIG_MBASE|CONFIG_UARTLITE_MMIO|CONFIG_MMIO_RESET_VECTOR' include/generated/autoconf.h
+}
+
 case "${TARGET}" in
     standalone) build_standalone ;;
     ref)        build_ref ;;
-    all)        build_standalone; build_ref ;;
+    all)        build_standalone; build_ref; restore_standalone_config ;;
     *) echo "unknown target: ${TARGET}" >&2; exit 1 ;;
 esac
 
