@@ -32,7 +32,7 @@ VLEN=128。基础指令 `vdot.vv` 对应赛题要求；另两条为本方案的�
 **掩码/尾部**：遵循 RISC-V 归约指令惯例（参照 `vredsum.vs` / `vwredsum.vs`）。`vstart`、`vl`、`vm`、`vta` 行为在设计文档中逐项规定并实现。
 
 #### D2.1 语义裁定（P3 参考模型阶段裁定，全项目强制遵守）
-下列裁定已在 C 参考模型中实现并经 30663 条用例 + 故障注入验证，**RTL 与 NEMU 必须与之逐位一致**。完整论证见 `docs/stage2/13_参考模型与测试向量说明.md`「语义裁定记录」。
+下列裁定已在 C 参考模型中实现并经 30663 条用例（D2.3 S-7' 传播后语料为 30703 条）+ 故障注入验证，**RTL 与 NEMU 必须与之逐位一致**。完整论证见 `docs/stage2/13_参考模型与测试向量说明.md`「语义裁定记录」。
 
 | 编号 | 裁定 | 依据 |
 |---|---|---|
@@ -54,13 +54,13 @@ VLEN=128。基础指令 `vdot.vv` 对应赛题要求；另两条为本方案的�
 | 编号 | 分歧 | 根因 |
 |---|---|---|
 | G5a | `LMUL != 1` 的 vdot，NEMU 判非法而香山不判 | 香山译码侧缺 `dotLmulIllegal` 守卫。用对齐寄存器 `v8/v16/v24` 实测 3000/3000 全分歧；此前用 `v1/v2/v3` 看似一致，只是寄存器组对齐检查的副作用 |
-| G5b | `vdot4a` 且 `vstart ∈ {1,2,3}`，NEMU 按原 S-7 正常执行，香山判非法 | 香山上游 `VecExceptionGen.scala:294` 的 `vstartIllegal = isVArith && vstart =/= 0` 对**所有**向量算术指令生效 |
+| G5b | `vdot4a` 且 `vstart ∈ {1,2,3}`，NEMU 按原 S-7 正常执行，香山判非法 | 香山上游 `VecExceptionGen.scala:275`（pristine 基线；实现树与 `rtl/chisel/xiangshan/VecExceptionGen.scala` 为 `:305`）的 `vstartIllegal = isVArith && vstart =/= 0` 对**所有**向量算术指令生效（此处原写 `:294`：pristine 的 `:294` 是把它并入 `io.illegalInst` 的那一行；该数字应来自首轮协同仿真工作树快照——当时尚缺 11 行的 `dotEmulIllegal`，305 − 11 = 294——属推断，快照已不可复查） |
 
 **裁定 S-7'**：`vdot4a.vv` 在 `vstart != 0` 时**同样抛出 Illegal Instruction**，与 `vdot.vv` / `vdotacc.vv` 一致。
 
 **理由（平台约束优先原则）**：本指令是为香山昆明湖V2 定义的自定义扩展，其 ISA 语义不应宽于宿主微架构的实际能力。昆明湖V2 的向量算术通路不支持非零 `vstart` 重启，这是既有架构事实而非本项目引入的缺陷。让 ISA 定义向微架构收敛，比为一条自定义指令放宽上游异常生成逻辑更合理，也避免了改动会影响所有向量指令的公共判据。该取舍须在设计文档中明确记录为**平台约束驱动的设计决策**，并说明在支持 `vstart` 重启的实现上可以放宽。
 
-**修订 G5a**：香山译码侧必须补 `dotLmulIllegal`（`LMUL != 1` 时判非法），与 S-6 对齐。
+**修订 G5a**：香山译码侧必须补 `dotLmulIllegal`（`LMUL != 1` 时判非法），与 S-6 对齐。（已实现，代码中命名为 `dotEmulIllegal`，见 `rtl/chisel/xiangshan/VecExceptionGen.scala:217`）
 
 **传播范围（必须全部同步，否则语义不自洽）**：
 `tests/golden/vdot_ref.c` → 重新生成 `tests/vectors/` 全部语料 → NEMU `vdot.c` → RTL `VecExceptionGen` 的 LMUL 守卫 → 设计文档 §1 行为表 → 参考模型文档语义裁定记录 → NEMU 扩展说明 → 协同仿真报告。传播后必须重跑 P4 功能测试与 P6 协同仿真，**要求非法判定分歧归零**。

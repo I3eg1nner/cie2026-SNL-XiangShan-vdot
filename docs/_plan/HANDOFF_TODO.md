@@ -13,7 +13,7 @@
 | 1.1 环境部署验证 | ✅ | `logs/stage1/p1_hello_xiangshan.log`，裸机 RV64 程序经 UARTLITE 实输出，HIT GOOD TRAP 收尾 |
 | 1.2 操作日志 | ✅ | `logs/stage1/*.log`（含 4 次真实失败与修复） |
 | 1.3 向量加法执行过程文档 | ✅ | `docs/stage1/02_*.md` + 6 张波形图 + `logs/stage1/waveform/` |
-| 2.1 vdot.vv 设计文档 | ✅ | `docs/stage2/10_*.md`（1414 行） |
+| 2.1 vdot.vv 设计文档 | ✅ | `docs/stage2/10_*.md`（1459 行） |
 | 2.2 vdot.vv RTL 实现 | ✅ | `rtl/patch/*.patch`、`rtl/chisel/`、`rtl/verilog/` |
 | 2.3.1/2.3.2/2.3.3 三项功能测试 | ✅ | `docs/stage2/12_*.md`，29 万+ 条执行 0 失败 |
 | 3.1.1 NEMU 指令扩展 | ✅ | `nemu/patch/0001-*.patch`、`docs/stage3/20_*.md` |
@@ -181,3 +181,15 @@ JDK **17**（JDK 21/25 会失败）、mill **0.12.3**（XiangShan）与 **0.11.1
 - 所有对上游的改动以 **patch 形式**沉淀在 `rtl/patch/`、`nemu/patch/`、`tests/unit/`，严禁直接提交上游工作树。
 - `scripts/tools/sync_rtl_sources.sh --check` 校验 `rtl/chisel/` 与补丁是否漂移，**请纳入提交前检查**。
 - 执行纪律（`MASTER_PLAN.md` 第 2 节）对接手方同样有效：**禁止伪造日志与数据，无法执行的必须标注「未执行」及原因**。本项目全部产物均满足该标准，请勿破坏。
+
+---
+
+## 六、遗留小项（交付整合时发现，未处理）
+
+| 项 | 说明 | 建议 |
+|---|---|---|
+| 审计 I-3（阶段二部分） | 阶段二/三的波形尚无 PNG 截图，只有 VCD 与文本轨迹（阶段一已补 6 张） | 用 `scripts/tools/vcd_plot.py` 为 `logs/stage2/waveform/`、`logs/stage3/waveform/` 出图并嵌入 `docs/stage2/12`、`docs/stage3/22` |
+| `bench/results/latency_fu.csv` 措辞 | vwredsum/vredsum/vmul/vmacc 行写「数值比对 0 笔一致」，文档写「未建模」，含义一致但措辞冲突 | 修改生成脚本的输出文案后重跑 `scripts/40_run_bench.sh` |
+| 指令计数口径 | 设计文档按 6→1（不含 vsetvli），P7 按 6→2（含 vsetvli），已在设计文档加注 | PPT 与录屏统一使用 6→2（3.00×，实测口径） |
+| 守卫命名 | 方案文档称 `dotLmulIllegal`，代码为 `dotEmulIllegal`，已加注 | 无需改代码 |
+| 阶段三独立审计 | P5/P6/P7 尚未经过独立验收审计（阶段一、二均已审计并整改） | 接手后第一件事：按 MASTER_PLAN P5–P7 验收标准派审计 |

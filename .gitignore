@@ -41,7 +41,7 @@ tests/golden/example_cxx
 !logs/stage2/waveform/*.vcd
 !logs/stage2/waveform/*.fst
 
-# 阶段三：P7 延迟实测波形（docs/stage3/22 §6 逐笔引用 12×3 个事务）
+# 阶段三：P7 延迟实测波形（docs/stage3/22 §4.2 逐笔引用 12×3 个事务）
 # 重新生成： bash scripts/40_run_bench.sh
 !logs/stage3/waveform/*.vcd
 !logs/stage3/waveform/*.fst

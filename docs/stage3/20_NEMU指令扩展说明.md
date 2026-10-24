@@ -121,7 +121,7 @@ NEMU **没有**用 ysyx 教学版的 `INSTPAT` 宏；香山版用的是
 ## 2. 本次改动逐项对照表
 
 补丁：`nemu/patch/0001-add-vdot-instruction-family.patch`
-（sha256 `68410b8a59fd2246e2636876ec8c4c88a1ff01a1ec1f738b7dc1406b19e2b284`，
+（sha256 `fb003c54c813c91916cd31738a0d3d1d27b6f937f31bdcc728b0564f45008838`，与 `logs/stage3/p5_nemu_build.log:7` 一致，
 8 个文件 **+278 / -1** 行）。
 
 | # | 文件（patch 后行号） | 行数 | 改动内容 | 为什么需要 | 模板来源 |
@@ -310,9 +310,9 @@ section in this file"。这正是"不能失败的测试毫无价值"的一个具
 **补充定向语料 `extra_vectors/vstart_range.txt`（55 条）**：共享语料里只出现
 `OK` / `ILLEGAL_VSTART` / `ERR_SEW` 三种状态，**没有任何 `ERR_VSTART_RANGE` 用例**，
 也就是裁定 S-9 在共享语料中完全未覆盖。对 `vdot` / `vdotacc` 这不要紧（S-1 已把任何
-`vstart != 0` 判为非法），但 `vdot4a` 的 VLMAX = 4、`vstart` 正常生效，
+`vstart != 0` 判为非法），但在 P5 当时（原裁定 S-7 下）`vdot4a` 的 VLMAX = 4、`vstart` 正常生效，
 `vstart ∈ [4,15]` 是一组架构上可达、规范上 reserved、且"什么都不做"与"抛非法指令"
-可区分的配置。本阶段因此用 `gen_extra_vectors.py` 补了一个定向 suite：
+可区分的配置（S-7' 之后的变化见本段末尾）。本阶段因此用 `gen_extra_vectors.py` 补了一个定向 suite：
 脚本只构造输入，再把整批请求通过管道交给 `tests/golden/vdot_cli`（即参考模型本体）
 算出 `vd_expected` 与 `status`，做法与 `tests/vectors/gen_vectors.py` 完全一致，
 **不引入第二份语义实现**。55 条中 39 条期望 `ERR_VSTART_RANGE`，

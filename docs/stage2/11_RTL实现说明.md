@@ -26,7 +26,7 @@
 | 对既有 `vmul`/`vmacc`/`vsmul` 的影响 | **生成的 Verilog 逐字节相同**（去掉源码行号注释后 diff 为 0 行） | §7.1 |
 | L1 冒烟测试（三条指令各 20000 随机 + 混合 20000 + 定向语料 178 条，合计 80178 条） | **全部 PASS，0 失配** | `logs/stage2/p4_smoke_test.log` |
 | 故障注入自测（人为改坏一位） | **按预期 BADTRAP** | `logs/stage2/p4_fault_inject.log` |
-| P4 完整功能测试（含 `VIMacU` 直驱 27529 条、随机 236887 条、5 个故障注入） | **全部 PASS** | `docs/stage2/12_基础功能测试报告.md`、`logs/stage2/p5_*.log` |
+| P4 完整功能测试（含 `VIMacU` 直驱 26024 条、随机 235348 条、5 个故障注入；裁定 S-7' 传播后重跑的数字，修订前为 27529 / 236887） | **全部 PASS** | `docs/stage2/12_基础功能测试报告.md`、`logs/stage2/p5_*.log` |
 | `FuConfig` / `FuType` / `Parameters` / Dispatch / IQ / WbArbiter | **一行未改**（与设计文档 §5.1 第 15 项一致） | §6 文件清单 |
 
 ---
@@ -207,7 +207,7 @@ IO 的时序约定（这是接线时最容易错的地方，已写进源码注�
 
 **没有**整体使用 `CSA_Nto2With3to2MainPipeline`：它的 `pipeLevel` 语义是「从第 `pipeLevel` 层起**每层都插寄存器**」（`VectorFloatFMA.scala:1899-1903` 的 `is_piped` 一旦置真不复位），且压缩拓扑固定为 `n→11→8→4→2`，**无法表达「4 组独立 4 路」的可重构需求**（裁定 R-09）。
 
-### 2.5 `VIMacU`（B1/B2，改 +93/−12）
+### 2.5 `VIMacU`（B1/B2，改 +84/−9）
 
 #### (a) `VIMacSrcTypeModule`
 
@@ -586,7 +586,7 @@ LMUL>1 的方案（新增 `UopSplitType.VEC_VDOT`）见设计文档 §8.3，**�
 | 4 | §4.4.3 / §8.1 | 「建议在 P3 实现冗余 lane 门控与 `prod` 输入端操作数门控」 | **未实现** | 纯功耗优化，不影响功能，且会给 S1 增加 1 级 AND。本机没有功耗分析工具（D3 分层验证），做了也无法量化收益。留给 P7 综合后按实测决定，已登记在 §10 |
 | 5 | §6 D1/D3 | 「新建 `VDotSpec.scala` chiseltest 用例」「`DecodeTest.scala` 新增译码断言」 | **未实现**（改为 L1 Verilator 差分 + 语料回放） | 上游 chiseltest 6.0.0 在本机不可用：它生成的 C++ 用 `WData`，而 Verilator 5.052 已移除该类型（`docs/stage1/03_仿真平台搭建报告.md` §8.1 已记录，`make test` 本就不通过）。L1 平台（Verilator + C++ golden model）覆盖面更广（已跑 80000 随机 + 178 定向），是等价且更强的替代 |
 | 6 | §6 A5 | 只要求 `VerilogVDotTree` | 额外加了 `VerilogVDotTop` 与 `xiangshan.backend.fu.VIMacUMain` | 前者是 L1 DUT 的顶层，后者让 XiangShan 侧的 vdot 改动能真正**精化**（而不只是通过 Scala 类型检查）并产出可读 Verilog，直接支撑 P3 验收标准第 1、2 条 |
-| 7 | §9 测试平台 | 只要求随机激励 | 额外实现了 `YS_VDOT_VECTORS` 定向语料回放 | P4 的 30663 条共享语料需要能直接喂给 RTL；没有这个通道，定向用例只能手写 hex，既易错又无法与 `tests/vectors/` 对齐 |
+| 7 | §9 测试平台 | 只要求随机激励 | 额外实现了 `YS_VDOT_VECTORS` 定向语料回放 | P4 的共享语料（当时 30663 条，S-7' 后 30703 条）需要能直接喂给 RTL；没有这个通道，定向用例只能手写 hex，既易错又无法与 `tests/vectors/` 对齐 |
 | 8 | §6 C2 | `uopSplitType` 用默认 `VEC_VVV` | 一致，但**`vl` 随机范围在 L1 驱动里放宽到 `[0, vlmax]`** | 上游 `gen_random_vecinfo` 用 `rand()%vlmax + 1`，永远取不到 `vl=0`。裁定 S-5 对 `vl=0` 有明确规定（连 tail 都不写），参考模型和 RTL 都实现了，应该测到 |
 
 **没有发现设计文档的错误。** §6 的集成点清单可以逐条施工，§4.2 的抽头点正确性证明、§4.4 的蝶形折叠正确性、§3.6.3 的流水切分方案 B 在实现中全部成立，一次通过（首次 L1 随机测试即 PASS，无需调试数据通路）。
@@ -597,7 +597,7 @@ LMUL>1 的方案（新增 `UopSplitType.VEC_VDOT`）见设计文档 §8.3，**�
 
 1. ~~**掩码/尾部成形在两处分别实现**~~ —— **已在 P4 阶段关闭**。
    原问题：`VIMacU`（XiangShan 侧）用 `ByteMaskTailGen` + `Mgu` + `RedTailGen`；`VDotTop`（YunSuan 侧，L1 用）用手写的等价逻辑，L1 验证的只是 `VDotTop` 这一侧，「被验证的东西不等于被集成的东西」。
-   P4 的做法：新增 `VIMacUHarness`（只做连线的窄 IO 包装，`VIMacU.scala` 一行未改）+ `tests/unit/vimacu_tb.cpp`，把同一批共享语料**直接灌进 `VIMacU` 本体**，实测 **27529 条执行、0 失配**；并核对两条路径共享的 `VDotTree` / `CSA4to2` / `CSA3to2` / `ByteMaskTailGen` 网表**逐字节相同**。详见 `docs/stage2/12_基础功能测试报告.md` §8 与 `logs/stage2/p5_vimacu_equiv.log`。
+   P4 的做法：新增 `VIMacUHarness`（只做连线的窄 IO 包装，`VIMacU.scala` 一行未改）+ `tests/unit/vimacu_tb.cpp`，把同一批共享语料**直接灌进 `VIMacU` 本体**，实测 **26024 条执行、0 失配**（裁定 S-7' 传播后重跑；修订前为 27529 条：1545 条 `vdot4a` + `vstart != 0` 用例转为非法、不再投放，另有 `vstart_relaxed.txt` 补入的 40 条 vdot4a 用例，27529 − 1545 + 40 = 26024，见第 3 条）；并核对两条路径共享的 `VDotTree` / `CSA4to2` / `CSA3to2` / `ByteMaskTailGen` 网表**逐字节相同**。详见 `docs/stage2/12_基础功能测试报告.md` §8 与 `logs/stage2/p5_vimacu_equiv.log`。
    **剩余**：全核 difftest 仍未执行（见第 2 条）。
 
 2. **全核层面未验证**。`mill xiangshan.runMain top.TopMain`（全 SoC 精化）与 `make emu`（全核 Verilator）在本机 16 GB 内存下不可行（官方要求 `-Xmx40G`，见 `docs/stage1/03_仿真平台搭建报告.md` §7.1、`MASTER_PLAN.md` D3）。因此：
@@ -605,9 +605,11 @@ LMUL>1 的方案（新增 `UopSplitType.VEC_VDOT`）见设计文档 §8.3，**�
    - 已验证到的最强层级是：`DecodeUnit` 与 `VIMacU` 各自**单独精化成 Verilog 成功**（证明译码表无冲突、FU 可综合），加上 L1 对算术通路的逐位差分。
    - 全链路验证留给 P6（NEMU↔RTL 协同仿真）与可能的全核 difftest。
 
-3. **`vdot4a.vv` 的 `vstart != 0` 在全核上不可达**（仍然成立），但 **prestart 数据通路已在 P4 阶段被实际激励覆盖**。
-   `VecExceptionGen.scala:305` 的 `vstartIllegal` 对所有 `isVArith` 指令在 `vstart!=0` 时报非法，而裁定 S-7 要求 `vdot4a` 的 `vstart` 正常生效。按裁定 R-06，数据通路照 S-7 正确实现（`VDotTop` 的 prestart 分支、`VIMacU` 经 `Mgu.info.vstart`），但该路径**只能在 L1 验证**。
-   上游 `gen_random_vecinfo()` 对算术指令恒置 `vstart = 0`，随机激励确实覆盖不到；P4 用 `YS_VDOT_VECTORS` 定向语料回放补上：`vdot4a_boundary.txt` 6 条 + `vdot4a_random.txt` 1539 条 `vstart != 0` 用例全部实测通过，归约侧另有 `vstart_relaxed.txt` 90 条（非规范 SKIP 策略）。详见 12 号报告 §5.3。
+3. ~~**`vdot4a.vv` 的 `vstart != 0` 在全核上不可达**~~ —— **已由裁定 S-7' 消解，现为规范行为**（`MASTER_PLAN.md` D2.3）。
+   原文：「`VecExceptionGen.scala:305` 的 `vstartIllegal` 对所有 `isVArith` 指令在 `vstart!=0` 时报非法，而裁定 S-7 要求 `vdot4a` 的 `vstart` 正常生效 …… 该路径只能在 L1 验证」。
+   P6 协同仿真证明这不是一处无害的「不可达」，而是 NEMU（按 S-7 正常执行）与香山（判非法）之间 1946 条确定性的判定分歧（`docs/stage3/21_协同仿真验证报告.md` §7.3）。按**平台约束优先原则**修订为 **S-7'**：`vdot4a.vv` 在 `vstart != 0` 时**同样抛出 Illegal Instruction**，与 `vdot.vv` / `vdotacc.vv`（S-1）一致。
+   **RTL 一行未改**：上游原有的 `VecExceptionGen.scala:305` `vstartIllegal = isVArith && (io.vstart =/= 0.U)` 本就覆盖 `vdot4a`（`FuType.vimac` 属于 `isVArith`），S-7' 只需要参考模型、语料与 NEMU 向它收敛。译码级定向测试 `tests/unit/vecexcgen_tb.cpp` 的 `[I]` 组实测确认：`vdot4a` 在 `vstart = 1/2/3` 时判非法、`vstart = 0` 时判合法（`logs/stage2/p5_decode_illegal.log:87-94`）。
+   随之变化的测试口径：规范语料里原有的 1545 条 `vdot4a` + `vstart != 0` 用例（`vdot4a_boundary.txt` 6 条 + `vdot4a_random.txt` 1539 条）改标为 `ILLEGAL_VSTART`，在 FU 级平台上按「架构非法」跳过；数据通路本身的 prestart 门控（`VDotTop` 的 prestart 分支、`VIMacU` 经 `Mgu.info.vstart`）仍然正确实现，由非规范语料 `vstart_relaxed.txt`（130 条，其中 S-7' 时补入 40 条 vdot4a）继续在 L1 激励，以备在支持 `vstart` 重启的实现上放宽回 S-7。详见 12 号报告 §5.3 与 §12 第 3 条。
 
 4. **归约类 `vstart != 0` 在 L1 走的是 SKIP 策略**。FU 级平台不建模异常，RTL 的归约数据通路（`activeEn` 的 `begin = vstart`）天然实现 §5.4 的 prestart 跳过。架构层的 STRICT 行为（S-1：抛 Illegal Instruction）由 `VecExceptionGen` 在译码阶段实现，不在 L1 验证。`vector_dot.cpp` 因此用 `VDOT_VSTART_SKIP` 调参考模型；语料文件里 `status != OK` 的用例被自动跳过（`boundary.txt` 跳过 9 条）。
 
@@ -651,7 +653,7 @@ LMUL>1 的方案（新增 `UopSplitType.VEC_VDOT`）见设计文档 §8.3，**�
 |---|---:|---:|---|---|
 | `logs/stage1/waveform/` | 2 | 2.7 MB | `docs/stage1/02_向量加法指令执行过程分析.md` §5/§6/§11.2（21 条波形证据 + 6 张图） | `WAVE=1 bash scripts/10_build_yunsuan_sim.sh` |
 | `logs/stage2/waveform/` | 3 | 2.4 MB | `docs/stage2/12_基础功能测试报告.md` §10（12 个数值） | `bash scripts/tools/capture_vdot_waves.sh` |
-| `logs/stage3/waveform/` | 3 | 5.4 MB | `docs/stage3/22_基线实现与延迟加速分析.md` §6（3×12 笔事务的延迟） | `bash scripts/40_run_bench.sh` |
+| `logs/stage3/waveform/` | 3 | 5.4 MB | `docs/stage3/22_基线实现与延迟加速分析.md` §4.2（3×12 笔事务的延迟） | `bash scripts/40_run_bench.sh` |
 
 判据只有两条，缺一不可：**(a) 有文档逐个数值引用它**；**(b) 单份 ≤ 2 MB**。
 两条都满足才开例外，所以 `.gitignore` 里写的是**逐目录白名单**而不是放宽 `*.vcd` 本身
@@ -703,3 +705,6 @@ LMUL>1 的方案（新增 `UopSplitType.VEC_VDOT`）见设计文档 §8.3，**�
 > `vm=0` 且 `v0` 全 0 的 S-4 场景）均已覆盖并通过；另外关闭了 §10 第 1 条（VIMacU 直驱）与
 > 第 8 条（LMUL 拦截）两个缺口。完整结果见 `docs/stage2/12_基础功能测试报告.md`，
 > 一键复跑 `bash scripts/20_run_func_tests.sh`。
+> 其后的裁定 S-7'（`MASTER_PLAN.md` D2.3）把 `vdot4a` 的 `vstart != 0` 改为非法，
+> 上面第 3、7 条关于「`vdot4a` prestart 路径」的说法已按 §10 第 3 条更新：该路径现由非规范语料
+> `vstart_relaxed.txt` 覆盖，规范语料中的对应用例改为 `ILLEGAL_VSTART`。

@@ -9,8 +9,8 @@
 #         riscv64-xs-kmhv2-ref_defconfig  -> build/riscv64-nemu-interpreter-so
 #       两者都带 CONFIG_CUSTOM_XVDOT=y
 #   [3] 交叉编译 tests/riscv/vdot 并在独立解释器上跑完全部语料
-#       （tests/vectors 的 30663 条共享语料 + tests/riscv/vdot/extra_vectors 的
-#        47 条补充定向语料 = 30710 条），输出 PASS/FAIL 统计
+#       （tests/vectors 的 30703 条共享语料 + tests/riscv/vdot/extra_vectors 的
+#        55 条补充定向语料 = 30758 条，裁定 S-7' 传播后），输出 PASS/FAIL 统计
 #   [4] 用 NEMU 自带的 tools/ref-so-runner 把同一套语料在 **difftest 参考
 #       共享库** 里再跑一遍，证明 .so 侧也实现了 vdot（P6 协同仿真的前提）
 #   [5] 把工作区配置恢复成独立解释器形态
