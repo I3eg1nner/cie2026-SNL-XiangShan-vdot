@@ -1,0 +1,12 @@
+# 上游仓库与构建产物（不纳入交付仓库）
+work/
+**/build/
+**/out/
+*.o
+*.so
+*.a
+*.vcd
+*.fst
+*.fsdb
+.DS_Store
+__pycache__/
