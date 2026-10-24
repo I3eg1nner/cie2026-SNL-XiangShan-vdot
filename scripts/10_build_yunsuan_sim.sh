@@ -70,6 +70,20 @@ fi
 info "如需还原上游状态： git -C ${YS_DIR} checkout -- src/test/csrc/test_driver.cpp"
 
 # -----------------------------------------------------------------------------
+step "1.5/5 校验 mill 的 forkEnv 缓存"
+# mill 把 build.sc 里 `sys.env("PATH")` 算出的 forkEnv 缓存在 out/YunSuan/forkEnv.json，
+# 之后不再跟随外部 PATH 变化。若缓存里没有我们的 espresso 目录，精化会报
+# "Result of espresso: 126"，必须先把缓存删掉。
+FORKENV="${YS_DIR}/out/YunSuan/forkEnv.json"
+ESPRESSO_DIR="$(dirname "$(command -v espresso)")"
+if [ -f "${FORKENV}" ] && ! grep -q "${ESPRESSO_DIR}" "${FORKENV}"; then
+  info "forkEnv 缓存中的 PATH 不含 ${ESPRESSO_DIR}，删除缓存"
+  rm -f "${FORKENV}"
+else
+  info "forkEnv 缓存正常（或尚未生成）"
+fi
+
+# -----------------------------------------------------------------------------
 step "2/5 清理（可选）"
 if [ "${CLEAN}" = "1" ]; then
   info "make clean"

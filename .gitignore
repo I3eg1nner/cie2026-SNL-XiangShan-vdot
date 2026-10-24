@@ -17,3 +17,7 @@ tests/golden/test_golden
 tests/golden/vdot_cli
 *.dSYM/
 tests/golden/example_cxx
+
+# 例外：阶段一的真实波形属于交付证据，必须纳入版本管理
+!logs/stage1/waveform/*.vcd
+!logs/stage1/waveform/*.fst
