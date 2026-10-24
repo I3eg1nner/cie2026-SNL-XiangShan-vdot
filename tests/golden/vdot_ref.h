@@ -68,10 +68,13 @@ typedef struct {
  * ------------------------------------------------------------------ */
 enum vdot_status {
     VDOT_OK                = 0,  /* 正常执行（含"按规范不写回"的情形）      */
-    VDOT_ILLEGAL_VSTART    = 1,  /* 归约类指令 vstart!=0 → Illegal Instruction
-                                    （RVV v1.0 §14 原文：Vector reduction
-                                      operations raise an illegal instruction
-                                      exception if vstart is non-zero.）      */
+    VDOT_ILLEGAL_VSTART    = 1,  /* vstart!=0 → Illegal Instruction。
+                                    vdot/vdotacc：RVV v1.0 §14 原文「Vector
+                                      reduction operations raise an illegal
+                                      instruction exception if vstart is
+                                      non-zero.」（裁定 S-1）
+                                    vdot4a   ：平台约束（裁定 S-7'），见下文
+                                      vdot4a_vv 的说明                        */
     VDOT_ERR_SEW           = 2,  /* vtype.vsew 与指令要求不符 → Illegal Instr */
     VDOT_ERR_VL            = 3,  /* vl > VLMAX，架构上不可能，视为调用错误    */
     VDOT_ERR_VSTART_RANGE  = 4,  /* vstart 超出当前 SEW 的最大元素下标（§3.7
@@ -81,10 +84,14 @@ enum vdot_status {
     VDOT_ERR_OP            = 7   /* 未知的 op 编号                            */
 };
 
-/* vstart 策略（见 docs/stage2/13 「语义裁定记录」S-1） */
+/* vstart 策略（见 docs/stage2/13 「语义裁定记录」S-1 / S-7'） */
 enum vdot_vstart_policy {
-    VDOT_VSTART_STRICT = 0,  /* 规范字面：归约指令 vstart!=0 → Illegal Instr（默认） */
-    VDOT_VSTART_SKIP   = 1   /* 放宽：按 §5.4 prestart 规则跳过 i<vstart 的源元素     */
+    VDOT_VSTART_STRICT = 0,  /* 本项目的规范语义：三条指令 vstart!=0 一律 Illegal
+                                Instruction（默认）。vdot/vdotacc 的依据是 RVV §14，
+                                vdot4a 的依据是平台约束（裁定 S-7'）              */
+    VDOT_VSTART_SKIP   = 1   /* 放宽：按 §5.4 prestart 规则跳过 i<vstart 的源元素。
+                                仅供在支持 vstart 重启的实现上做数据通路测试，
+                                不参与规范一致性判定                              */
 };
 
 /* 指令编号（测试向量文件中的 op 字段） */
@@ -149,7 +156,9 @@ int vdotacc_vv(vreg128_t *vd, const vreg128_t *vs2, const vreg128_t *vs1,
                int vta, int vma);
 
 /* vdot4a.vv vd, vs2, vs1, vm —— SEW=32，逐 32 位元素的 4 路 int8 点积累加
- *   ∀i∈active: vd.u32[i] += Σ_{j=0}^{3} sext(vs2.i8[4i+j]) * sext(vs1.i8[4i+j]) */
+ *   ∀i∈active: vd.u32[i] += Σ_{j=0}^{3} sext(vs2.i8[4i+j]) * sext(vs1.i8[4i+j])
+ *   注意：虽然本指令是逐元素形态，vstart!=0 仍然 Illegal Instruction（裁定 S-7'，
+ *   平台约束优先原则；详见 vdot_ref.c 的 vdot4a 行为表第 2 条） */
 int vdot4a_vv(vreg128_t *vd, const vreg128_t *vs2, const vreg128_t *vs1,
               uint32_t vstart, uint32_t vl, const vreg128_t *vm_mask,
               int vta, int vma);

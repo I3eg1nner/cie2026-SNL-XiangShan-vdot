@@ -1,20 +1,23 @@
 ==============================================================
  P7 基线实现与延迟加速分析 —— 一键复现
- 开始时间 : 2026-10-24T14:50:55Z UTC
+ 开始时间 : 2026-10-24T15:32:19Z UTC
  仓库根   : /Users/i3eg1nner/code/cie
  RTL 工作树: /Users/i3eg1nner/code/cie/work/XiangShan-cosim  (a4eeaabb4c12)
  NEMU     : /Users/i3eg1nner/code/cie/work/NEMU  (90908390002f)
  verilator: Verilator 5.052 2026-09-05 rev vUNKNOWN-built20260905
 ==============================================================
 
-[1;34m==> [22:50:55] 1/6 NEMU：RVV 1.0 基线序列 <-> vdot 指令族等价性 + 动态指令数实测[0m
+[1;34m==> [23:32:19] 1/6 NEMU：RVV 1.0 基线序列 <-> vdot 指令族等价性 + 动态指令数实测[0m
 ==============================================================
  P7 / 赛题 3.2  基线功能实现与等价性验证
- 2026-10-24T14:50:55Z UTC
+ 2026-10-24T15:32:19Z UTC
 ==============================================================
 $ git log --oneline -1
 9090839 feat(difftest): support fast shared reference execution (#1247)
-（已存在 riscv64-xs-kmhv2 形态的解释器，跳过重建；FORCE=1 可强制重来）
+$ make riscv64-xs-kmhv2_defconfig && make -j
+Makefile:40: You have set CONFIG_FLASH_IMG_PATH option, but the specified path '""' does not exist!
++ CXX src/memory/store_queue_wrapper.cpp
++ g++ /work/work/NEMU/build/riscv64-nemu-interpreter
 #define CONFIG_UARTLITE_MMIO 0x40600000
 #define CONFIG_MBASE 0x80000000
 #define CONFIG_CUSTOM_XVDOT 1
@@ -26,6 +29,26 @@ CONFIG_MBASE         = 0x80000000
 CONFIG_UARTLITE_MMIO = 0x40600000
 CONFIG_CUSTOM_XVDOT  = enabled
 VLEN                 = 128
+GEN  build/nemu_config.h
+PACK build/corpus.bin
+  positive.txt                 40 cases   policy=strict  (../../vectors)
+  negative.txt                 44 cases   policy=strict  (../../vectors)
+  boundary.txt                103 cases   policy=strict  (../../vectors)
+  vdotacc_positive.txt         40 cases   policy=strict  (../../vectors)
+  vdotacc_negative.txt         44 cases   policy=strict  (../../vectors)
+  vdotacc_boundary.txt        103 cases   policy=strict  (../../vectors)
+  vdot4a_positive.txt          40 cases   policy=strict  (../../vectors)
+  vdot4a_negative.txt          44 cases   policy=strict  (../../vectors)
+  vdot4a_boundary.txt         115 cases   policy=strict  (../../vectors)
+  vstart_relaxed.txt          130 cases   policy=skip    (../../vectors)
+  random.txt                10000 cases   policy=strict  (../../vectors)
+  vdotacc_random.txt        10000 cases   policy=strict  (../../vectors)
+  vdot4a_random.txt         10000 cases   policy=strict  (../../vectors)
+  vstart_range.txt             55 cases   policy=strict  (../vdot/extra_vectors)
+  -> build/corpus.bin  (14 suites, 30758 cases, 2707176 bytes)
+LD   build/baseline_test.elf
+BIN  build/baseline_test.bin  (2721640 bytes)
+DIS  build/baseline_test.dis
 
 --- 证据：基线序列确实以标准 RVV 1.0 编码出现在镜像的 .text 里 ---
     800008a4:	ee20a257          	vwmul.vv	v4,v2,v1
@@ -55,7 +78,7 @@ $ $NEMU_HOME/build/riscv64-nemu-interpreter -b --log=build/nemu-run.log build/ba
    NEMU defconfig   : riscv64-xs-kmhv2_defconfig
    NEMU commit      : 90908390002f
    csrr vlenb       : 16 byte -> VLEN = 128 bit (MATCH)
-   corpus           : 14 suites, 30710 cases
+   corpus           : 14 suites, 30758 cases
    baseline         : RVV 1.0 only (vmv.s.x / vwmul.vv / vwredsum.vs,
                       vsll.vi / vsra.vi / vmacc.vv for vdot4a)
    vdot encodings   : vdot 0xe62081d7  vdotacc 0xea2081d7  vdot4a 0xee2081d7
@@ -74,7 +97,7 @@ $ $NEMU_HOME/build/riscv64-nemu-interpreter -b --log=build/nemu-run.log build/ba
     vsll.vi            no trap             TRAP  mcause=2
     vsra.vi            no trap             TRAP  mcause=2
     vmacc.vv           no trap             TRAP  mcause=2
-    vdot4a.vv          no trap             no trap
+    vdot4a.vv          no trap             TRAP  mcause=2
 
 --- [A] single dot product: baseline(RVV1.0) vs vdot vs corpus golden ---
 
@@ -90,13 +113,13 @@ vdotacc_boundary              103      94      94       0       9
 vdot4a_positive                40      40      40       0       0
 vdot4a_negative                44      44      44       0       0
 vdot4a_boundary               115     106     106       0       9
-vstart_relaxed(strict)         90      13      13       0      77
+vstart_relaxed(strict)        130      22      22       0     108
 random                      10000    8459    8459       0    1541
 vdotacc_random              10000    8428    8428       0    1572
 vdot4a_random               10000    8461    8461       0    1539
-vstart_range(extra)            47       0       0       0      47
+vstart_range(extra)            55       8       8       0      47
 ---------------------------------------------------------------------
-[A] TOTAL cases=30710 run=25907 pass=25907 fail=0 skip(illegal-by-spec)=3250 skip(baseline-inexpressible,vstart!=0)=1553
+[A] TOTAL cases=30758 run=25924 pass=25924 fail=0 skip(illegal-by-spec)=4834 skip(baseline-inexpressible,vstart!=0)=0
     baseline-vs-golden mismatch = 0 , vdot-vs-golden mismatch = 0 , baseline-vs-vdot mismatch = 0
     unexpected baseline trap = 0 , unexpected vdot trap = 0 , vl readback mismatch = 0
     baseline vector-instruction count per case: vdot=6  vdotacc=4  vdot4a=19   (vdot side = 1 each)
@@ -170,14 +193,14 @@ Welcome to [1;41m[1;33mriscv64[0m-NEMU!
 For help, type "help"
 ------------------- 模拟器输出结束 -------------------
 NEMU 进程退出码 = 0
-[A] TOTAL cases=30710 run=25907 pass=25907 fail=0 skip(illegal-by-spec)=3250 skip(baseline-inexpressible,vstart!=0)=1553
+[A] TOTAL cases=30758 run=25924 pass=25924 fail=0 skip(illegal-by-spec)=4834 skip(baseline-inexpressible,vstart!=0)=0
 RESULT: PASS
 ==============================================================
  P7 / 赛题 3.3  功能单元延迟实测
- 2026-10-24T14:50:56Z UTC
+ 2026-10-24T15:32:29Z UTC
 ==============================================================
 
-[1;34m==> [22:50:56] 2/6 L1 YunSuan 平台：抓 vdot 三条指令的真实波形并抽取事务[0m
+[1;34m==> [23:32:29] 2/6 L1 YunSuan 平台：抓 vdot 三条指令的真实波形并抽取事务[0m
     emu(trace) : 3359296 bytes
 
 ##############################################################
@@ -193,11 +216,11 @@ $ YS_VDOT_VECTORS=/tmp/p7_w_vdot.txt ./build/emu --dump-wave -b 0 -e 400 -O 12 -
     [vdot-vectors] run with -O 12 to execute every case exactly once
     Set Test Type Res: fuType:7 fuOpType:225 (pick_fuType=0 pick_fuOpType=0)
     Using seed = 1
-    dump wave to /Users/i3eg1nner/code/cie/work/XiangShan-cosim/yunsuan/build/2026-10-24@22:50:56_dump_wave_seed_1.vcd...
+    dump wave to /Users/i3eg1nner/code/cie/work/XiangShan-cosim/yunsuan/build/2026-10-24@23:32:29_dump_wave_seed_1.vcd...
     [vdot-vectors] all 12 cases consumed
     EMU EXCEEDED LIMIT
     HAS Executed Cycles:114 Operations:12
-    EMU has executed 13 ms.
+    EMU has executed 16 ms.
     VCD -> logs/stage3/waveform/p7_vdotvv_vdottop_fuType10_seed1.vcd
 
 $ python3 scripts/tools/vcd_extract.py --vcd <vcd> --transactions
@@ -252,7 +275,7 @@ $ YS_VDOT_VECTORS=/tmp/p7_w_vdotacc.txt ./build/emu --dump-wave -b 0 -e 400 -O 1
     [vdot-vectors] run with -O 12 to execute every case exactly once
     Set Test Type Res: fuType:7 fuOpType:225 (pick_fuType=0 pick_fuOpType=0)
     Using seed = 1
-    dump wave to /Users/i3eg1nner/code/cie/work/XiangShan-cosim/yunsuan/build/2026-10-24@22:50:56_dump_wave_seed_1.vcd...
+    dump wave to /Users/i3eg1nner/code/cie/work/XiangShan-cosim/yunsuan/build/2026-10-24@23:32:29_dump_wave_seed_1.vcd...
     [vdot-vectors] all 12 cases consumed
     EMU EXCEEDED LIMIT
     HAS Executed Cycles:114 Operations:12
@@ -311,7 +334,7 @@ $ YS_VDOT_VECTORS=/tmp/p7_w_vdot4a.txt ./build/emu --dump-wave -b 0 -e 400 -O 12
     [vdot-vectors] run with -O 12 to execute every case exactly once
     Set Test Type Res: fuType:7 fuOpType:225 (pick_fuType=0 pick_fuOpType=0)
     Using seed = 1
-    dump wave to /Users/i3eg1nner/code/cie/work/XiangShan-cosim/yunsuan/build/2026-10-24@22:50:56_dump_wave_seed_1.vcd...
+    dump wave to /Users/i3eg1nner/code/cie/work/XiangShan-cosim/yunsuan/build/2026-10-24@23:32:29_dump_wave_seed_1.vcd...
     [vdot-vectors] all 12 cases consumed
     EMU EXCEEDED LIMIT
     HAS Executed Cycles:114 Operations:12
@@ -363,12 +386,12 @@ $ python3 scripts/tools/vcd_extract.py --vcd <vcd> --transactions
       #35                   0  3101c0ccbe0dd7d24dd3e2611b50b50e                   1            00000915                   1                   1                   0
       #37                   1  3101c0ccbe0dd7d24dd3e2611b50b50e                   0            00000915                   0                   1                   0
 
-[1;34m==> [22:50:56] 3/6 直驱 VIMacU（vdot 族 + 上游既有 vmul/vwmul/vmacc）[0m
+[1;34m==> [23:32:29] 3/6 直驱 VIMacU（vdot 族 + 上游既有 vmul/vwmul/vmacc）[0m
 
 ##############################################################
 # [3] VIMacU 直驱延迟实测（真正被集成进香山的功能单元）
 ##############################################################
-=== VIMacU 延迟实测  2026-10-24 22:50:56 CST ===
+=== VIMacU 延迟实测  2026-10-24 23:32:29 CST ===
 
 --- (0) 把交付仓库里的 harness 源码同步进工作树 ---
     tests/unit/VIMacUHarness.scala -> work/XiangShan-cosim/src/test/scala/xiangshan/backend/fu/
@@ -387,7 +410,7 @@ c++  -I.  -MMD -I/opt/homebrew/Cellar/verilator/5.052/share/verilator/include -I
 c++  -Wl,-U,__Z15vl_time_stamp64v,-U,__Z13sc_time_stampv,-U,_vlog_startup_routines   vimacu_latency_tb.o verilated.o verilated_threads.o VVIMacUHarness__ALL.a    -pthread -lpthread   -o /Users/i3eg1nner/code/cie/work/XiangShan-cosim/build/vimacu-lat-tb/vimacu_latency_tb
 - V e r i l a t i o n   R e p o r t: Verilator 5.052 2026-09-05 rev vUNKNOWN-built20260905
 - Verilator: Built from 0.000 MB sources in 0 modules, into 0.000 MB in 0 C++ files needing 0.000 MB
-- Verilator: Walltime 0.836 s (elab=0.000, cvt=0.000, bld=0.834); cpu 0.002 s on 10 threads; allocated 3.094 MB
+- Verilator: Walltime 1.671 s (elab=0.000, cvt=0.000, bld=1.669); cpu 0.002 s on 10 threads; allocated 3.094 MB
 
 --- (3) 运行 ---
 =====================================================================
@@ -399,7 +422,7 @@ c++  -Wl,-U,__Z15vl_time_stamp64v,-U,__Z13sc_time_stampv,-U,_vlog_startup_routin
 --- (1) vdot 指令族（激励来自共享语料，结果与 tests/golden/vdot_ref.c 逐位比对）---
   vdot        事务=178    延迟分布: 2拍×178  => 实测延迟 = 2 拍（178/178 一致）；数据比对 ok=178 bad=0
   vdotacc     事务=178    延迟分布: 2拍×178  => 实测延迟 = 2 拍（178/178 一致）；数据比对 ok=178 bad=0
-  vdot4a      事务=196    延迟分布: 2拍×196  => 实测延迟 = 2 拍（196/196 一致）；数据比对 ok=196 bad=0
+  vdot4a      事务=190    延迟分布: 2拍×190  => 实测延迟 = 2 拍（190/190 一致）；数据比对 ok=190 bad=0
 
 --- (2) 上游既有 vimac 指令（每条 64 笔随机激励）---
   vmul.vv     事务=64     延迟分布: 2拍×64  => 实测延迟 = 2 拍（64/64 一致）
@@ -411,19 +434,19 @@ c++  -Wl,-U,__Z15vl_time_stamp64v,-U,__Z13sc_time_stampv,-U,_vlog_startup_routin
 CSVHDR,instruction,fu,measured_latency_cycles,transactions,data_checked
 CSVROW,vdot.vv,VIMacU,2,178,178
 CSVROW,vdotacc.vv,VIMacU,2,178,178
-CSVROW,vdot4a.vv,VIMacU,2,196,196
+CSVROW,vdot4a.vv,VIMacU,2,190,190
 CSVROW,vmul.vv,VIMacU,2,64,0
 CSVROW,vwmul.vv,VIMacU,2,64,64
 CSVROW,vmacc.vv,VIMacU,2,64,0
 
 RESULT: PASS
 
-[1;34m==> [22:51:10] 4/6 直驱 VIAluFix / VIPU（基线序列的另外两个功能单元）[0m
+[1;34m==> [23:32:45] 4/6 直驱 VIAluFix / VIPU（基线序列的另外两个功能单元）[0m
 
 ##############################################################
 # [4] VIAluFix / VIPU 直驱延迟实测
 ##############################################################
-=== VIAluFix / VIPU 延迟实测  2026-10-24 22:51:10 CST ===
+=== VIAluFix / VIPU 延迟实测  2026-10-24 23:32:45 CST ===
 
 声明值（香山源码）：
     FuConfig.scala:533:    name = "vialuFix",
@@ -435,7 +458,7 @@ RESULT: PASS
     tests/unit/VecFuLatHarness.scala -> work/XiangShan-cosim/src/test/scala/xiangshan/backend/fu/
 
 --- (1) 精化 harness ---
-[860/860] =============== xiangshan.test.runMain xi...ild/vdot --target verilog =============== 9s
+[860/860] =============== xiangshan.test.runMain xi...ld/vdot --target verilog =============== 10s
 ==================================================================================================
     VIAluFixHarness.v : 7671 行
 [860/860] =============== xiangshan.test.runMain xi...ld/vdot --target verilog =============== 10s
@@ -474,7 +497,7 @@ CSVROW,vwredsum.vs,VIPUHarness,2,2,64,0
 
 RESULT: PASS
 
-[1;34m==> [22:51:35] 5/6 从日志抽取原始数据 -> bench/results/*.csv[0m
+[1;34m==> [23:33:09] 5/6 从日志抽取原始数据 -> bench/results/*.csv[0m
   WROTE equivalence.csv              15 行
   WROTE latency_fu.csv               12 行
   WROTE instr_count_loop.csv         20 行
@@ -494,34 +517,34 @@ RESULT: PASS
     vdot4a       每 16 个 int8 实测 9.00 条指令
     vdotacc      每 16 个 int8 实测 8.00 条指令
 total 72
--rw-r--r--  1 i3eg1nner  staff   621 10 24 22:51 critical_path.csv
--rw-r--r--  1 i3eg1nner  staff   949 10 24 22:51 equivalence.csv
--rw-r--r--  1 i3eg1nner  staff  1786 10 24 22:51 instr_count_loop.csv
--rw-r--r--  1 i3eg1nner  staff   384 10 24 22:51 instr_count_single.csv
--rw-r--r--  1 i3eg1nner  staff  2569 10 24 22:51 latency_fu.csv
--rw-r--r--  1 i3eg1nner  staff   779 10 24 22:51 sensitivity.csv
--rw-r--r--  1 i3eg1nner  staff  1318 10 24 22:51 speedup.csv
--rw-r--r--  1 i3eg1nner  staff  1073 10 24 22:51 uop_count.csv
--rw-r--r--  1 i3eg1nner  staff   758 10 24 22:51 vstart_control.csv
+-rw-r--r--  1 i3eg1nner  staff   621 10 24 23:33 critical_path.csv
+-rw-r--r--  1 i3eg1nner  staff   951 10 24 23:33 equivalence.csv
+-rw-r--r--  1 i3eg1nner  staff  1786 10 24 23:33 instr_count_loop.csv
+-rw-r--r--  1 i3eg1nner  staff   384 10 24 23:33 instr_count_single.csv
+-rw-r--r--  1 i3eg1nner  staff  2569 10 24 23:33 latency_fu.csv
+-rw-r--r--  1 i3eg1nner  staff   779 10 24 23:33 sensitivity.csv
+-rw-r--r--  1 i3eg1nner  staff  1318 10 24 23:33 speedup.csv
+-rw-r--r--  1 i3eg1nner  staff  1073 10 24 23:33 uop_count.csv
+-rw-r--r--  1 i3eg1nner  staff   765 10 24 23:33 vstart_control.csv
 
-[1;34m==> [22:51:35] 6/6 绘图 -> docs/stage3/figures/*.png[0m
+[1;34m==> [23:33:09] 6/6 绘图 -> docs/stage3/figures/*.png[0m
   PNG /Users/i3eg1nner/code/cie/docs/stage3/figures/fig1_instr_count.png  (225682 bytes)
   PNG /Users/i3eg1nner/code/cie/docs/stage3/figures/fig2_speedup.png  (184175 bytes)
   PNG /Users/i3eg1nner/code/cie/docs/stage3/figures/fig3_latency.png  (127315 bytes)
   PNG /Users/i3eg1nner/code/cie/docs/stage3/figures/fig4_sensitivity.png  (113993 bytes)
 total 1440
--rw-r--r--  1 i3eg1nner  staff  225682 10 24 22:51 fig1_instr_count.png
--rw-r--r--  1 i3eg1nner  staff  184175 10 24 22:51 fig2_speedup.png
--rw-r--r--  1 i3eg1nner  staff  127315 10 24 22:51 fig3_latency.png
--rw-r--r--  1 i3eg1nner  staff  113993 10 24 22:51 fig4_sensitivity.png
+-rw-r--r--  1 i3eg1nner  staff  225682 10 24 23:33 fig1_instr_count.png
+-rw-r--r--  1 i3eg1nner  staff  184175 10 24 23:33 fig2_speedup.png
+-rw-r--r--  1 i3eg1nner  staff  127315 10 24 23:33 fig3_latency.png
+-rw-r--r--  1 i3eg1nner  staff  113993 10 24 23:33 fig4_sensitivity.png
 
 ==============================================================
- 完成  2026-10-24T14:51:36Z UTC
+ 完成  2026-10-24T15:33:10Z UTC
    /Users/i3eg1nner/code/cie/logs/stage3/p7_baseline_equiv.log
    /Users/i3eg1nner/code/cie/logs/stage3/p7_latency_measure.log
    /Users/i3eg1nner/code/cie/logs/stage3/p7_bench_run.log
    /Users/i3eg1nner/code/cie/bench/results/*.csv
    /Users/i3eg1nner/code/cie/docs/stage3/figures/*.png
 ==============================================================
-[A] TOTAL cases=30710 run=25907 pass=25907 fail=0 skip(illegal-by-spec)=3250 skip(baseline-inexpressible,vstart!=0)=1553
+[A] TOTAL cases=30758 run=25924 pass=25924 fail=0 skip(illegal-by-spec)=4834 skip(baseline-inexpressible,vstart!=0)=0
 [B] long-vector sizes checked = 24 , mismatches = 0

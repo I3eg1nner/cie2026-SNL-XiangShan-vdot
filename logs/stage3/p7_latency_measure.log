@@ -1,6 +1,6 @@
 ==============================================================
  P7 / 赛题 3.3  功能单元延迟实测
- 2026-10-24T14:50:56Z UTC
+ 2026-10-24T15:32:29Z UTC
 ==============================================================
 
 ##############################################################
@@ -16,11 +16,11 @@ $ YS_VDOT_VECTORS=/tmp/p7_w_vdot.txt ./build/emu --dump-wave -b 0 -e 400 -O 12 -
     [vdot-vectors] run with -O 12 to execute every case exactly once
     Set Test Type Res: fuType:7 fuOpType:225 (pick_fuType=0 pick_fuOpType=0)
     Using seed = 1
-    dump wave to /Users/i3eg1nner/code/cie/work/XiangShan-cosim/yunsuan/build/2026-10-24@22:50:56_dump_wave_seed_1.vcd...
+    dump wave to /Users/i3eg1nner/code/cie/work/XiangShan-cosim/yunsuan/build/2026-10-24@23:32:29_dump_wave_seed_1.vcd...
     [vdot-vectors] all 12 cases consumed
     EMU EXCEEDED LIMIT
     HAS Executed Cycles:114 Operations:12
-    EMU has executed 13 ms.
+    EMU has executed 16 ms.
     VCD -> logs/stage3/waveform/p7_vdotvv_vdottop_fuType10_seed1.vcd
 
 $ python3 scripts/tools/vcd_extract.py --vcd <vcd> --transactions
@@ -75,7 +75,7 @@ $ YS_VDOT_VECTORS=/tmp/p7_w_vdotacc.txt ./build/emu --dump-wave -b 0 -e 400 -O 1
     [vdot-vectors] run with -O 12 to execute every case exactly once
     Set Test Type Res: fuType:7 fuOpType:225 (pick_fuType=0 pick_fuOpType=0)
     Using seed = 1
-    dump wave to /Users/i3eg1nner/code/cie/work/XiangShan-cosim/yunsuan/build/2026-10-24@22:50:56_dump_wave_seed_1.vcd...
+    dump wave to /Users/i3eg1nner/code/cie/work/XiangShan-cosim/yunsuan/build/2026-10-24@23:32:29_dump_wave_seed_1.vcd...
     [vdot-vectors] all 12 cases consumed
     EMU EXCEEDED LIMIT
     HAS Executed Cycles:114 Operations:12
@@ -134,7 +134,7 @@ $ YS_VDOT_VECTORS=/tmp/p7_w_vdot4a.txt ./build/emu --dump-wave -b 0 -e 400 -O 12
     [vdot-vectors] run with -O 12 to execute every case exactly once
     Set Test Type Res: fuType:7 fuOpType:225 (pick_fuType=0 pick_fuOpType=0)
     Using seed = 1
-    dump wave to /Users/i3eg1nner/code/cie/work/XiangShan-cosim/yunsuan/build/2026-10-24@22:50:56_dump_wave_seed_1.vcd...
+    dump wave to /Users/i3eg1nner/code/cie/work/XiangShan-cosim/yunsuan/build/2026-10-24@23:32:29_dump_wave_seed_1.vcd...
     [vdot-vectors] all 12 cases consumed
     EMU EXCEEDED LIMIT
     HAS Executed Cycles:114 Operations:12
@@ -189,7 +189,7 @@ $ python3 scripts/tools/vcd_extract.py --vcd <vcd> --transactions
 ##############################################################
 # [3] VIMacU 直驱延迟实测（真正被集成进香山的功能单元）
 ##############################################################
-=== VIMacU 延迟实测  2026-10-24 22:50:56 CST ===
+=== VIMacU 延迟实测  2026-10-24 23:32:29 CST ===
 
 --- (0) 把交付仓库里的 harness 源码同步进工作树 ---
     tests/unit/VIMacUHarness.scala -> work/XiangShan-cosim/src/test/scala/xiangshan/backend/fu/
@@ -208,7 +208,7 @@ c++  -I.  -MMD -I/opt/homebrew/Cellar/verilator/5.052/share/verilator/include -I
 c++  -Wl,-U,__Z15vl_time_stamp64v,-U,__Z13sc_time_stampv,-U,_vlog_startup_routines   vimacu_latency_tb.o verilated.o verilated_threads.o VVIMacUHarness__ALL.a    -pthread -lpthread   -o /Users/i3eg1nner/code/cie/work/XiangShan-cosim/build/vimacu-lat-tb/vimacu_latency_tb
 - V e r i l a t i o n   R e p o r t: Verilator 5.052 2026-09-05 rev vUNKNOWN-built20260905
 - Verilator: Built from 0.000 MB sources in 0 modules, into 0.000 MB in 0 C++ files needing 0.000 MB
-- Verilator: Walltime 0.836 s (elab=0.000, cvt=0.000, bld=0.834); cpu 0.002 s on 10 threads; allocated 3.094 MB
+- Verilator: Walltime 1.671 s (elab=0.000, cvt=0.000, bld=1.669); cpu 0.002 s on 10 threads; allocated 3.094 MB
 
 --- (3) 运行 ---
 =====================================================================
@@ -220,7 +220,7 @@ c++  -Wl,-U,__Z15vl_time_stamp64v,-U,__Z13sc_time_stampv,-U,_vlog_startup_routin
 --- (1) vdot 指令族（激励来自共享语料，结果与 tests/golden/vdot_ref.c 逐位比对）---
   vdot        事务=178    延迟分布: 2拍×178  => 实测延迟 = 2 拍（178/178 一致）；数据比对 ok=178 bad=0
   vdotacc     事务=178    延迟分布: 2拍×178  => 实测延迟 = 2 拍（178/178 一致）；数据比对 ok=178 bad=0
-  vdot4a      事务=196    延迟分布: 2拍×196  => 实测延迟 = 2 拍（196/196 一致）；数据比对 ok=196 bad=0
+  vdot4a      事务=190    延迟分布: 2拍×190  => 实测延迟 = 2 拍（190/190 一致）；数据比对 ok=190 bad=0
 
 --- (2) 上游既有 vimac 指令（每条 64 笔随机激励）---
   vmul.vv     事务=64     延迟分布: 2拍×64  => 实测延迟 = 2 拍（64/64 一致）
@@ -232,7 +232,7 @@ c++  -Wl,-U,__Z15vl_time_stamp64v,-U,__Z13sc_time_stampv,-U,_vlog_startup_routin
 CSVHDR,instruction,fu,measured_latency_cycles,transactions,data_checked
 CSVROW,vdot.vv,VIMacU,2,178,178
 CSVROW,vdotacc.vv,VIMacU,2,178,178
-CSVROW,vdot4a.vv,VIMacU,2,196,196
+CSVROW,vdot4a.vv,VIMacU,2,190,190
 CSVROW,vmul.vv,VIMacU,2,64,0
 CSVROW,vwmul.vv,VIMacU,2,64,64
 CSVROW,vmacc.vv,VIMacU,2,64,0
@@ -242,7 +242,7 @@ RESULT: PASS
 ##############################################################
 # [4] VIAluFix / VIPU 直驱延迟实测
 ##############################################################
-=== VIAluFix / VIPU 延迟实测  2026-10-24 22:51:10 CST ===
+=== VIAluFix / VIPU 延迟实测  2026-10-24 23:32:45 CST ===
 
 声明值（香山源码）：
     FuConfig.scala:533:    name = "vialuFix",
@@ -254,7 +254,7 @@ RESULT: PASS
     tests/unit/VecFuLatHarness.scala -> work/XiangShan-cosim/src/test/scala/xiangshan/backend/fu/
 
 --- (1) 精化 harness ---
-[860/860] =============== xiangshan.test.runMain xi...ild/vdot --target verilog =============== 9s
+[860/860] =============== xiangshan.test.runMain xi...ld/vdot --target verilog =============== 10s
 ==================================================================================================
     VIAluFixHarness.v : 7671 行
 [860/860] =============== xiangshan.test.runMain xi...ld/vdot --target verilog =============== 10s

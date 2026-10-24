@@ -7,7 +7,15 @@
 //      修复前 VecExceptionGen 不拦截，LMUL>1 的 vdot.vv 会静默算错
 //      （docs/stage2/11_RTL实现说明.md §10 第 8 条登记的缺口）。
 //   2) dotEewIllegal 回归：vdot/vdotacc 只许 SEW=8，vdot4a 只许 SEW=32。
-//   3) vstartIllegal 回归：归约类 vstart!=0 触发非法（裁定 S-1）。
+//   3) vstartIllegal 回归：三条指令 vstart!=0 都触发非法
+//      —— vdot/vdotacc 依裁定 S-1（RVV §14 归约语义），
+//         vdot4a   依裁定 S-7'（平台约束优先原则：昆明湖 V2 的向量算术通路
+//         不支持非零 vstart 重启，上游公共判据
+//         `vstartIllegal = isVArith && vstart =/= 0` 对所有向量算术指令生效）。
+//      S-7' 由 NEMU <-> RTL 协同仿真发现（原 S-7 允许 vdot4a 的 vstart 正常生效，
+//      与香山必然在全核 difftest 上 mismatch）。本组用例同时**证明了 RTL 侧
+//      无需任何改动**：vdot4a 走 vimac 功能单元，FuType.isVArith 为真，
+//      上游既有逻辑已经把它拦下。
 //   4) 既有向量指令不受影响：vadd.vv / vmacc.vv 在各种 SEW/LMUL 下仍然合法。
 //
 // DUT 是 VecExceptionGenHarness（src/test/scala/xiangshan/backend/decode/
@@ -102,19 +110,28 @@ int main(int argc, char **argv) {
   check("vdot4a SEW=16", INST_VDOT4A, 1, 0, 0, 1);
   check("vdot4a SEW=64", INST_VDOT4A, 3, 0, 0, 1);
 
-  printf("\n[H] vstartIllegal 回归 —— 裁定 S-1（归约类 vstart!=0 非法）\n");
+  printf("\n[H] vstartIllegal 回归 —— 归约类 vstart!=0 非法（裁定 S-1）\n");
   check("vdot vstart=1",   INST_VDOT, 0, 0, 1,  1);
   check("vdot vstart=15",  INST_VDOT, 0, 0, 15, 1);
   check("vdotacc vstart=1",INST_VDOTACC, 0, 0, 1, 1);
+  check("vdotacc vstart=15",INST_VDOTACC, 0, 0, 15, 1);
 
-  printf("\n[I] 既有向量指令不受影响 —— vadd.vv 在各 SEW × LMUL 下仍然合法\n");
+  printf("\n[I] vdot4a vstart!=0 同样非法（裁定 S-7'，平台约束优先原则）\n");
+  printf("    vdot4a 的 VLMAX = 4，故 vstart 的架构内取值为 0..3；\n");
+  printf("    本组证明上游 vstartIllegal 已覆盖 vdot4a，RTL 侧无需新增守卫。\n");
+  check("vdot4a vstart=1", INST_VDOT4A, 2, 0, 1, 1);
+  check("vdot4a vstart=2", INST_VDOT4A, 2, 0, 2, 1);
+  check("vdot4a vstart=3", INST_VDOT4A, 2, 0, 3, 1);
+  check("vdot4a vstart=0", INST_VDOT4A, 2, 0, 0, 0);   // 对照：vstart=0 必须合法
+
+  printf("\n[J] 既有向量指令不受影响 —— vadd.vv 在各 SEW × LMUL 下仍然合法\n");
   for (int sew = 0; sew <= 3; sew++)
     for (int lmul = 0; lmul <= 3; lmul++) {
       char nm[64]; snprintf(nm, sizeof(nm), "vadd SEW=%d LMUL=%d", 8 << sew, 1 << lmul);
       check(nm, INST_VADD, sew, lmul, 0, 0);
     }
 
-  printf("\n[J] 既有 vimac 指令不受影响 —— vmacc.vv LMUL>1 仍然合法\n");
+  printf("\n[K] 既有 vimac 指令不受影响 —— vmacc.vv LMUL>1 仍然合法\n");
   check("vmacc SEW=8  LMUL=1", INST_VMACC, 0, 0, 0, 0);
   check("vmacc SEW=8  LMUL=2", INST_VMACC, 0, 1, 0, 0);
   check("vmacc SEW=32 LMUL=8", INST_VMACC, 2, 3, 0, 0);

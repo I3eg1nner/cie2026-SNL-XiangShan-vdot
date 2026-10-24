@@ -18,11 +18,14 @@ pack_corpus.py —— 把 tests/vectors/*.txt 共享语料打包成裸机测试�
 
 vstart_relaxed.txt 的处理：
   该语料是 MASTER_PLAN 裁定 S-1 的「备用策略」语料，采用非规范的
-  VDOT_VSTART_SKIP 策略（归约指令 vstart!=0 时不抛异常）。本项目绑定的是
-  STRICT 策略，因此打包时把其中 vstart != 0 的用例按 STRICT 语义重新标注为
-  `ILLEGAL_VSTART` 且 vd_expected = vd_in（这正是参考模型 STRICT 策略下的
-  行为，见 vdot_ref.c:vdot_reduce_common 规则 2）。vstart == 0 的用例两种
-  策略结果相同，原样保留。文件头的 `# policy: skip` 是触发条件。
+  VDOT_VSTART_SKIP 策略（vstart!=0 时不抛异常，按 §5.4 跳过 prestart 元素）。
+  本项目绑定的是 STRICT 策略，因此打包时把其中 vstart != 0 的用例按 STRICT
+  语义重新标注为 `ILLEGAL_VSTART` 且 vd_expected = vd_in（这正是参考模型
+  STRICT 策略下的行为，见 vdot_ref.c:vdot_reduce_common 规则 2 与
+  vdot4a_vv_ex 规则 2）。vstart == 0 的用例两种策略结果相同，原样保留。
+  文件头的 `# policy: skip` 是触发条件。
+  注意：裁定 S-7' 之前这条重标注只对 vdot/vdotacc 生效（vdot4a 的 vstart
+  按原 S-7 正常生效）；S-7' 之后三条指令统一适用。
 
 blob 布局（全部小端）：
   0x00  char[8]  magic = "VDOTCORP"
@@ -123,8 +126,9 @@ def main():
                 vs1, vs2, vd_in, vd_exp, v0 = (parse_hex(x) for x in f[7:12])
                 status = STATUS[f[11 + 1]]
 
-                # vstart_relaxed：SKIP 策略语料，按本项目绑定的 STRICT 策略重标注
-                if policy == "skip" and op in (0, 1) and vstart != 0:
+                # vstart_relaxed：SKIP 策略语料，按本项目绑定的 STRICT 策略重标注。
+                # 裁定 S-7' 之后三条指令（op 0/1/2）一律适用，不再只限归约形态。
+                if policy == "skip" and vstart != 0:
                     status = STATUS["ILLEGAL_VSTART"]
                     vd_exp = vd_in
 

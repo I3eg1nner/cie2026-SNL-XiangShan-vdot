@@ -2,7 +2,7 @@
  P3 参考模型与测试向量 —— 宿主端自检真实运行记录
 ==========================================================
 host : Darwin 24.5.0 arm64
-date : 2026-10-24T10:36:02Z UTC
+date : 2026-10-24T15:17:21Z UTC
 cc   : Apple clang version 17.0.0 (clang-1700.0.13.5)
 repo : /Users/i3eg1nner/code/cie
 
@@ -34,25 +34,25 @@ GCC(16.2.0) C11 dialect check: OK
   /Users/i3eg1nner/code/cie/tests/vectors/vdotacc_random.txt cases=10000  roundtrip_fail=0    diff_checked=10000  diff_executed=8428   diff_fail=0    diff_skipped=0
   /Users/i3eg1nner/code/cie/tests/vectors/vdot4a_positive.txt cases=40     roundtrip_fail=0    diff_checked=40     diff_executed=40     diff_fail=0    diff_skipped=0
   /Users/i3eg1nner/code/cie/tests/vectors/vdot4a_negative.txt cases=44     roundtrip_fail=0    diff_checked=44     diff_executed=44     diff_fail=0    diff_skipped=0
-  /Users/i3eg1nner/code/cie/tests/vectors/vdot4a_boundary.txt cases=115    roundtrip_fail=0    diff_checked=112    diff_executed=112    diff_fail=0    diff_skipped=3
-  /Users/i3eg1nner/code/cie/tests/vectors/vdot4a_random.txt cases=10000  roundtrip_fail=0    diff_checked=10000  diff_executed=10000  diff_fail=0    diff_skipped=0
-  /Users/i3eg1nner/code/cie/tests/vectors/vstart_relaxed.txt cases=90     roundtrip_fail=0    diff_checked=13     diff_executed=13     diff_fail=0    diff_skipped=77
+  /Users/i3eg1nner/code/cie/tests/vectors/vdot4a_boundary.txt cases=115    roundtrip_fail=0    diff_checked=112    diff_executed=106    diff_fail=0    diff_skipped=3
+  /Users/i3eg1nner/code/cie/tests/vectors/vdot4a_random.txt cases=10000  roundtrip_fail=0    diff_checked=10000  diff_executed=8461   diff_fail=0    diff_skipped=0
+  /Users/i3eg1nner/code/cie/tests/vectors/vstart_relaxed.txt cases=130    roundtrip_fail=0    diff_checked=22     diff_executed=22     diff_fail=0    diff_skipped=108
 -- long vector loop --
   long-vector loop equivalence: 19 sizes, 0 mismatch
 -- summary --
-  total cases            : 30663
+  total cases            : 30703
   roundtrip failures     : 0
-  differential checked   : 30577
-  of which both executed : 27452   (双方都真正完成了一次运算)
+  differential checked   : 30586
+  of which both executed : 25916   (双方都真正完成了一次运算)
   differential failures  : 0
-  differential skipped   : 86
+  differential skipped   : 117
   long-vector failures   : 0
 RESULT: PASS
 test_golden exit_code=0
 
 --- [4] 故障注入：人为改坏实现，自检必须报错 ---
-  inject #1 [参考模型：int8 改为零扩展（丢掉符号）]: 被检出 (exit=1, 失配行数>=42958)  OK
-  inject #2 [参考模型：vta=1 时 tail 写 0 而不是全 1]: 被检出 (exit=1, 失配行数>=23316)  OK
+  inject #1 [参考模型：int8 改为零扩展（丢掉符号）]: 被检出 (exit=1, 失配行数>=41952)  OK
+  inject #2 [参考模型：vta=1 时 tail 写 0 而不是全 1]: 被检出 (exit=1, 失配行数>=22916)  OK
   inject #3 [基线仿真：vwredsum.vs 丢掉标量初值（vs1[0]）]: 被检出 (exit=1, 失配行数>=7945)  OK
 FAULT-INJECTION: PASS (3/3 被检出)
 fault_inject exit_code=0
@@ -79,7 +79,7 @@ tests/vectors/vdotacc_boundary.txt                            103 cases  20586 b
 tests/vectors/vdotacc_random.txt                            10000 cases  1904511 bytes
 tests/vectors/vdot4a_positive.txt                              40 cases  8331 bytes
 tests/vectors/vdot4a_negative.txt                              44 cases  9132 bytes
-tests/vectors/vdot4a_boundary.txt                             115 cases  22678 bytes
-tests/vectors/vdot4a_random.txt                             10000 cases  1880801 bytes
-tests/vectors/vstart_relaxed.txt                               90 cases  17661 bytes
+tests/vectors/vdot4a_boundary.txt                             115 cases  22750 bytes
+tests/vectors/vdot4a_random.txt                             10000 cases  1899269 bytes
+tests/vectors/vstart_relaxed.txt                              130 cases  25493 bytes
 

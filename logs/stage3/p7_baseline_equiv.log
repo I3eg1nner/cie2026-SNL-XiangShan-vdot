@@ -1,10 +1,13 @@
 ==============================================================
  P7 / 赛题 3.2  基线功能实现与等价性验证
- 2026-10-24T14:50:55Z UTC
+ 2026-10-24T15:32:19Z UTC
 ==============================================================
 $ git log --oneline -1
 9090839 feat(difftest): support fast shared reference execution (#1247)
-（已存在 riscv64-xs-kmhv2 形态的解释器，跳过重建；FORCE=1 可强制重来）
+$ make riscv64-xs-kmhv2_defconfig && make -j
+Makefile:40: You have set CONFIG_FLASH_IMG_PATH option, but the specified path '""' does not exist!
++ CXX src/memory/store_queue_wrapper.cpp
++ g++ /work/work/NEMU/build/riscv64-nemu-interpreter
 #define CONFIG_UARTLITE_MMIO 0x40600000
 #define CONFIG_MBASE 0x80000000
 #define CONFIG_CUSTOM_XVDOT 1
@@ -16,6 +19,26 @@ CONFIG_MBASE         = 0x80000000
 CONFIG_UARTLITE_MMIO = 0x40600000
 CONFIG_CUSTOM_XVDOT  = enabled
 VLEN                 = 128
+GEN  build/nemu_config.h
+PACK build/corpus.bin
+  positive.txt                 40 cases   policy=strict  (../../vectors)
+  negative.txt                 44 cases   policy=strict  (../../vectors)
+  boundary.txt                103 cases   policy=strict  (../../vectors)
+  vdotacc_positive.txt         40 cases   policy=strict  (../../vectors)
+  vdotacc_negative.txt         44 cases   policy=strict  (../../vectors)
+  vdotacc_boundary.txt        103 cases   policy=strict  (../../vectors)
+  vdot4a_positive.txt          40 cases   policy=strict  (../../vectors)
+  vdot4a_negative.txt          44 cases   policy=strict  (../../vectors)
+  vdot4a_boundary.txt         115 cases   policy=strict  (../../vectors)
+  vstart_relaxed.txt          130 cases   policy=skip    (../../vectors)
+  random.txt                10000 cases   policy=strict  (../../vectors)
+  vdotacc_random.txt        10000 cases   policy=strict  (../../vectors)
+  vdot4a_random.txt         10000 cases   policy=strict  (../../vectors)
+  vstart_range.txt             55 cases   policy=strict  (../vdot/extra_vectors)
+  -> build/corpus.bin  (14 suites, 30758 cases, 2707176 bytes)
+LD   build/baseline_test.elf
+BIN  build/baseline_test.bin  (2721640 bytes)
+DIS  build/baseline_test.dis
 
 --- 证据：基线序列确实以标准 RVV 1.0 编码出现在镜像的 .text 里 ---
     800008a4:	ee20a257          	vwmul.vv	v4,v2,v1
@@ -45,7 +68,7 @@ $ $NEMU_HOME/build/riscv64-nemu-interpreter -b --log=build/nemu-run.log build/ba
    NEMU defconfig   : riscv64-xs-kmhv2_defconfig
    NEMU commit      : 90908390002f
    csrr vlenb       : 16 byte -> VLEN = 128 bit (MATCH)
-   corpus           : 14 suites, 30710 cases
+   corpus           : 14 suites, 30758 cases
    baseline         : RVV 1.0 only (vmv.s.x / vwmul.vv / vwredsum.vs,
                       vsll.vi / vsra.vi / vmacc.vv for vdot4a)
    vdot encodings   : vdot 0xe62081d7  vdotacc 0xea2081d7  vdot4a 0xee2081d7
@@ -64,7 +87,7 @@ $ $NEMU_HOME/build/riscv64-nemu-interpreter -b --log=build/nemu-run.log build/ba
     vsll.vi            no trap             TRAP  mcause=2
     vsra.vi            no trap             TRAP  mcause=2
     vmacc.vv           no trap             TRAP  mcause=2
-    vdot4a.vv          no trap             no trap
+    vdot4a.vv          no trap             TRAP  mcause=2
 
 --- [A] single dot product: baseline(RVV1.0) vs vdot vs corpus golden ---
 
@@ -80,13 +103,13 @@ vdotacc_boundary              103      94      94       0       9
 vdot4a_positive                40      40      40       0       0
 vdot4a_negative                44      44      44       0       0
 vdot4a_boundary               115     106     106       0       9
-vstart_relaxed(strict)         90      13      13       0      77
+vstart_relaxed(strict)        130      22      22       0     108
 random                      10000    8459    8459       0    1541
 vdotacc_random              10000    8428    8428       0    1572
 vdot4a_random               10000    8461    8461       0    1539
-vstart_range(extra)            47       0       0       0      47
+vstart_range(extra)            55       8       8       0      47
 ---------------------------------------------------------------------
-[A] TOTAL cases=30710 run=25907 pass=25907 fail=0 skip(illegal-by-spec)=3250 skip(baseline-inexpressible,vstart!=0)=1553
+[A] TOTAL cases=30758 run=25924 pass=25924 fail=0 skip(illegal-by-spec)=4834 skip(baseline-inexpressible,vstart!=0)=0
     baseline-vs-golden mismatch = 0 , vdot-vs-golden mismatch = 0 , baseline-vs-vdot mismatch = 0
     unexpected baseline trap = 0 , unexpected vdot trap = 0 , vl readback mismatch = 0
     baseline vector-instruction count per case: vdot=6  vdotacc=4  vdot4a=19   (vdot side = 1 each)

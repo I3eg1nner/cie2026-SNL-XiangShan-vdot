@@ -154,10 +154,10 @@ index 07406f6..ae04d9d 100644
  
 diff --git a/src/isa/riscv64/instr/rvv/vdot.c b/src/isa/riscv64/instr/rvv/vdot.c
 new file mode 100644
-index 0000000..90b243b
+index 0000000..9811a84
 --- /dev/null
 +++ b/src/isa/riscv64/instr/rvv/vdot.c
-@@ -0,0 +1,201 @@
+@@ -0,0 +1,221 @@
 +/***************************************************************************************
 +* vdot.c —— 非标准 int8 点积指令族（Xvdot）的执行引擎
 +*
@@ -174,8 +174,10 @@ index 0000000..90b243b
 +*     （vcompute_impl.c:1529）：vector_reduction_check → check_vstart_exception
 +*     → check_vstart_ignore → 主循环 → set_vreg_tail → 只写元素 0。
 +*   - vdot4a 是逐元素形态，整体结构对照 arithmetic_instr()
-+*     （vcompute_impl.c:488）：vector_vvv_check → check_vstart_ignore
-+*     → 主循环（含 vma 处理）→ tail 循环（vta）→ 清 vstart。
++*     （vcompute_impl.c:488）：vector_vvv_check → check_vstart_exception
++*     → check_vstart_ignore → 主循环（含 vma 处理）→ tail 循环（vta）→ 清 vstart。
++*     arithmetic_instr() 在 vcompute_impl.c:544 对**每一条**标准向量算术指令都
++*     调用 check_vstart_exception()，vdot4a 与之保持一致（裁定 S-7'）。
 +*
 +* 溢出：int8×int8 ∈ [-16256, +16384]，16 项求和 |Σ| ≤ 262144 < 2^31，
 +* 故 vdot.vv 不可能溢出、无需饱和；vdotacc / vdot4a 的累加按 2^32 模回绕
@@ -210,6 +212,10 @@ index 0000000..90b243b
 + *   1) vtype.vsew 必须与指令要求一致，否则 Illegal Instruction；
 + *   2) 本版本固定 LMUL = 1（总体方案裁定 S-6），其余 vlmul 取值视为保留；
 + *   3) vstart 超出当前 SEW 的最大元素下标 -> Illegal Instruction（裁定 S-9）。
++ * 另有「vstart != 0 -> Illegal Instruction」一条，三条指令统一适用
++ * （vdot/vdotacc 依裁定 S-1，vdot4a 依裁定 S-7'），由各自的执行函数在
++ * check_vstart_ignore() 之前调用 check_vstart_exception() 完成 —— 调用位置
++ * 与 NEMU 既有框架 reduction_instr() / arithmetic_instr() 完全一致。
 + * ------------------------------------------------------------------------ */
 +static void vdot_check(Decode *s, int opcode) {
 +  if (opcode == VDOT4A) {
@@ -295,15 +301,29 @@ index 0000000..90b243b
 + * vdot4a.vv —— 分组点积累加（SEW=32），逐元素指令
 + *
 + * 结构逐条对照 arithmetic_instr()（vcompute_impl.c:488-1011）：
-+ *   - 不调用 check_vstart_exception()：本指令非归约，vstart 正常生效（裁定 S-7）；
++ *   - check_vstart_exception()：vstart != 0 → Illegal Instruction（裁定 S-7'）。
++ *     这一条与归约形态的依据不同：vdot4a 是逐元素指令，RVV 1.0 并不要求它禁止
++ *     非零 vstart；禁止的理由是**平台约束优先原则** —— 目标微架构昆明湖 V2 的
++ *     向量算术通路不支持从非零 vstart 恢复执行，其译码级公共判据
++ *     `vstartIllegal = isVArith && (vstart =/= 0)`（XiangShan
++ *     src/main/scala/xiangshan/backend/decode/VecExceptionGen.scala）对所有
++ *     向量算术指令无条件生效。自定义指令的 ISA 语义不应宽于宿主微架构的实际
++ *     能力，因此让 ISA 向微架构收敛，而不是为一条自定义指令去放宽上游的公共
++ *     判据。本冲突由 NEMU <-> RTL 协同仿真发现：原裁定 S-7 下 NEMU 正常执行而
++ *     香山判非法，在全核 difftest 上必然 mismatch。修订后三条 vdot 指令的
++ *     vstart 行为完全一致。
++ *     注：arithmetic_instr()（vcompute_impl.c:544）对每一条标准向量算术指令
++ *     同样调用 check_vstart_exception()，故本调用不是特例，而是回归常规。
 + *   - check_vstart_ignore()：vstart >= vl → 连 tail 都不写；
-+ *   - 主循环从 vstart 开始，i < vstart 的 prestart 元素天然保持不变；
++ *   - 主循环从 vstart 开始（S-7' 之后此处 vstart 恒为 0，保留写法与上游一致）；
 + *   - mask == 0 时按 vma 决定「写全 1」或「保持不变」，掩码粒度是 32 位元素；
 + *   - tail 循环把 [vl, vlmax) 写全 1（vta=1）；
 + *   - 结尾用 vcsr_write(IDXVSTART, 0) 清 vstart。
-+ * 子元素定位：element i 的第 j 个 int8 位于字节 4i+j（寄存器内小端，裁定 S-7）。
++ * 子元素定位：element i 的第 j 个 int8 位于字节 4i+j（寄存器内小端）——
++ * 裁定 S-7 的这一部分未被 S-7' 修订，仍然有效。
 + * ------------------------------------------------------------------------ */
 +static void vdot4a_exec(Decode *s) {
++  check_vstart_exception(s);   // 裁定 S-7'：vstart != 0 -> Illegal Instruction
 +  if (check_vstart_ignore(s)) {
 +    vp_set_dirty();
 +    return;

@@ -20,6 +20,7 @@
 #   p5_regression.log      既有指令/既有功能单元回归
 #   p5_vimacu_equiv.log    VIMacU（真正被集成的模块）等价性验证
 #   p5_fault_injection.log 故障注入（WITH_FAULT=1 时刷新）
+#   p5_decode_prove_fail.log 译码级守卫的反向验证（撤掉 dotEmulIllegal 必须变红）
 #   p5_summary.log         汇总表
 #
 # 判读规则（来自 yunsuan/src/test/csrc/emu.cpp:205-210）：
@@ -205,9 +206,9 @@ step "3/7 2.3.3 边界值测试"
   run_corpus "2.3.3 边界" "boundary(vdotacc.vv)"  "${VEC_DIR}/vdotacc_boundary.txt" \
     "同上"
   run_corpus "2.3.3 边界" "boundary(vdot4a.vv)"   "${VEC_DIR}/vdot4a_boundary.txt" \
-    "跳过项为 ERR_SEW；vstart!=0 的 6 条 prestart 用例全部真实执行"
-  run_corpus "2.3.3 边界" "vstart_relaxed(vdot/vdotacc)" "${VEC_DIR}/vstart_relaxed.txt" \
-    "非规范 SKIP 策略语料，专门激励归约通路的 prestart 门控"
+    "跳过项为 ERR_SEW 与 ILLEGAL_VSTART（裁定 S-7' 之后 vdot4a 的 vstart!=0 也非法）"
+  run_corpus "2.3.3 边界" "vstart_relaxed(三条指令)" "${VEC_DIR}/vstart_relaxed.txt" \
+    "非规范 SKIP 策略语料，激励三条指令数据通路的 prestart 门控；S-7' 之后 vdot4a 的 40 条在此保住覆盖"
   echo ""
   echo "---- 边界覆盖点自查（直接从语料文件统计，不依赖仿真）----"
   for f in boundary vdotacc_boundary vdot4a_boundary; do
@@ -227,8 +228,11 @@ step "3/7 2.3.3 边界值测试"
     "vdot.vv vl=0：裁定 S-5，连 tail 都不写，vd 原样保留"
   worked_example "${VEC_DIR}/boundary.txt" '$5==0 && $12 ~ /^0000a5a5/ && $6==1' \
     "vdot.vv 全 0 掩码（v0 低 16 位全 0、高位填 0xA5 用于检验无关掩码位被忽略）：裁定 S-4，仍然写 vd[0]=0"
-  worked_example "${VEC_DIR}/vdot4a_boundary.txt" '$3==1 && $4==4' \
-    "vdot4a.vv vstart=1：prestart 元素 0 保持不变（裁定 S-7，RTL 实现说明 §10 第 3 条的缺口）"
+  worked_example "${VEC_DIR}/vstart_relaxed.txt" '$1=="vdot4a" && $3==1 && $4==4' \
+    "vdot4a.vv vstart=1（非规范 SKIP 策略语料）：数据通路仍然正确实现 prestart 门控。
+==   架构层面该配置已被裁定 S-7' 判为非法指令（平台约束优先原则），
+==   规范语料 vdot4a_boundary.txt / vdot4a_random.txt 里对应的 1545 条已标为 ILLEGAL_VSTART，
+==   由 VecExceptionGen 在译码级拦截（见 p5_decode_illegal.log 的 [I] 组）"
 } 2>&1 | tee "${LOG_DIR}/p5_func_boundary.log"
 
 # ---------------------------------------------------------------------------
@@ -244,7 +248,7 @@ step "4/7 随机差分测试（每条指令 >= ${RANDOM_OPS} × $(echo ${RANDOM_
     "跳过项为 ILLEGAL_VSTART（归约类 vstart!=0，FU 级不建模异常）"
   run_corpus "随机差分" "random.txt(vdotacc.vv)"     "${VEC_DIR}/vdotacc_random.txt" "同上"
   run_corpus "随机差分" "random.txt(vdot4a.vv)"      "${VEC_DIR}/vdot4a_random.txt" \
-    "vdot4a 的 vstart!=0 合法，10000 条全部可执行，其中 1539 条 vstart!=0"
+    "跳过项为 ILLEGAL_VSTART：裁定 S-7' 之后 vdot4a 的 vstart!=0 同样非法，FU 级不建模异常"
   echo ""
   echo "--- (B) 测试平台随机激励（每次重新随机，与语料文件互相独立）---"
   for s in ${RANDOM_SEEDS}; do
@@ -351,6 +355,44 @@ step "5.5/7 补丁可应用性与译码级非法指令判定"
   echo ""
   bash "${REPO_ROOT}/scripts/tools/run_decode_tb.sh" || true
 } 2>&1 | tee "${LOG_DIR}/p5_decode_illegal.log"
+
+# ---------------------------------------------------------------------------
+# 5.6 译码级守卫的反向验证（必须落盘存档）
+#
+# 「46 条全 PASS」本身不能说明测试有效 —— 必须证明守卫一旦撤掉测试就会变红。
+# 这里真的把 dotEmulIllegal 从 VecExceptionGen.scala 里临时摘掉、重新精化、
+# 重新 verilate、重跑同一批用例，再把源码按备份还原。整段输出存入
+# p5_decode_prove_fail.log，供验收者直接核对，而不是要求他"自己再跑一遍"。
+# 代价是多两次 mill 精化 + 两次 verilator 构建（约 20 s），默认开启。
+# PROVE_FAIL_ARCHIVE=0 可跳过。
+# ---------------------------------------------------------------------------
+if [ "${PROVE_FAIL_ARCHIVE:-1}" = "1" ]; then
+  step "5.6/7 译码级守卫反向验证（撤掉 dotEmulIllegal 必须变红）"
+  {
+    echo "=== 译码级守卫反向验证  $(date '+%Y-%m-%d %H:%M:%S %Z') ==="
+    echo "=== 命令： PROVE_FAIL=1 bash scripts/tools/run_decode_tb.sh ==="
+    echo "=== 目的： 证明 §5.5 的「全 PASS」不是因为用例恒真 ——"
+    echo "===       临时撤掉 dotEmulIllegal 之后，LMUL 相关用例必须立刻变红。"
+    echo "===       脚本结束时会按备份还原源码并重新生成正确的 Verilog。"
+    echo ""
+    PROVE_FAIL=1 bash "${REPO_ROOT}/scripts/tools/run_decode_tb.sh" || true
+  } 2>&1 | tee "${LOG_DIR}/p5_decode_prove_fail.log"
+  # 反向验证的判据：撤掉守卫后必须出现 FAIL（VECEXC-TB: FAIL）
+  if grep -q "^VECEXC-TB: FAIL" "${LOG_DIR}/p5_decode_prove_fail.log"; then
+    nf=$(grep -oE "PASS [0-9]+，FAIL [0-9]+" "${LOG_DIR}/p5_decode_prove_fail.log" | tail -1 | grep -oE "FAIL [0-9]+" | grep -oE "[0-9]+")
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "译码级" "反向验证(撤守卫应变红)" 1 1 0 0 "PASS" \
+      "撤掉 dotEmulIllegal 后 ${nf:-?} 条变红；p5_decode_prove_fail.log" >> "${ROWS}"
+  else
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "译码级" "反向验证(撤守卫应变红)" 1 0 1 0 "FAIL" \
+      "撤掉守卫后用例仍全 PASS，说明用例无效；见 p5_decode_prove_fail.log" >> "${ROWS}"
+  fi
+  # 还原之后必须仍然全 PASS（证明工作树已回到干净状态）
+  if grep -q "源码已还原" "${LOG_DIR}/p5_decode_prove_fail.log"; then
+    info "源码已按备份还原（见 p5_decode_prove_fail.log）"
+  else
+    die "反向验证未打印还原确认，工作树可能被改坏，请检查 VecExceptionGen.scala"
+  fi
+fi
 if grep -q "^VECEXC-TB: PASS" "${LOG_DIR}/p5_decode_illegal.log"; then
   nd=$(grep -oE "共 [0-9]+ 条" "${LOG_DIR}/p5_decode_illegal.log" | head -1 | grep -oE "[0-9]+")
   printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "译码级" "VecExceptionGen 定向" "${nd:-0}" "${nd:-0}" 0 0 "PASS" \
@@ -420,7 +462,7 @@ step "汇总"
   }' "${ROWS}"
   echo ""
   echo "日志："
-  for l in p5_func_positive p5_func_negative p5_func_boundary p5_func_random p5_regression p5_decode_illegal p5_vimacu_equiv p5_fault_injection p5_waveform; do
+  for l in p5_func_positive p5_func_negative p5_func_boundary p5_func_random p5_regression p5_decode_illegal p5_decode_prove_fail p5_vimacu_equiv p5_fault_injection p5_waveform; do
     [ -f "${LOG_DIR}/${l}.log" ] && printf "  %-26s %s\n" "${l}.log" "$(wc -l < "${LOG_DIR}/${l}.log" | tr -d ' ') 行"
   done
 } 2>&1 | tee "${SUMMARY}"

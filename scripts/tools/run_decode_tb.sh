@@ -6,7 +6,12 @@
 # 必须触发 Illegal Instruction（裁定 S-6）。修复前 VecExceptionGen 不拦截，
 # LMUL>1 的 vdot.vv 会静默给出错误结果。
 #
+# 另含裁定 S-7' 的 [I] 组：vdot4a 在 vstart!=0 时必须非法 —— 由上游 vstartIllegal
+# 天然满足，用例的作用是用实测证明「RTL 无需改动」。
+#
 # 用法： bash scripts/tools/run_decode_tb.sh
+#        PROVE_FAIL=1 追加反向验证（scripts/20_run_func_tests.sh 5.6 步会自动执行并
+#        存档为 logs/stage2/p5_decode_prove_fail.log）
 #        SKIP_ELAB=1 跳过 mill 精化
 # =============================================================================
 set -euo pipefail

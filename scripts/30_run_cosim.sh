@@ -20,7 +20,7 @@
 #
 #   用法：
 #     ./scripts/30_run_cosim.sh                 # 构建 + 跑完整协同仿真
-#     ./scripts/30_run_cosim.sh fault           # 故障注入自测（RTL 侧 + NEMU 侧）
+#     ./scripts/30_run_cosim.sh fault           # 故障注入自测（RTL 侧 2 次 + NEMU 侧 3 次）
 #     FORCE_NEMU=1 ./scripts/30_run_cosim.sh    # 强制重建 NEMU 参考共享库
 #
 #   日志：
@@ -291,9 +291,15 @@ make -j"$(nproc)" 2>&1 | tail -2
     fi
     cp -f "${BUILD}/vdot.c.orig" "${VDOTC}"
 
-    # ------- NEMU 侧注入 2：删掉 vstart!=0 的非法判定（裁定 S-1），考察非法判定通道 -------
+    # ------- NEMU 侧注入 2：删掉归约形态 vstart!=0 的非法判定（裁定 S-1） -------
     banner "[T3-NEMU-2] 删掉 vdot_reduce() 里的 check_vstart_exception()，破坏裁定 S-1"
-    inject "${VDOTC}" "  check_vstart_exception(s);" "  /* injected: S-1 check removed */" 1
+    # 注意锚点要带上函数头：裁定 S-7' 之后 vdot4a_exec() 里也有一行
+    # check_vstart_exception(s);，裸字符串会命中两处。
+    inject "${VDOTC}" \
+        "static void vdot_reduce(Decode *s, int accumulate) {
+  check_vstart_exception(s);" \
+        "static void vdot_reduce(Decode *s, int accumulate) {
+  /* injected: S-1 check removed */" 1
     rebuild_nemu_so
     injections=$((injections + 1))
     echo "--- 注入后实跑（本项考察的是非法判定通道：REF 不再抛异常，"
@@ -307,6 +313,29 @@ make -j"$(nproc)" 2>&1 | tail -2
         detected=$((detected + 1))
     else
         echo ">>> T3-NEMU-2 未被检出  => FAIL"
+    fi
+    cp -f "${BUILD}/vdot.c.orig" "${VDOTC}"
+
+    # ------- NEMU 侧注入 3：删掉 vdot4a 的 vstart!=0 判定（裁定 S-7'）-------
+    # 这一项直接守护本次语义收敛的成果：S-7' 一旦被回退，协同仿真必须立刻报出
+    # 「RTL 非法 / REF 合法」的分歧 —— 这正是 §7.3 当初发现 G5b 的那条通路。
+    banner "[T3-NEMU-3] 删掉 vdot4a_exec() 里的 check_vstart_exception()，回退裁定 S-7'"
+    inject "${VDOTC}" \
+        "  check_vstart_exception(s);   // 裁定 S-7'：vstart != 0 -> Illegal Instruction" \
+        "  /* injected: S-7' check removed (回退到原裁定 S-7) */" 1
+    rebuild_nemu_so
+    injections=$((injections + 1))
+    echo "--- 注入后实跑（期望判定分歧由 ${base_div} 条上升：vdot4a 且 vstart!=0 的用例"
+    echo "     会从「非法一致」翻成「RTL非法/REF合法」）---"
+    small_run || true
+    local inj3_div
+    inj3_div="$(divergence)"
+    echo ">>> 判定分歧：基线 ${base_div} 条 -> 注入后 ${inj3_div} 条"
+    if [ "${inj3_div}" -gt "${base_div}" ]; then
+        echo ">>> T3-NEMU-3 被检出  => OK（证明 S-7' 的收敛是被实测守住的，不是口头约定）"
+        detected=$((detected + 1))
+    else
+        echo ">>> T3-NEMU-3 未被检出  => FAIL"
     fi
 
     # ---------------- 恢复 ----------------

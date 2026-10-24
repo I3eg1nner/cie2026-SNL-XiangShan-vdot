@@ -59,7 +59,16 @@ run_inject() {
     rc=$?
     echo "${out}" | grep -E '^(TOTAL|  must-trap|  missing-trap|RESULT)' || true
     echo "${out}" | grep -c '^FAIL #' | sed 's/^/打印出的失败用例条数（上限 20）: /'
-    if echo "${out}" | grep -q '^RESULT: FAIL'; then
+    if [ "${EQUIV_ID:-}" = "${id}" ]; then
+        # 等价变异体：按设计不可观测，单独计数，不计入检出率
+        if echo "${out}" | grep -q '^RESULT: FAIL'; then
+            echo "  => 被检出（预期为等价变异体却被检出 —— 说明分析有误，计为异常）"
+            MISSED=$((MISSED + 1))
+        else
+            echo "  => 未被检出，符合预期：这是等价变异体（见上方说明），不计入检出率"
+            EQUIV=$((EQUIV + 1))
+        fi
+    elif echo "${out}" | grep -q '^RESULT: FAIL'; then
         echo "  => 被检出 OK"
         DETECTED=$((DETECTED + 1))
     else
@@ -69,6 +78,7 @@ run_inject() {
 }
 
 DETECTED=0
+EQUIV=0
 MISSED=0
 FAILED_SETUP=0
 TOTAL=0
@@ -129,12 +139,30 @@ open(p, "w").write(s.replace(old, new))
 '
 
 # ---- #5 去掉 S-9 的 vstart 越界检查 ----
-TOTAL=$((TOTAL + 1))
+# 裁定 S-7' 之后这是一个**等价变异体**：三条指令都会在 vdot_check() 之后调用
+# check_vstart_exception()，而 vstart 越界（>= VLMAX）必然意味着 vstart != 0，
+# 于是删掉 S-9 的检查后，这些用例仍然以同样的 mcause=2 trap —— 架构上不可观测。
+# S-7' 之前它是可检出的（vdot4a 的 vstart ∈ [4,15] 只能由 S-9 拦下）。
+# 这里照跑，用来**实测确认**它确实变成了等价变异体，但不计入检出率。
+# S-9 与 S-1/S-7' 在参考模型里仍是不同的状态码（ERR_VSTART_RANGE / ILLEGAL_VSTART），
+# 其区分由 tests/golden/test_golden 的回环比对（比对 status 字段）守住。
+EQUIV_ID=5
 run_inject 5 "[破坏裁定 S-9：vstart 超出当前 SEW 最大元素下标时不再报错]" '
 import sys
 p = sys.argv[1]; s = open(p).read()
 old = "  if (vstart->val + 1 > (uint64_t)get_vlen_max(vtype->vsew, vtype->vlmul, 0)) {\n    longjmp_exception(EX_II);\n  }"
 new = "  /* FAULT #5: S-9 的 vstart 越界检查被删除 */"
+assert s.count(old) == 1, "pattern not found"
+open(p, "w").write(s.replace(old, new))
+'
+
+# ---- #6 去掉 S-7' 的 vdot4a vstart!=0 非法指令检查（回退到原裁定 S-7）----
+TOTAL=$((TOTAL + 1))
+run_inject 6 "[回退裁定 S-7'：vdot4a 不再对 vstart!=0 抛 Illegal Instruction]" '
+import sys
+p = sys.argv[1]; s = open(p).read()
+old = "  check_vstart_exception(s);   // 裁定 S-7\x27"
+new = "  /* FAULT #6: S-7 check removed */ //"
 assert s.count(old) == 1, "pattern not found"
 open(p, "w").write(s.replace(old, new))
 '
@@ -153,6 +181,7 @@ echo "${CLEAN_OUT}" | grep -E '^(TOTAL|  must-trap|  missing-trap|RESULT)'
 
 echo
 echo "=============================================================="
+echo "等价变异体（按设计不可观测，未计入）: ${EQUIV} 个（#5，S-7' 之后 S-9 被 S-1/S-7' 覆盖）"
 printf 'FAULT-INJECTION: %d/%d 被检出' "${DETECTED}" "${TOTAL}"
 if [ "${MISSED}" -ne 0 ] || [ "${FAILED_SETUP}" -ne 0 ]; then
     printf '  (漏检 %d, 注入/编译失败 %d)\n' "${MISSED}" "${FAILED_SETUP}"

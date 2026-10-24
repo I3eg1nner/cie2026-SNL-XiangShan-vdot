@@ -130,13 +130,25 @@ int vdotacc_vv_ex(vreg128_t *vd, const vreg128_t *vs2, const vreg128_t *vs1,
  *
  * 行为表：
  *   1) vsew != 32               -> Illegal Instruction (VDOT_ERR_SEW)
- *   2) vstart >= vl（含 vl==0） -> 不写回任何元素，连 tail 也不写（§5.4）
- *   3) i < vstart（prestart）   -> 目的元素保持不变（§3.7 / §5.4）
- *   4) body & mask=1（active）  -> vd.u32[i] += Σ_{j<4} sext(vs2.i8[4i+j])*sext(vs1.i8[4i+j])
- *   5) body & mask=0（inactive）-> vma=1 写全 1，vma=0 保持不变（§3.4.3 / §5.4）
- *   6) i >= vl（tail）          -> vta=1 写全 1，vta=0 保持不变（§3.4.3）
- *   7) 掩码粒度 = 32 位元素（每个结果 1 个 mask bit），与 Zvdot4a8i 一致
- *   8) 子元素 j 取字节 4i+j（寄存器内小端）；4 个乘积相加，字节顺序不影响结果
+ *   2) vstart != 0              -> Illegal Instruction（裁定 S-7'，STRICT 策略）。
+ *                                  本条**不是** RVV 对逐元素指令的一般规定，而是
+ *                                  平台约束优先原则的产物：目标微架构昆明湖 V2 的
+ *                                  向量算术通路不支持从非零 vstart 恢复执行，其译码
+ *                                  级公共判据 vstartIllegal = isVArith && (vstart
+ *                                  =/= 0) 对所有向量算术指令无条件生效（XiangShan
+ *                                  VecExceptionGen.scala）。自定义指令的 ISA 语义不
+ *                                  应宽于宿主微架构的实际能力，故让 ISA 向微架构收敛。
+ *                                  该冲突由 NEMU <-> RTL 协同仿真发现（原裁定 S-7
+ *                                  在此处允许 vstart 正常生效）。在支持 vstart 重启的
+ *                                  实现上本条可放宽；SKIP 策略保留原 S-7 的 prestart
+ *                                  语义，供其做数据通路测试。
+ *   3) vstart >= vl（含 vl==0） -> 不写回任何元素，连 tail 也不写（§5.4）
+ *   4) i < vstart（prestart）   -> 目的元素保持不变（§3.7 / §5.4；仅 SKIP 策略可达）
+ *   5) body & mask=1（active）  -> vd.u32[i] += Σ_{j<4} sext(vs2.i8[4i+j])*sext(vs1.i8[4i+j])
+ *   6) body & mask=0（inactive）-> vma=1 写全 1，vma=0 保持不变（§3.4.3 / §5.4）
+ *   7) i >= vl（tail）          -> vta=1 写全 1，vta=0 保持不变（§3.4.3）
+ *   8) 掩码粒度 = 32 位元素（每个结果 1 个 mask bit），与 Zvdot4a8i 一致
+ *   9) 子元素 j 取字节 4i+j（寄存器内小端）；4 个乘积相加，字节顺序不影响结果
  * ================================================================== */
 int vdot4a_vv_ex(vreg128_t *vd, const vreg128_t *vs2, const vreg128_t *vs1,
                  uint32_t vstart, uint32_t vl, const vreg128_t *vm_mask,
@@ -151,15 +163,22 @@ int vdot4a_vv_ex(vreg128_t *vd, const vreg128_t *vs2, const vreg128_t *vs1,
     if (vl > vlmax)         return VDOT_ERR_VL;
     if (vstart > vlmax - 1) return VDOT_ERR_VSTART_RANGE;   /* §3.7 reserved */
 
-    /* 规则 2 */
+    /* 规则 2（裁定 S-7'）：判定次序与归约形态一致 —— 先 vstart 越界（S-9），
+     * 再 vstart != 0，最后才是 vstart >= vl 的「不写回」。该次序与 NEMU
+     * vdot_check() -> check_vstart_exception() -> check_vstart_ignore()
+     * 的调用顺序逐条对应。 */
+    if (vstart != 0 && vstart_policy == VDOT_VSTART_STRICT)
+        return VDOT_ILLEGAL_VSTART;
+
+    /* 规则 3 */
     if (vstart >= vl) return VDOT_OK;
 
     for (i = vstart; i < vl; i++) {
-        if (!elem_active(vm_mask, i)) {          /* 规则 5 */
+        if (!elem_active(vm_mask, i)) {          /* 规则 6 */
             if (vma) vreg_set_u32(vd, (int)i, 0xFFFFFFFFu);
             continue;
         }
-        {                                        /* 规则 4 */
+        {                                        /* 规则 5 */
             uint32_t acc = vreg_u32(vd, (int)i);
             for (j = 0; j < 4; j++) {
                 acc += (uint32_t)(vreg_i8(vs2, (int)(4*i + (uint32_t)j))
@@ -168,7 +187,7 @@ int vdot4a_vv_ex(vreg128_t *vd, const vreg128_t *vs2, const vreg128_t *vs1,
             vreg_set_u32(vd, (int)i, acc);
         }
     }
-    /* 规则 6 */
+    /* 规则 7 */
     if (vta) {
         for (i = vl; i < vlmax; i++) vreg_set_u32(vd, (int)i, 0xFFFFFFFFu);
     }

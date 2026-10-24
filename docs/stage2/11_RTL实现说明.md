@@ -621,7 +621,7 @@ LMUL>1 的方案（新增 `UopSplitType.VEC_VDOT`）见设计文档 §8.3，**�
    本版本 `uopSplitType` 用 `VEC_VVV`，LMUL>1 时 `numOfUop = lmul`，但 `vdot`/`vdotacc` 的多 uop 累加链语义没有实现，结果会是错的。原实现里 `VecExceptionGen` **不会**拦截 `vlmul != 0` 的 vdot 指令，会静默算错。
    P4 修复：`VecExceptionGen.scala:217` 新增
    `private val dotEmulIllegal = (dotRedInst || dot4aInst) && (io.vtype.vlmul =/= 0.U)`，并并入 `emulIllegal`（`:240`）。三条指令统一拦截，与 NEMU 侧 `vdot_check()` 的 `if (vtype->vlmul != 0) longjmp_exception(EX_II)` 保持一致。
-   验证：新增 `VecExceptionGenHarness` + `tests/unit/vecexcgen_tb.cpp`，46 条定向用例全 PASS；撤掉该守卫后 13 条立即变红（`PROVE_FAIL=1 bash scripts/tools/run_decode_tb.sh`，日志 `logs/stage2/p5_decode_illegal.log`）。
+   验证：新增 `VecExceptionGenHarness` + `tests/unit/vecexcgen_tb.cpp`，51 条定向用例全 PASS（日志 `logs/stage2/p5_decode_illegal.log`）；撤掉该守卫后 13 条立即变红（`PROVE_FAIL=1 bash scripts/tools/run_decode_tb.sh`，由 `scripts/20_run_func_tests.sh` 5.6 步自动执行，日志 `logs/stage2/p5_decode_prove_fail.log`）。
    **仍然不支持 LMUL>1 的正确执行**，只是从「静默算错」变成「明确报非法」。
 
 9. **`.insn` 汇编宏未验证**。本机无 RISC-V 工具链，三条指令的机器码只由位域拼接算得（设计文档 §1.2 已标注 UNVERIFIED），P4/P5 需用 `objdump -d` 回读确认。

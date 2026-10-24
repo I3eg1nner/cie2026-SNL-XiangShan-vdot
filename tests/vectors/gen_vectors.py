@@ -25,6 +25,7 @@ gen_vectors.py —— vdot 指令族共享测试向量语料生成器（python3 
       v0_hex  掩码寄存器 v0 的完整 128 位内容（vm=1 时无意义，仍然给出）
       status  参考模型返回的状态名：OK / ILLEGAL_VSTART / ERR_SEW / ...
               非 OK 时 vd_expected 恒等于 vd_in（规范要求不写回目的寄存器）
+              注：裁定 S-7' 之后 vdot4a 的 vstart!=0 也返回 ILLEGAL_VSTART
 
 用法：
     python3 gen_vectors.py --cli <vdot_cli 路径> [--outdir <目录>]
@@ -387,6 +388,29 @@ def build_vstart_relaxed(rng):
             cases.append(Case(op, 8, vstart, vl, k & 1, (k >> 1) & 1,
                               (k >> 2) & 1, a, b, vd, v0,
                               note="relaxed vstart random"))
+    # vdot4a：裁定 S-7' 之后，vstart!=0 在**架构层**已是非法指令，规范语料里
+    # 原有的 1545 条 vstart!=0 用例全部转为 ILLEGAL_VSTART、不再进入 FU。
+    # 但 RTL 数据通路本身仍然实现了 §5.4 的 prestart 门控（S-7' 是平台约束，
+    # 不是数据通路缺陷），为避免这部分逻辑完全失去 L1 覆盖，在本非规范语料里
+    # 补上 vdot4a 的 prestart 用例 —— 它们同时也是「将来若实现 vstart 重启，
+    # 语义应当是什么」的可执行说明。
+    for vstart in (0, 1, 2, 3):
+        for vl in (0, 1, 2, 3, 4):
+            a = rnd_bytes(rng, 0, 255)
+            b = rnd_bytes(rng, 0, 255)
+            vd = u32le([rng.randint(0, 0xFFFFFFFF) for _ in range(4)])
+            cases.append(Case("vdot4a", 32, vstart, vl, 1, 1, 1, a, b, vd,
+                              note="relaxed vstart (vdot4a prestart)"))
+    for k in range(20):
+        a = rnd_bytes(rng, 0, 255)
+        b = rnd_bytes(rng, 0, 255)
+        vd = rnd_bytes(rng, 0, 255)
+        v0 = rnd_bytes(rng, 0, 255)
+        vl = rng.randint(0, 4)
+        vstart = rng.randint(0, 3)
+        cases.append(Case("vdot4a", 32, vstart, vl, k & 1, (k >> 1) & 1,
+                          (k >> 2) & 1, a, b, vd, v0,
+                          note="relaxed vstart random (vdot4a)"))
     return cases
 
 
@@ -419,9 +443,12 @@ RATIONALE = {
         vl/vstart/vm/vta/vma 随机。用于 RTL 与 NEMU 的大规模差分比对。
     """,
     "vstart_relaxed": """
-        非规范补充语料：采用 SKIP 策略（归约指令不抛 Illegal Instruction，
+        非规范补充语料：采用 SKIP 策略（三条指令都不抛 Illegal Instruction，
         而是按 RVV v1.0 §5.4 的 prestart 规则跳过 i<vstart 的源元素）。
-        仅供 RTL 侧在实现了可重启归约时做数据通路测试，不参与规范一致性判定。
+        仅供 RTL 侧在实现了可重启执行时做数据通路测试，不参与规范一致性判定。
+        规范语义见裁定 S-1（vdot/vdotacc，RVV §14）与 S-7'（vdot4a，平台约束
+        优先原则）：两者在 STRICT 策略下 vstart!=0 一律 Illegal Instruction。
+        vdot4a 的 40 条是 S-7' 之后补入的，用于保住 prestart 门控的数据通路覆盖。
     """,
 }
 

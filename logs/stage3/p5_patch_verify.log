@@ -1,5 +1,5 @@
 ==============================================================
- [V] 在干净副本上验证 patch 可应用   2026-10-24T11:56:24Z UTC
+ [V] 在干净副本上验证 patch 可应用   2026-10-24T15:27:11Z UTC
 ==============================================================
 $ git clone --shared --no-checkout /work/work/NEMU NEMU-fresh
 $ git checkout 9090839 -- . （检出干净的上游 commit，不带任何本地改动）
@@ -19,13 +19,13 @@ $ git apply /work/nemu/patch/0001-add-vdot-instruction-family.patch
 $ git apply --stat /work/nemu/patch/0001-add-vdot-instruction-family.patch
  configs/riscv64-xs-kmhv2-ref_defconfig    |    1 
  configs/riscv64-xs-kmhv2_defconfig        |    1 
- src/isa/riscv64/Kconfig                   |   11 ++
+ src/isa/riscv64/Kconfig                   |   11 +
  src/isa/riscv64/include/isa-all-instr.h   |    9 +
  src/isa/riscv64/instr/rvv/decode.h        |    8 +
  src/isa/riscv64/instr/rvv/vcompute.h      |   17 ++
- src/isa/riscv64/instr/rvv/vcompute_impl.h |   11 ++
- src/isa/riscv64/instr/rvv/vdot.c          |  201 +++++++++++++++++++++++++++++
- 8 files changed, 258 insertions(+), 1 deletion(-)
+ src/isa/riscv64/instr/rvv/vcompute_impl.h |   11 +
+ src/isa/riscv64/instr/rvv/vdot.c          |  221 +++++++++++++++++++++++++++++
+ 8 files changed, 278 insertions(+), 1 deletion(-)
 $ git status --short
  M configs/riscv64-xs-kmhv2-ref_defconfig
  M configs/riscv64-xs-kmhv2_defconfig
@@ -38,14 +38,14 @@ $ git status --short
 
 --- 在这份全新副本上实际构建一次（独立解释器形态） ---
 （已从现有工作区复制 resource/，避免重复联网浅克隆）
-/tmp/tmp.gzjJBe5aIj/NEMU-fresh/scripts/config.mk:20: [1;31mWarning: .config does not exists![0m
-/tmp/tmp.gzjJBe5aIj/NEMU-fresh/scripts/config.mk:21: [1;31mTo build the project, first run 'make menuconfig'.[0m
+/tmp/tmp.ld5Y9viIuS/NEMU-fresh/scripts/config.mk:20: [1;31mWarning: .config does not exists![0m
+/tmp/tmp.ld5Y9viIuS/NEMU-fresh/scripts/config.mk:21: [1;31mTo build the project, first run 'make menuconfig'.[0m
 113:#define CONFIG_CUSTOM_XVDOT 1
--rwxr-xr-x 1 root root 589312 Oct 24 11:56 build/riscv64-nemu-interpreter
+-rwxr-xr-x 1 root root 589312 Oct 24 15:27 build/riscv64-nemu-interpreter
 
 --- 用干净副本的解释器重跑全部语料 ---
-TOTAL cases=30710 pass=30710 fail=0
-  must-trap cases (status != OK) = 3250 , trapped with mcause=2 = 3250
+TOTAL cases=30758 pass=30758 fail=0
+  must-trap cases (status != OK) = 4834 , trapped with mcause=2 = 4834
   missing-trap=0  unexpected-trap=0  wrong-mcause=0  value-mismatch=0  vl-readback-mismatch=0
 RESULT: PASS
 PATCH-VERIFY: OK

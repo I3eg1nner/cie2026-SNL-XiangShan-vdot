@@ -134,7 +134,7 @@ VLMAX = VLEN / 8;                                    /* = 16   (vdot_ref.c:76) *
 /* --- 译码/执行前的非法性检查 --- */
 if (vtype.vill)            raise ILLEGAL_INSTRUCTION;
 if (mstatus.VS == Off)     raise ILLEGAL_INSTRUCTION;
-if (vtype.vsew != 0b000)   raise ILLEGAL_INSTRUCTION;   /* 必须 SEW=8   (vdot_ref.c:213/217) */
+if (vtype.vsew != 0b000)   raise ILLEGAL_INSTRUCTION;   /* 必须 SEW=8   (vdot_ref.c:232/236) */
 if (vstart != 0)           raise ILLEGAL_INSTRUCTION;   /* 裁定 S-1     (vdot_ref.c:90-91) */
 require_aligned(vs1, LMUL); require_aligned(vs2, LMUL);  /* vd 为单寄存器，EMUL=1，无对齐要求 */
 
@@ -161,28 +161,30 @@ vstart = 0;  mstatus.VS = Dirty;
 
 ```c
 /* vdot4a.vv vd, vs2, vs1, vm
- * 对应 vdot_ref.c:141-176 vdot4a_vv_ex()
+ * 对应 vdot_ref.c:153-195 vdot4a_vv_ex()
  */
-VLMAX = VLEN / 32;                                   /* = 4    (vdot_ref.c:145) */
+VLMAX = VLEN / 32;                                   /* = 4    (vdot_ref.c:157) */
 
 if (vtype.vill)            raise ILLEGAL_INSTRUCTION;
-if (vtype.vsew != 0b010)   raise ILLEGAL_INSTRUCTION;   /* 必须 SEW=32  (vdot_ref.c:221) */
+if (vtype.vsew != 0b010)   raise ILLEGAL_INSTRUCTION;   /* 必须 SEW=32  (vdot_ref.c:240) */
 require_aligned(vd, LMUL); require_aligned(vs1, LMUL); require_aligned(vs2, LMUL);
 
-if (vstart >= vl) { vstart = 0; mstatus.VS = Dirty; return; }   /* 裁定 S-5 (vdot_ref.c:155) */
+if (vstart != 0)           raise ILLEGAL_INSTRUCTION;   /* 裁定 S-7'  (vdot_ref.c:170-171) */
 
-for (i = vstart; i < vl; i++) {                      /* i < vstart 为 prestart，目的元素保持不变 */
+if (vstart >= vl) { vstart = 0; mstatus.VS = Dirty; return; }   /* 裁定 S-5 (vdot_ref.c:174) */
+
+for (i = vstart /* ==0 */; i < vl; i++) {            /* prestart 仅在放宽实现上可达，见 S-7' */
     if (vm == 0 && v0.mask[i] == 0) {                /* inactive */
-        if (vtype.vma) vd.u32[i] = 0xFFFFFFFF;       /* (vdot_ref.c:158-160) */
+        if (vtype.vma) vd.u32[i] = 0xFFFFFFFF;       /* (vdot_ref.c:177-179) */
         continue;                                    /* vma==0：保持不变 */
     }
     uint32_t acc = vd.u32[i];
-    for (j = 0; j < 4; j++)                          /* 裁定 S-7：子字节索引取 4i+j */
+    for (j = 0; j < 4; j++)                          /* 裁定 S-7：子字节索引取 4i+j（S-7' 未修订此条） */
         acc += (uint32_t)( sext32(vs2.i8[4*i+j]) * sext32(vs1.i8[4*i+j]) );
-    vd.u32[i] = acc;                                 /* (vdot_ref.c:162-168) */
+    vd.u32[i] = acc;                                 /* (vdot_ref.c:181-187) */
 }
 if (vtype.vta)                                       /* tail: i >= vl */
-    for (i = vl; i < VLMAX; i++) vd.u32[i] = 0xFFFFFFFF;    /* (vdot_ref.c:172-174) */
+    for (i = vl; i < VLMAX; i++) vd.u32[i] = 0xFFFFFFFF;    /* (vdot_ref.c:191-193) */
 
 vstart = 0;  mstatus.VS = Dirty;
 ```
@@ -199,7 +201,7 @@ vstart = 0;  mstatus.VS = Dirty;
 | 情形 | 行为 | 依据 | 参考模型 |
 |---|---|---|---|
 | `vtype.vill = 1` | Illegal Instruction | RVV §3.4.1 | — |
-| `vtype.vsew != 8` | Illegal Instruction | D2；本指令仅定义于 SEW=8 | `vdot_ref.c:213,217` |
+| `vtype.vsew != 8` | Illegal Instruction | D2；本指令仅定义于 SEW=8 | `vdot_ref.c:232,236` |
 | **`vstart != 0`** | **Illegal Instruction** | **S-1**；RVV §14「Vector reduction operations raise an illegal instruction exception if vstart is non-zero」 | `vdot_ref.c:90-91` |
 | `vstart >= vl`（含 `vl = 0`） | 不写回任何元素，**连 tail 都不写**，`vd` 完全保持 | **S-5**；RVV §5.4 | `vdot_ref.c:94` |
 | `vl = 0`（且 vstart=0） | 同上：`vd` 完全保持 | S-5 | `vdot_ref.c:94` |
@@ -220,15 +222,16 @@ vstart = 0;  mstatus.VS = Dirty;
 | 情形 | 行为 | 依据 | 参考模型 |
 |---|---|---|---|
 | `vtype.vill = 1` | Illegal Instruction | RVV §3.4.1 | — |
-| `vtype.vsew != 32` | Illegal Instruction | D2 / Zvdot4a8i draft v0.1 同样要求 SEW=32 | `vdot_ref.c:221` |
-| `vstart != 0` | **正常生效**：`i < vstart` 的目的元素为 prestart，保持不变 | **S-7**；RVV §5.4 | `vdot_ref.c:157` |
-| `vstart >= vl`（含 `vl = 0`） | 不写回任何元素，连 tail 都不写 | **S-5**；RVV §5.4 | `vdot_ref.c:155` |
+| `vtype.vsew != 32` | Illegal Instruction | D2 / Zvdot4a8i draft v0.1 同样要求 SEW=32 | `vdot_ref.c:240` |
+| **`vstart != 0`** | **Illegal Instruction** | **S-7'**（取代原 S-7 的 vstart 部分）；**平台约束优先原则**，非 RVV 对逐元素指令的一般规定 —— 见下文 §1.5.4 与 §9 裁定 R-17 | `vdot_ref.c:170-171` |
+| `vstart >= vl`（含 `vl = 0`） | 不写回任何元素，连 tail 都不写 | **S-5**；RVV §5.4 | `vdot_ref.c:174` |
+| `i < vstart`（prestart） | 目的元素保持不变。S-7' 之后该情形在本平台**架构上不可达**，仅在放宽 `vstart` 的实现上有意义；数据通路仍正确实现（非规范语料 `vstart_relaxed.txt` 的 40 条 vdot4a 用例在 L1 实测通过） | S-7' 的放宽分支；RVV §3.7 / §5.4 | `vdot_ref.c:176` |
 | `vm = 1` | `vstart <= i < vl` 全部为 active | RVV §5.3 | — |
-| `vm = 0`，`v0.mask[i] = 0`，`vma = 0` | 目的元素 `i` 保持原值（undisturbed） | RVV §3.4.3 | `vdot_ref.c:158-160` |
-| `vm = 0`，`v0.mask[i] = 0`，`vma = 1` | 目的元素 `i` 写全 1（agnostic） | RVV §3.4.3 | `vdot_ref.c:159` |
-| `i >= vl`（tail），`vta = 1` | 写全 1 | RVV §3.4.3 | `vdot_ref.c:172-174` |
+| `vm = 0`，`v0.mask[i] = 0`，`vma = 0` | 目的元素 `i` 保持原值（undisturbed） | RVV §3.4.3 | `vdot_ref.c:177-179` |
+| `vm = 0`，`v0.mask[i] = 0`，`vma = 1` | 目的元素 `i` 写全 1（agnostic） | RVV §3.4.3 | `vdot_ref.c:178` |
+| `i >= vl`（tail），`vta = 1` | 写全 1 | RVV §3.4.3 | `vdot_ref.c:191-193` |
 | `i >= vl`（tail），`vta = 0` | 保持原值 | RVV §3.4.3 | 同上 |
-| 掩码粒度 | **32 位目的元素**（每个结果 1 bit），与 Zvdot4a8i 一致 | `vdot_ref.c:138` | — |
+| 掩码粒度 | **32 位目的元素**（每个结果 1 bit），与 Zvdot4a8i 一致 | `vdot_ref.c:150` | — |
 | `vd` 与 `vs1`/`vs2` 重叠 | 允许（EEW/EMUL 完全相同，RVV §5.2 的「相同 EEW 可完全重叠」） | `VecExceptionGen.scala:286`（`vs2Constraint1`） | — |
 | `LMUL` | 本版本固定 LMUL = 1（S-6）。LMUL>1 结构上直接复用 `UopSplitType.VEC_VVV`，见 §8.3 | S-6 | — |
 | 累加溢出 | 按 2^32 模回绕，**不饱和**，不置 `vxsat` | RVV §11「overflows wrap around」 | `vdot_ref.c:16-18` |
@@ -237,13 +240,54 @@ vstart = 0;  mstatus.VS = Dirty;
 
 | 条件 | 判定位置 | 说明 |
 |---|---|---|
-| `vstart != 0 && isVArith` | `$XS/src/main/scala/xiangshan/backend/decode/VecExceptionGen.scala:275`（`vstartIllegal`），汇入 `:294` `io.illegalInst` | **现有逻辑天然满足 S-1**，`FuType.vimac ∈ vecArith`，无需任何新增代码即可对 `vdot`/`vdotacc` 在 `vstart != 0` 时报非法。详见 §9 裁定 R-05 |
+| `vstart != 0 && isVArith` | `$XS/src/main/scala/xiangshan/backend/decode/VecExceptionGen.scala:275`（pristine）/ `:305`（实现树）`vstartIllegal`，汇入 `io.illegalInst` | **现有逻辑天然满足 S-1 与 S-7'**，`FuType.vimac ∈ vecArith`，无需任何新增代码即可对**三条**指令在 `vstart != 0` 时报非法。详见 §9 裁定 R-05 / R-17。译码级定向用例 `tests/unit/vecexcgen_tb.cpp` 的 `[H]` `[I]` 两组（7 条）实测验证 |
+| `vdot` 族且 `vtype.vlmul != 0`（LMUL != 1） | `VecExceptionGen.scala:217`（实现树）`dotEmulIllegal`，汇入 `:240` `emulIllegal` | 新增（裁定 S-6）。由 P6 协同仿真发现缺失，见 `docs/stage3/21` §7.2 |
 | `vdot`/`vdotacc` 且 `SEW != 8`；`vdot4a` 且 `SEW != 32` | 需在 `VecExceptionGen.scala:195` 的 `eewIllegal` 中新增分支（集成项 C4） | 新增 |
 | `vill` | `VecExceptionGen.scala:178` `villIllegal` | 现有 |
 | 寄存器对齐 / 重叠 | `VecExceptionGen.scala:257,292` | 需把三条指令登记进 `vdIsSingleElem`（仅归约两条）等列表，见集成项 C4 |
 
-> ⚠️ **S-7 与现有 RTL 的冲突点（必须由 RTL 工程师注意）**：`vdot4a.vv` 按 S-7 要求 `vstart` 正常生效，但 `VecExceptionGen.scala:275` 的 `vstartIllegal` 对**所有** `isVArith` 指令（含 `FuType.vimac`）在 `vstart != 0` 时报非法。因此 `vdot4a` 的 prestart 语义在**全核 RTL 上不可达**：指令在译码阶段就被挡掉。
-> 处理办法：数据通路照 S-7 正确实现（`Mgu` 的 `info.vstart` 本来就接了 `outVecCtrl.vstart`，`VIMacU.scala:140`，天然支持 prestart），但在交付文档与测试报告中如实写明「`vdot4a` 的 `vstart != 0` 路径只能在 L1（FU 级，`vstart` 是可自由驱动的输入端口）验证，全核层面被 `VecExceptionGen` 统一挡住」。**不建议**为 `vdot4a` 单独放宽 `vstartIllegal` —— 那会改动一条影响所有向量算术指令的公共判据，风险与收益不成比例（§9 裁定 R-06）。
+#### 1.5.4 裁定 S-7'：`vdot4a` 的 `vstart` 为什么也判非法（平台约束优先原则）
+
+**本小节记录一次语义修订，修订的触发者是 NEMU ↔ RTL 协同仿真。**
+
+| | 原裁定 S-7（P3 阶段） | 修订后 S-7'（P6 阶段） |
+|---|---|---|
+| `vdot4a.vv` 且 `vstart != 0` | 正常生效，`i < vstart` 为 prestart | **Illegal Instruction** |
+| 依据 | RVV §5.4 对逐元素指令的一般规定 | **平台约束优先原则**（见下） |
+| `4i+j` 子字节索引 | S-7 的这一部分**未被修订**，仍然有效 | 同左 |
+
+**修订经过**：本文档原先（见上一版 §1.5.3 的 ⚠️ 注与 §9 裁定 R-06）已经识别出「S-7 要求 `vstart`
+正常生效，而 `vstartIllegal` 会在译码阶段挡掉它」这一冲突，但当时的处理是**把它登记为一处
+可接受的不可达性**，ISA 定义照旧。P6 的 Level-1 协同仿真（真 NEMU `.so` ↔ Verilated 译码单元）
+把这件事的真实代价量化了出来：在 `vdot4a` + `vstart ∈ {1,2,3}` 的 **1946 条**激励上，
+NEMU 按 S-7 正常执行、香山判非法 —— 这是一类**确定性的全核 difftest mismatch**，
+不是「不可达」，而是「两侧对同一条指令给出了不同的架构可见行为」。
+
+**裁定（平台约束优先原则）**：自定义指令的 ISA 语义**不应宽于宿主微架构的实际能力**。
+昆明湖 V2 的向量算术通路不支持从非零 `vstart` 恢复执行任何向量算术指令，这是既有架构事实，
+不是本项目引入的缺陷。两条收敛路径中：
+
+* **让 ISA 向微架构收敛**（采纳）：在参考模型与 NEMU 里补 `vstart != 0 -> Illegal Instruction`，
+  改动面局限在本指令族内部，三条 vdot 指令的 `vstart` 行为从此完全一致，且与同平台上
+  `vadd.vv` / `vmacc.vv` / `vwmul.vv` 等**所有**标准向量算术指令的行为一致
+  （实测对照表见 `bench/results/vstart_control.csv`：8 条指令在 `vstart=1` 时全部 `TRAP mcause=2`）。
+* **让微架构向 ISA 收敛**（否决）：为 `vdot4a` 在 `vstartIllegal` 上开一个例外，并让 `VIMacU`
+  的 `Mgu` 正确处理 prestart。代价是改动一条影响**全部**向量算术指令的公共判据，
+  回归面覆盖整个向量后端，风险与收益不成比例（这正是 §9 裁定 R-06 已经论证过的）。
+
+**可放宽性（重要）**：S-7' 是**平台约束驱动的设计决策，不是指令语义的内在限制**。
+在支持 `vstart` 重启的实现上，本条完全可以放宽回原 S-7 的 prestart 语义：
+① 参考模型保留了 `VDOT_VSTART_SKIP` 策略，一行参数即可切换；
+② 数据通路本身**已经正确实现**了 prestart（`Mgu` 的 `info.vstart` 接的就是
+   `outVecCtrl.vstart`，`VIMacU.scala:140`），无需任何 RTL 改动；
+③ 非规范语料 `tests/vectors/vstart_relaxed.txt` 里有 40 条 `vdot4a` 的 prestart 用例，
+   在 L1 平台上实测全部通过 —— 也就是说「放宽之后应当是什么行为」是有可执行定义的。
+
+**RTL 侧需要做什么：什么都不需要做。** `vdot4a` 走 `FuType.vimac`，`FuType.isVArith` 为真，
+上游既有的 `vstartIllegal` 已经把它拦下。该结论不是推导出来的，是在译码级直驱平台上测出来的：
+`tests/unit/vecexcgen_tb.cpp` 的 `[I]` 组 4 条用例（`vstart = 1/2/3` 期望非法、`vstart = 0` 期望合法）
+全部 PASS，日志 `logs/stage2/p5_decode_illegal.log`。
+
 
 ### 1.6 溢出证明
 
@@ -1154,7 +1198,7 @@ object VerilogVDotTree extends App {
 **D2** — 用例覆盖矩阵（对应 P4 验收标准）
 - 正数 ≥20、负数 ≥20（含全负 / 正负混合）；
 - 边界：`+127/-128/0`、全 0、全 `-128`、`vl = 0/1/15/16`、`vm` 掩码（全 0 / 全 1 / 交错）、`vta` 两种取值；
-- `vstart != 0`：按修订后的 P4 标准，**期望结果是 Illegal Instruction**。FU 级平台不建模异常，这些用例应**跳过并在报告中记录跳过条数与原因**（§1.5.3）。
+- `vstart != 0`：按修订后的 P4 标准，**三条指令的期望结果都是 Illegal Instruction**（`vdot`/`vdotacc` 依 S-1，`vdot4a` 依 S-7'，§1.5.4）。FU 级平台不建模异常，这些用例应**跳过并在报告中记录跳过条数与原因**（§1.5.3）；`vdot4a` 的 prestart 数据通路改由非规范语料 `vstart_relaxed.txt` 覆盖。
 
 **D3** — `$XS/src/test/scala/xiangshan/DecodeTest.scala`
 - 新增译码级断言：三条指令的 `fuType == FuType.vimac`、`fuOpType == VimacType.vdot/vdotacc/vdot4a`、`uopSplitType == VEC_VVV`、`numOfUop == 1`、`srcType(2) == SrcType.vp`。
@@ -1189,7 +1233,7 @@ object VerilogVDotTree extends App {
 | 累加宽度 | 32（内部 20 位足够） | 32 | 32 | 32 | 32 | 32 | 64 |
 | 溢出 | **不可能**（§1.6 已证） | 2^32 回绕 | 2^32 回绕 | 2^32 回绕 | 2^32 回绕 | 2^32 回绕（`VPDPBUSDS` 饱和） | — |
 | 掩码粒度 | 源元素（8 位） | 源元素（8 位） | 目的元素（32 位） | 目的元素（32 位） | 无掩码 | EVEX：32 位元素 | 无 |
-| `vstart != 0` | **Illegal**（S-1） | **Illegal**（S-1） | 正常生效（S-7） | 正常生效 | n/a | n/a | n/a |
+| `vstart != 0` | **Illegal**（S-1） | **Illegal**（S-1） | **Illegal**（S-7'，平台约束；§1.5.4） | 正常生效 | n/a | n/a | n/a |
 | FU 延迟 | 2 周期（估算，`TBD(由P7实测填入)`） | 2 周期 | 2 周期 | 实现相关 | 实现相关 | 典型 ~5 周期（Intel 公开文档） | 论文未给 |
 
 ### 7.2 设计选择差异的理由
@@ -1387,7 +1431,7 @@ uop lmul..2lmul-2  : 把 TMP 两两相加                              （需要
 | **R-03** | `VimacOpcode` 只剩 `b111` 一个值，三条指令怎么放？ | (a) 三条共用 `b111`，靠 `VimacType[8:7]` pad 位区分；(b) 把 `VimacOpcode.width` 从 3 扩到 4 | **(a)**。`VimacType` 是 9 位（`yunsuan/package.scala:8`），现有全部取值的 `[8:7] == 00`（`:384-399` 逐条可见），高半空间 384 个值全空。(b) 要改 `VimacOpcode.width` 和所有 `getOpcode` 切片，diff 大且无必要。 |
 | **R-04** | `vdotacc` / `vdot4a` 的累加走 `isMacc`（进 Wallace 树）还是走新加法树？ | (a) 走 `isMacc`；(b) 在 `VDotTree` 末级注入 | **(b)**。`sew=8` 时 Wallace 进位掩码 `"h7fff7fff…"`（`VIMac64b.scala:138`）把每 lane 锁死在 16 位，且 `partProd(33)` 的 `oldVdReorg`（`:115-117`）是按 SEW 分段扩展的 —— `oldVd` 进 Wallace 树会被当成 16 个 8 位元素逐个加，语义完全错误，**且 32 位累加器根本放不进 16 位 lane**。 |
 | **R-05** | 设计问题 3：`VecExceptionGen.scala:275` 对 `vstart != 0` 的向量算术指令一律报非法，而 `Reduction.scala` 全文 0 次出现 `vstart` —— 这是冲突还是契合？ | (a) 视为缺陷，为 vdot 放宽 `vstartIllegal`；(b) 视为与 S-1 契合，直接复用 | **(b)**。D2.1 裁定 **S-1** 明确规定 `vdot.vv`/`vdotacc.vv` 在 `vstart != 0` 时抛 Illegal Instruction，依据 RVV 1.0 §14「Vector reduction operations raise an illegal instruction exception if vstart is non-zero」。`VecExceptionGen.scala:275` 的 `vstartIllegal = isVArith && (io.vstart =/= 0.U)` **恰好就是这个语义**，`FuType.vimac ∈ vecArith`，故 **S-1 不需要任何新增代码即自动成立**。这同时解释了为什么 `Reduction.scala` 可以完全不实现 prestart —— 那是自洽的设计取舍，不是缺陷。本设计因此也获得两点简化：① `RedTailGen` 只需 `vl === 0` 一个比较（§4.6）；② §4.5 的 `ByteMaskTailGen.io.in.begin` 恒为 0。 |
-| **R-06** | `vdot4a.vv` 按 S-7 要求 `vstart` 正常生效，但 `vstartIllegal` 会在译码阶段挡掉它 | (a) 为 `vdot4a` 放宽 `vstartIllegal`；(b) 数据通路照 S-7 实现，但接受全核层面不可达，在文档中写明 | **(b)**。`vstartIllegal` 是一条影响**全部**向量算术指令的公共判据，为一条新指令开特例会扩大回归面。数据通路侧 `Mgu` 的 `info.vstart` 本来就接着 `outVecCtrl.vstart`（`VIMacU.scala:140`），prestart 天然正确，只是全核上到不了。该限制在 §1.5.3 如实记录，`vstart != 0` 的 `vdot4a` 行为只在 L1（FU 级）验证。 |
+| **R-06** ⚠️**已被 R-17 修订** | `vdot4a.vv` 按 S-7 要求 `vstart` 正常生效，但 `vstartIllegal` 会在译码阶段挡掉它 | (a) 为 `vdot4a` 放宽 `vstartIllegal`；(b) 数据通路照 S-7 实现，但接受全核层面不可达，在文档中写明 | **原裁定 (b)**。`vstartIllegal` 是一条影响**全部**向量算术指令的公共判据，为一条新指令开特例会扩大回归面。数据通路侧 `Mgu` 的 `info.vstart` 本来就接着 `outVecCtrl.vstart`（`VIMacU.scala:140`），prestart 天然正确，只是全核上到不了。<br>**R-06 的「不改 RTL」结论至今成立且已被实测确认**，但它当时**低估了后果**：把两侧行为不一致当成「一处不可达」记录下来，而没有同时修订 ISA 定义。P6 协同仿真证明那其实是 1946 条确定性的全核 difftest mismatch。修订见 **R-17 / 裁定 S-7'**（§1.5.4）。 |
 | **R-07** | 设计问题 1：LMUL>1 的 uop 拆分 | (a) 复用 `VEC_VWW`；(b) 新增 `VEC_VDOT` 累加链；(c) 新增 `VEC_VDOT` 二叉树；(d) 本版本固定 LMUL=1 | **(d) 本版本固定 LMUL=1（D2.1 裁定 S-6）**，`uopSplitType` 用默认的 `VEC_VVV`，`numOfUop = 1`。(a) 已核实不可行：`DecodeUnitComp.scala:1520` 把末 uop 的 `lsrc(0)` 覆写成 `vs1`，对 `vwredsum.vs` 的标量种子是对的，对 `vdot.vv` 的向量操作数是错的。(b) 已核实**框架允许**（Rename 的 bundle 内旁路 `Rename.scala:546-583`；现成先例 `VEC_SLIDEUP` 在一条指令内把 `VECTOR_TMP_REG_LMUL+1` 写 7 次，`DecodeUnitComp.scala:1412-1426`），且具备天然的可重启语义，列为后续版本首选（§8.3.2）。(c) 不推荐：uop 数接近翻倍。 |
 | **R-08** | 设计问题 2：加法树抽头点 | (a) `wallaceOutReg` carry-save；(b) `sum_wo`；(c) `walOut`；(d) 改 `calcPartProd` 做 32 位 lane | **(b)**，树跨 S1/S2 切分，`latency` 保持 2。(a) **数学上不成立**：carry-save 的 lane 表示只在模 2^16 下有效，符号扩展需要精确数值；修正项 `Σ(k_i + p_i[15])` 又依赖 lane 级 CPA 的输出，省不掉（§3.6.2 给出完整推导）。(c) 零新增寄存器但 S2 增量 ≈28 级，大概率成为新关键路径。(d) 要动 `calcPartProd` 这段所有 SEW 共用的 S0 核心逻辑，风险作用在全部 `vimac` 指令上。 |
 | **R-09** | 能否直接用 `CSA_Nto2With3to2MainPipeline` 搭树？ | (a) 用；(b) 手工例化 `CSA4to2`/`CSA3to2` | **(b)**。该模块的 `pipeLevel` 语义是「从第 `pipeLevel` 层**起每层都插寄存器**」（`VectorFloatFMA.scala:1899-1903` 的 `is_piped` 一旦置真不复位），`n=16` 时只有 `pipeLevel = 4` 或 `> 4` 才产生恰好一级流水；更关键的是它固定按 `16→11→8→4→2` 压缩，**无法表达「4 组独立 4 路」的可重构需求**。手工例化其底层原语与 `Reduction.scala:472-505` 的做法完全一致，仍然是复用。 |
@@ -1397,6 +1441,7 @@ uop lmul..2lmul-2  : 把 TMP 两两相加                              （需要
 | **R-13** | 归约形态走 `Mgu` 还是自建 tail 逻辑？ | (a) `Mgu`；(b) 照抄 `Reduction.scala:644-647` | **(b)**。`Mgu` 的逐字节 active/tail 模型表达不了「只写元素 0，其余按 `vta`」。`VIPU` 面对同样的问题也是绕过 `Mgu`（`wrapper/VIPU.scala:149` 直接 `io.out.bits.res.data := vialu.io.out.bits.vd`；该文件虽在 `:31` import 了 `Mgu`，但全文没有 `Module(new Mgu)`）。`vdot4a` 是正常的逐元素指令，继续走 `Mgu`。 |
 | **R-14** | `vdot.vv` 是否需要饱和逻辑 / `vxsat`？ | (a) 需要；(b) 不需要 | **(b)**。§1.6 给出严格证明：`|Σ p_i| <= 16 × 16384 = 2^18 < 2^31`，不可能溢出。`io.out.bits.res.vxsat` 对 vdot 三条指令恒为 0。`vdotacc`/`vdot4a` 的累加按 RVV §11 回绕，同样不置 `vxsat`。 |
 | **R-15** | `vdot.vv` 的 `vs1` 要不要登记进 `VecExceptionGen` 的 `vs1IsSingleElem`？ | (a) 要（照抄 `redWideningInst`）；(b) 不要 | **(b)**。`vs1IsSingleElem`（`VecExceptionGen.scala:220`）会把 `vs1Emul` 设成 `"b100"`（单寄存器，`:222`）。这对 `vwredsum.vs` 是对的（`vs1[0]` 是标量种子），对 `vdot.vv` 是错的（`vs1` 是完整的 LMUL 向量）。只有 `vdIsSingleElem`（`:245`）要加，因为 `vd` 确实只占一个寄存器。 |
+| **R-17** | 协同仿真发现：`vdot4a` + `vstart != 0` 在 NEMU 上正常执行、在香山上判非法（1946 条确定性分歧）。改哪一侧？ | (a) 改香山向 NEMU 靠：为 `vdot4a` 在 `vstartIllegal` 上开例外，并让 `Mgu` 处理 prestart；(b) 改 NEMU/ISA 向香山靠：把 `vdot4a` 的 `vstart != 0` 也裁定为非法（**裁定 S-7'**） | **(b)，依据「平台约束优先原则」**：自定义指令的 ISA 语义不应宽于宿主微架构的实际能力。昆明湖 V2 的向量算术通路不支持非零 `vstart` 重启，这是既有架构事实；让 ISA 向微架构收敛，改动面只在本指令族内，且使三条 vdot 指令与同平台所有标准向量算术指令的 `vstart` 行为完全一致（实测对照 `bench/results/vstart_control.csv`，8 条指令在 `vstart=1` 时一律 `TRAP mcause=2`）。否决 (a) 的理由同 R-06：改公共判据的回归面是整个向量后端。**本裁定是平台约束驱动的，不是语义内在限制** —— 支持 `vstart` 重启的实现可以放宽（参考模型的 `VDOT_VSTART_SKIP` 策略 + 非规范语料 `vstart_relaxed.txt` 的 40 条 vdot4a 用例已给出可执行定义）。完整论证见 §1.5.4，发现过程见 `docs/stage3/21` §7.3。**RTL 侧零改动**，由 `tests/unit/vecexcgen_tb.cpp` 的 `[I]` 组实测确认。 |
 | **R-16** | 机器码示例要不要用汇编器实际验证？ | — | 本机无 RISC-V 工具链，`.insn r` 宏的可接受性标注为 **UNVERIFIED**；`.word` 形式的机器码由位域拼接算得并用脚本复核，P4 阶段须用 `objdump -d` 回读确认。 |
 
 ---

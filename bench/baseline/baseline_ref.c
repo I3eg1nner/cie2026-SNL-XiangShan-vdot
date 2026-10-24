@@ -341,6 +341,12 @@ int baseline_vdot4a_vv(vreg128_t *vd, const vreg128_t *vs2, const vreg128_t *vs1
     if ((vta != 0 && vta != 1) || (vma != 0 && vma != 1)) return VDOT_ERR_ARG;
     if (vl > 4) return VDOT_ERR_VL;
     if (vstart > 3) return VDOT_ERR_VSTART_RANGE;
+    /* 裁定 S-7'：vdot4a 在 vstart!=0 时同样是非法指令（平台约束优先原则，
+     * 见 tests/golden/vdot_ref.c 的 vdot4a 行为表第 2 条）。基线序列本身用的是
+     * vsll/vsra/vmacc 这些逐元素指令，它们在昆明湖 V2 上同样受
+     * `vstartIllegal = isVArith && vstart =/= 0` 约束，因此基线与 vdot4a
+     * 在这一点上天然等价 —— 两侧都报非法。 */
+    if (vstart != 0) return VDOT_ILLEGAL_VSTART;
 
     vrf_init(&s);
     if (mask_on) vrf_load(&s, 0, vm_mask);

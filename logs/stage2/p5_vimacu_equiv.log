@@ -1,14 +1,14 @@
-=== VIMacU 直驱等价性验证  2026-10-24 21:55:54 CST ===
+=== VIMacU 直驱等价性验证  2026-10-24 23:22:41 CST ===
 
 --- (1) 精化 VIMacUHarness（内部例化真正的 VIMacU）---
 [mill-state-guard] /Users/i3eg1nner/code/cie/work/XiangShan-vdot: 清理了 0 个失效的增量编译状态
 [860] elemIdxWidth: 8
 [860] numBytes: 16, byteWidth: 4
 [860] elemIdxWidth: 8
-[860/860] =============== xiangshan.test.runMain xi...ld/vdot --target verilog =============== 10s
+[860/860] =============== xiangshan.test.runMain xi...ild/vdot --target verilog =============== 9s
 ==================================================================================================
 [860] elemIdxWidth: 8
-[860/860] =============== xiangshan.test.runMain xi...ld/vdot2 --target verilog =============== 9s
+[860/860] =============== xiangshan.test.runMain xi...ld/vdot2 --target verilog =============== 8s
 ==================================================================================================
     VIMacUHarness.v : 4367 行
     其中的模块      : 13 个
@@ -31,7 +31,7 @@ c++  -I.  -MMD -I/opt/homebrew/Cellar/verilator/5.052/share/verilator/include -I
 c++  -Wl,-U,__Z15vl_time_stamp64v,-U,__Z13sc_time_stampv,-U,_vlog_startup_routines   vimacu_tb.o verilated.o verilated_threads.o VVIMacUHarness__ALL.a    -pthread -lpthread   -o /Users/i3eg1nner/code/cie/work/XiangShan-vdot/build/vimacu-tb/vimacu_tb
 - V e r i l a t i o n   R e p o r t: Verilator 5.052 2026-09-05 rev vUNKNOWN-built20260905
 - Verilator: Built from 0.000 MB sources in 0 modules, into 0.000 MB in 0 C++ files needing 0.000 MB
-- Verilator: Walltime 0.610 s (elab=0.000, cvt=0.000, bld=0.607); cpu 0.002 s on 10 threads; allocated 3.203 MB
+- Verilator: Walltime 0.783 s (elab=0.000, cvt=0.000, bld=0.781); cpu 0.002 s on 10 threads; allocated 3.094 MB
     vimacu_tb : 465016 bytes
 
 --- (3) 回放全部定向语料（与 L1 平台用的是同一批文件）---
@@ -67,13 +67,13 @@ c++  -Wl,-U,__Z15vl_time_stamp64v,-U,__Z13sc_time_stampv,-U,_vlog_startup_routin
 /Users/i3eg1nner/code/cie/tests/vectors/vdotacc_boundary.txt 总 103    执行 94     通过 94     失败 0    跳过 9    解析/模型异常 0
 /Users/i3eg1nner/code/cie/tests/vectors/vdot4a_positive.txt 总 40     执行 40     通过 40     失败 0    跳过 0    解析/模型异常 0
 /Users/i3eg1nner/code/cie/tests/vectors/vdot4a_negative.txt 总 44     执行 44     通过 44     失败 0    跳过 0    解析/模型异常 0
-/Users/i3eg1nner/code/cie/tests/vectors/vdot4a_boundary.txt 总 115    执行 112    通过 112    失败 0    跳过 3    解析/模型异常 0
-/Users/i3eg1nner/code/cie/tests/vectors/vstart_relaxed.txt 总 90     执行 90     通过 90     失败 0    跳过 0    解析/模型异常 0
+/Users/i3eg1nner/code/cie/tests/vectors/vdot4a_boundary.txt 总 115    执行 106    通过 106    失败 0    跳过 9    解析/模型异常 0
+/Users/i3eg1nner/code/cie/tests/vectors/vstart_relaxed.txt 总 130    执行 130    通过 130    失败 0    跳过 0    解析/模型异常 0
 /Users/i3eg1nner/code/cie/tests/vectors/random.txt 总 10000  执行 8459   通过 8459   失败 0    跳过 1541 解析/模型异常 0
 /Users/i3eg1nner/code/cie/tests/vectors/vdotacc_random.txt 总 10000  执行 8428   通过 8428   失败 0    跳过 1572 解析/模型异常 0
-/Users/i3eg1nner/code/cie/tests/vectors/vdot4a_random.txt 总 10000  执行 10000  通过 10000  失败 0    跳过 0    解析/模型异常 0
+/Users/i3eg1nner/code/cie/tests/vectors/vdot4a_random.txt 总 10000  执行 8461   通过 8461   失败 0    跳过 1539 解析/模型异常 0
 ----------------------------------------------------------------------
-VIMacU 直驱汇总： 总计 30663 条，执行 27529 条，通过 27529 条，失败 0 条，跳过 3134 条，异常 0 条
+VIMacU 直驱汇总： 总计 30703 条，执行 26024 条，通过 26024 条，失败 0 条，跳过 4679 条，异常 0 条
 VIMACU-TB: PASS
 
 --- (4) 共享算术核的逐 module 比对 ---

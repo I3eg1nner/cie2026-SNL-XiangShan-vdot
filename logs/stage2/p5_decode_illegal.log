@@ -1,4 +1,4 @@
-=== 补丁可应用性验证  2026-10-24 21:55:45 CST ===
+=== 补丁可应用性验证  2026-10-24 23:22:04 CST ===
 pristine 基线 : /Users/i3eg1nner/code/cie/work/XiangShan-kmhv2  @ a4eeaab
                yunsuan @ 9559211
 实现工作树     : /Users/i3eg1nner/code/cie/work/XiangShan-vdot  @ a4eeaab
@@ -19,13 +19,13 @@ pristine 基线 : /Users/i3eg1nner/code/cie/work/XiangShan-kmhv2  @ a4eeaab
 
 PATCH-VERIFY: PASS
 
-=== VecExceptionGen 译码级合法性定向测试  2026-10-24 21:55:45 CST ===
+=== VecExceptionGen 译码级合法性定向测试  2026-10-24 23:22:04 CST ===
 
 --- (1) 精化 VecExceptionGenHarness ---
 [mill-state-guard] /Users/i3eg1nner/code/cie/work/XiangShan-vdot: 清理了 0 个失效的增量编译状态
 [860/860] xiangshan.test.runMain
 [860] ImmUnion max len: 22
-[860/860] =============== xiangshan.test.runMain xi...ild/vdot --target verilog =============== 5s
+[860/860] =============== xiangshan.test.runMain xi...ild/vdot --target verilog =============== 4s
 ==================================================================================================
     VecExceptionGenHarness.v : 257 行
 
@@ -34,7 +34,7 @@ c++  -I.  -MMD -I/opt/homebrew/Cellar/verilator/5.052/share/verilator/include -I
 c++  -Wl,-U,__Z15vl_time_stamp64v,-U,__Z13sc_time_stampv,-U,_vlog_startup_routines   vecexcgen_tb.o verilated.o verilated_threads.o VVecExceptionGenHarness__ALL.a    -pthread -lpthread   -o /Users/i3eg1nner/code/cie/work/XiangShan-vdot/build/decode-tb/vecexcgen_tb
 - V e r i l a t i o n   R e p o r t: Verilator 5.052 2026-09-05 rev vUNKNOWN-built20260905
 - Verilator: Built from 0.000 MB sources in 0 modules, into 0.000 MB in 0 C++ files needing 0.000 MB
-- Verilator: Walltime 0.782 s (elab=0.000, cvt=0.000, bld=0.782); cpu 0.001 s on 10 threads; allocated 3.094 MB
+- Verilator: Walltime 0.635 s (elab=0.000, cvt=0.000, bld=0.633); cpu 0.001 s on 10 threads; allocated 3.094 MB
 
 --- (3) 运行定向用例 ---
 DUT: VecExceptionGenHarness（内部例化真正的 VecExceptionGen）
@@ -78,12 +78,21 @@ vsew  编码： 0=e8  1=e16 2=e32 3=e64
   PASS  vdot4a SEW=16              inst=ef880457 vsew=1 vlmul=0 vstart=0   期望 illegal=1 实测 illegal=1
   PASS  vdot4a SEW=64              inst=ef880457 vsew=3 vlmul=0 vstart=0   期望 illegal=1 实测 illegal=1
 
-[H] vstartIllegal 回归 —— 裁定 S-1（归约类 vstart!=0 非法）
+[H] vstartIllegal 回归 —— 归约类 vstart!=0 非法（裁定 S-1）
   PASS  vdot vstart=1              inst=e7880457 vsew=0 vlmul=0 vstart=1   期望 illegal=1 实测 illegal=1
   PASS  vdot vstart=15             inst=e7880457 vsew=0 vlmul=0 vstart=15  期望 illegal=1 实测 illegal=1
   PASS  vdotacc vstart=1           inst=eb880457 vsew=0 vlmul=0 vstart=1   期望 illegal=1 实测 illegal=1
+  PASS  vdotacc vstart=15          inst=eb880457 vsew=0 vlmul=0 vstart=15  期望 illegal=1 实测 illegal=1
 
-[I] 既有向量指令不受影响 —— vadd.vv 在各 SEW × LMUL 下仍然合法
+[I] vdot4a vstart!=0 同样非法（裁定 S-7'，平台约束优先原则）
+    vdot4a 的 VLMAX = 4，故 vstart 的架构内取值为 0..3；
+    本组证明上游 vstartIllegal 已覆盖 vdot4a，RTL 侧无需新增守卫。
+  PASS  vdot4a vstart=1            inst=ef880457 vsew=2 vlmul=0 vstart=1   期望 illegal=1 实测 illegal=1
+  PASS  vdot4a vstart=2            inst=ef880457 vsew=2 vlmul=0 vstart=2   期望 illegal=1 实测 illegal=1
+  PASS  vdot4a vstart=3            inst=ef880457 vsew=2 vlmul=0 vstart=3   期望 illegal=1 实测 illegal=1
+  PASS  vdot4a vstart=0            inst=ef880457 vsew=2 vlmul=0 vstart=0   期望 illegal=0 实测 illegal=0
+
+[J] 既有向量指令不受影响 —— vadd.vv 在各 SEW × LMUL 下仍然合法
   PASS  vadd SEW=8 LMUL=1          inst=03880457 vsew=0 vlmul=0 vstart=0   期望 illegal=0 实测 illegal=0
   PASS  vadd SEW=8 LMUL=2          inst=03880457 vsew=0 vlmul=1 vstart=0   期望 illegal=0 实测 illegal=0
   PASS  vadd SEW=8 LMUL=4          inst=03880457 vsew=0 vlmul=2 vstart=0   期望 illegal=0 实测 illegal=0
@@ -101,12 +110,12 @@ vsew  编码： 0=e8  1=e16 2=e32 3=e64
   PASS  vadd SEW=64 LMUL=4         inst=03880457 vsew=3 vlmul=2 vstart=0   期望 illegal=0 实测 illegal=0
   PASS  vadd SEW=64 LMUL=8         inst=03880457 vsew=3 vlmul=3 vstart=0   期望 illegal=0 实测 illegal=0
 
-[J] 既有 vimac 指令不受影响 —— vmacc.vv LMUL>1 仍然合法
+[K] 既有 vimac 指令不受影响 —— vmacc.vv LMUL>1 仍然合法
   PASS  vmacc SEW=8  LMUL=1        inst=b7882457 vsew=0 vlmul=0 vstart=0   期望 illegal=0 实测 illegal=0
   PASS  vmacc SEW=8  LMUL=2        inst=b7882457 vsew=0 vlmul=1 vstart=0   期望 illegal=0 实测 illegal=0
   PASS  vmacc SEW=32 LMUL=8        inst=b7882457 vsew=2 vlmul=3 vstart=0   期望 illegal=0 实测 illegal=0
   PASS  vmacc SEW=64 LMUL=4        inst=b7882457 vsew=3 vlmul=2 vstart=0   期望 illegal=0 实测 illegal=0
 
 ----------------------------------------------------------------------
-VecExceptionGen 定向测试： 共 46 条，PASS 46，FAIL 0
+VecExceptionGen 定向测试： 共 51 条，PASS 51，FAIL 0
 VECEXC-TB: PASS
