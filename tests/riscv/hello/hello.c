@@ -13,7 +13,7 @@
 
 #include "nemu_config.h"   /* 构建期由 Makefile 从 NEMU 配置生成 */
 
-/* --- UARTLITE 设备寄存器布局，见 NEMU src/device/uartlite.c:18-21 --- */
+/* --- UARTLITE 设备寄存器布局，见 NEMU src/device/uartlite.c:20-23 --- */
 #define UARTLITE_RX_FIFO  0x0
 #define UARTLITE_TX_FIFO  0x4
 #define UARTLITE_STAT_REG 0x8
@@ -29,7 +29,7 @@ typedef signed char   int8;
 
 static inline void putch(char c) {
     /* 1 字节写入 TX FIFO；NEMU 的 serial_io_handler 把它转发到宿主 stderr
-     * (src/device/uartlite.c:120-124) */
+     * (src/device/uartlite.c:126-129) */
     *(volatile unsigned char *)(NEMU_UARTLITE_MMIO + UARTLITE_TX_FIFO) =
         (unsigned char)c;
 }

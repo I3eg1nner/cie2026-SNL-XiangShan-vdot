@@ -24,7 +24,13 @@ IMAGE_NAME="${XSDEV_IMAGE:-xsdev:ubuntu24.04-arm64}"
 DOCKERFILE="${REPO_ROOT}/scripts/docker/Dockerfile.xsdev"
 LOG_DIR="${REPO_ROOT}/logs/stage1"
 
-# 在容器内执行命令。宿主 UID/GID 透传，避免产生 root 所属文件。
+# 在容器内执行命令。
+# 属主说明：这里【没有】传 --user。在 macOS / Docker Desktop 下，virtiofs 会把容器内
+# 写出的文件映射成宿主当前用户所属，实测 build/ 产物属主正常；但容器内 `ls -l` 仍显示
+# root（见 logs/stage1/p1_nemu_build.log:126 的 `root root`）。
+# 在 Linux 宿主上没有这层映射，会真的生成 root 所属文件 —— 此时请自行加上
+#   --user "$(id -u):$(id -g)"
+# 并注意容器内 HOME 不可写与 git 的 safe.directory 两个副作用。
 xsdev() {
     docker run --rm -i \
         --platform linux/arm64 \

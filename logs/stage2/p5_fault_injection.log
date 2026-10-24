@@ -1,0 +1,202 @@
+=== vdot RTL 故障注入自测  2026-10-24 20:46:24 CST ===
+基线：先确认未注入故障时全部检测项 PASS
+    emu md5: 5b7a22fb3fb7a09c6146085855332853 -> 5b7a22fb3fb7a09c6146085855332853
+  --- 基线检测结果（期望全部 not detected，即全 PASS）---
+      positive           not detected (EMU EXCEEDED LIMIT)
+      negative           not detected (EMU EXCEEDED LIMIT)
+      boundary           not detected (EMU EXCEEDED LIMIT)
+      vdotacc_positive   not detected (EMU EXCEEDED LIMIT)
+      vdotacc_negative   not detected (EMU EXCEEDED LIMIT)
+      vdotacc_boundary   not detected (EMU EXCEEDED LIMIT)
+      vdot4a_positive    not detected (EMU EXCEEDED LIMIT)
+      vdot4a_negative    not detected (EMU EXCEEDED LIMIT)
+      vdot4a_boundary    not detected (EMU EXCEEDED LIMIT)
+      vstart_relaxed     not detected (EMU EXCEEDED LIMIT)
+      random/vdot        not detected (EMU EXCEEDED LIMIT)
+      random/vdotacc     not detected (EMU EXCEEDED LIMIT)
+      random/vdot4a      not detected (EMU EXCEEDED LIMIT)
+    -> 被检出的检测项：0/13
+
+============================================================================
+故障 #1：丢掉乘积的符号扩展（VDotTree 符号扩展改为零扩展）
+  目标文件：work/XiangShan-vdot/yunsuan/src/main/scala/yunsuan/vector/vectorIMAC/VDotTree.scala
+  --- 注入后的源码差异 ---
+  @@ -74,7 +74,7 @@
+     // ---------------------------------------------------------------------------
+     private val extProd = Wire(Vec(numProd, UInt(accWidth.W)))
+     for (i <- 0 until numProd) {
+  -    val signExtended = Cat(Fill(accWidth - prodWidth, io.prod(i)(prodWidth - 1)), io.prod(i))
+  +    val signExtended = Cat(0.U((accWidth - prodWidth).W), io.prod(i))  /* FAULT#1 */
+       extProd(i) := Fill(accWidth, io.activeEn(i)) & signExtended
+     }
+   
+  --- 重建 emu ---
+    emu md5: 5b7a22fb3fb7a09c6146085855332853 -> e107bdfa179f655b29bdd95819a90696
+  --- 检测结果 ---
+      positive           not detected (EMU EXCEEDED LIMIT)
+      negative           DETECTED (EMU BADTRAP)
+      boundary           DETECTED (EMU BADTRAP)
+      vdotacc_positive   not detected (EMU EXCEEDED LIMIT)
+      vdotacc_negative   DETECTED (EMU BADTRAP)
+      vdotacc_boundary   DETECTED (EMU BADTRAP)
+      vdot4a_positive    not detected (EMU EXCEEDED LIMIT)
+      vdot4a_negative    DETECTED (EMU BADTRAP)
+      vdot4a_boundary    DETECTED (EMU BADTRAP)
+      vstart_relaxed     DETECTED (EMU BADTRAP)
+      random/vdot        DETECTED (EMU BADTRAP)
+      random/vdotacc     DETECTED (EMU BADTRAP)
+      random/vdot4a      DETECTED (EMU BADTRAP)
+    -> 被检出的检测项：10/13
+  [故障 #1] CAUGHT
+
+============================================================================
+故障 #2：vl 边界 off-by-one（active 判据 i < vl 改为 i <= vl）
+  目标文件：work/XiangShan-vdot/yunsuan/src/main/scala/yunsuan/vector/vectorIMAC/VDotTop.scala
+  --- 注入后的源码差异 ---
+  @@ -85,7 +85,7 @@
+     private val vl     = io.info.vl
+     private val vstart = io.info.vstart
+     private val redActiveEn = VecInit(Seq.tabulate(16) { i =>
+  -    (i.U >= vstart) && (i.U < vl) && (io.info.vm || io.mask(i))
+  +    (i.U >= vstart) && (i.U <= vl)  /* FAULT#2 */ && (io.info.vm || io.mask(i))
+     }).asUInt
+     private val dotActiveEn = Mux(isDot4a, ~0.U(16.W), redActiveEn)
+   
+  --- 重建 emu ---
+    emu md5: e107bdfa179f655b29bdd95819a90696 -> 5a0a27e3881f1321cd5fc3d013c690fe
+  --- 检测结果 ---
+      positive           DETECTED (EMU BADTRAP)
+      negative           DETECTED (EMU BADTRAP)
+      boundary           DETECTED (EMU BADTRAP)
+      vdotacc_positive   DETECTED (EMU BADTRAP)
+      vdotacc_negative   DETECTED (EMU BADTRAP)
+      vdotacc_boundary   DETECTED (EMU BADTRAP)
+      vdot4a_positive    not detected (EMU EXCEEDED LIMIT)
+      vdot4a_negative    not detected (EMU EXCEEDED LIMIT)
+      vdot4a_boundary    not detected (EMU EXCEEDED LIMIT)
+      vstart_relaxed     DETECTED (EMU BADTRAP)
+      random/vdot        DETECTED (EMU BADTRAP)
+      random/vdotacc     DETECTED (EMU BADTRAP)
+      random/vdot4a      not detected (EMU EXCEEDED LIMIT)
+    -> 被检出的检测项：9/13
+  [故障 #2] CAUGHT
+
+============================================================================
+故障 #3：忽略 v0 掩码（active 判据去掉 (vm || mask(i))）
+  目标文件：work/XiangShan-vdot/yunsuan/src/main/scala/yunsuan/vector/vectorIMAC/VDotTop.scala
+  --- 注入后的源码差异 ---
+  @@ -85,7 +85,7 @@
+     private val vl     = io.info.vl
+     private val vstart = io.info.vstart
+     private val redActiveEn = VecInit(Seq.tabulate(16) { i =>
+  -    (i.U >= vstart) && (i.U < vl) && (io.info.vm || io.mask(i))
+  +    (i.U >= vstart) && (i.U < vl) && true.B  /* FAULT#3 */
+     }).asUInt
+     private val dotActiveEn = Mux(isDot4a, ~0.U(16.W), redActiveEn)
+   
+  --- 重建 emu ---
+    emu md5: 5a0a27e3881f1321cd5fc3d013c690fe -> 0e9cb7e04a47debdfa78b572394de76d
+  --- 检测结果 ---
+      positive           not detected (EMU EXCEEDED LIMIT)
+      negative           not detected (EMU EXCEEDED LIMIT)
+      boundary           DETECTED (EMU BADTRAP)
+      vdotacc_positive   not detected (EMU EXCEEDED LIMIT)
+      vdotacc_negative   not detected (EMU EXCEEDED LIMIT)
+      vdotacc_boundary   DETECTED (EMU BADTRAP)
+      vdot4a_positive    not detected (EMU EXCEEDED LIMIT)
+      vdot4a_negative    not detected (EMU EXCEEDED LIMIT)
+      vdot4a_boundary    not detected (EMU EXCEEDED LIMIT)
+      vstart_relaxed     DETECTED (EMU BADTRAP)
+      random/vdot        DETECTED (EMU BADTRAP)
+      random/vdotacc     DETECTED (EMU BADTRAP)
+      random/vdot4a      not detected (EMU EXCEEDED LIMIT)
+    -> 被检出的检测项：5/13
+  [故障 #3] CAUGHT
+
+============================================================================
+故障 #4：加法树第 2 级蝶形折叠（Fold L2，S2 级）永久关闭
+  目标文件：work/XiangShan-vdot/yunsuan/src/main/scala/yunsuan/vector/vectorIMAC/VDotTree.scala
+  --- 注入后的源码差异 ---
+  @@ -134,7 +134,7 @@
+     private var csNodeS2: Seq[(UInt, UInt)] =
+       Seq.tabulate(numLane)(g => (sumRegS2(g), carRegS2(g)))
+     for (k <- numFoldS1 until numFold) {
+  -    csNodeS2 = foldStage(csNodeS2, 1 << k, foldLevelsS2 > k.U)
+  +    csNodeS2 = foldStage(csNodeS2, 1 << k, false.B)  /* FAULT#4 */
+     }
+   
+     // ---------------------------------------------------------------------------
+  --- 重建 emu ---
+    emu md5: 0e9cb7e04a47debdfa78b572394de76d -> 36c39f43794e9bf1f6c7e618ace698d8
+  --- 检测结果 ---
+      positive           DETECTED (EMU BADTRAP)
+      negative           DETECTED (EMU BADTRAP)
+      boundary           DETECTED (EMU BADTRAP)
+      vdotacc_positive   DETECTED (EMU BADTRAP)
+      vdotacc_negative   DETECTED (EMU BADTRAP)
+      vdotacc_boundary   DETECTED (EMU BADTRAP)
+      vdot4a_positive    not detected (EMU EXCEEDED LIMIT)
+      vdot4a_negative    not detected (EMU EXCEEDED LIMIT)
+      vdot4a_boundary    not detected (EMU EXCEEDED LIMIT)
+      vstart_relaxed     DETECTED (EMU BADTRAP)
+      random/vdot        DETECTED (EMU BADTRAP)
+      random/vdotacc     DETECTED (EMU BADTRAP)
+      random/vdot4a      not detected (EMU EXCEEDED LIMIT)
+    -> 被检出的检测项：9/13
+  [故障 #4] CAUGHT
+
+============================================================================
+故障 #5：归约结果取错 lane（元素 0 由 lane0 改成 lane1）
+  目标文件：work/XiangShan-vdot/yunsuan/src/main/scala/yunsuan/vector/vectorIMAC/VDotTop.scala
+  --- 注入后的源码差异 ---
+  @@ -124,8 +124,8 @@
+   
+     // (1) 归约形态：只写目的元素 0（EEW=32），元素 1..3 按 vta 处理；vma 被忽略（裁定 S-2）。
+     //     照抄 Reduction.scala:644-647 的 red_vd_tail 惯用法，目的 EEW 固定为 32。
+  -  private val redVdTailOne = Cat(~0.U((VLEN - 32).W), dotVd(31, 0))
+  -  private val redVdTailOld = Cat(oldVdS2(VLEN - 1, 32), dotVd(31, 0))
+  +  private val redVdTailOne = Cat(~0.U((VLEN - 32).W), dotVd(63, 32))  /* FAULT#5 */
+  +  private val redVdTailOld = Cat(oldVdS2(VLEN - 1, 32), dotVd(63, 32))  /* FAULT#5 */
+     private val redVd = Mux(vstartGeVlS2, oldVdS2, Mux(vtaS2, redVdTailOne, redVdTailOld))
+   
+     // (2) 逐元素形态（vdot4a）：prestart / body-active / body-inactive / tail 四分支，
+  --- 重建 emu ---
+    emu md5: 36c39f43794e9bf1f6c7e618ace698d8 -> c051503fdd9264f2b0ea12801850a2e6
+  --- 检测结果 ---
+      positive           not detected (EMU EXCEEDED LIMIT)
+      negative           not detected (EMU EXCEEDED LIMIT)
+      boundary           not detected (EMU EXCEEDED LIMIT)
+      vdotacc_positive   DETECTED (EMU BADTRAP)
+      vdotacc_negative   DETECTED (EMU BADTRAP)
+      vdotacc_boundary   DETECTED (EMU BADTRAP)
+      vdot4a_positive    not detected (EMU EXCEEDED LIMIT)
+      vdot4a_negative    not detected (EMU EXCEEDED LIMIT)
+      vdot4a_boundary    not detected (EMU EXCEEDED LIMIT)
+      vstart_relaxed     DETECTED (EMU BADTRAP)
+      random/vdot        not detected (EMU EXCEEDED LIMIT)
+      random/vdotacc     DETECTED (EMU BADTRAP)
+      random/vdot4a      not detected (EMU EXCEEDED LIMIT)
+    -> 被检出的检测项：5/13
+  [故障 #5] CAUGHT
+
+============================================================================
+还原源码并重建干净的 emu
+    emu md5: c051503fdd9264f2b0ea12801850a2e6 -> 095ea724db47ad38e0b1d2e3f2da894a
+  --- 还原后的回归（期望全部 PASS / not detected）---
+      positive           not detected (EMU EXCEEDED LIMIT)
+      negative           not detected (EMU EXCEEDED LIMIT)
+      boundary           not detected (EMU EXCEEDED LIMIT)
+      vdotacc_positive   not detected (EMU EXCEEDED LIMIT)
+      vdotacc_negative   not detected (EMU EXCEEDED LIMIT)
+      vdotacc_boundary   not detected (EMU EXCEEDED LIMIT)
+      vdot4a_positive    not detected (EMU EXCEEDED LIMIT)
+      vdot4a_negative    not detected (EMU EXCEEDED LIMIT)
+      vdot4a_boundary    not detected (EMU EXCEEDED LIMIT)
+      vstart_relaxed     not detected (EMU EXCEEDED LIMIT)
+      random/vdot        not detected (EMU EXCEEDED LIMIT)
+      random/vdotacc     not detected (EMU EXCEEDED LIMIT)
+      random/vdot4a      not detected (EMU EXCEEDED LIMIT)
+    -> 被检出的检测项：0/13
+
+=== 故障注入汇总：注入 5 个，被检出 5 个 ===
+FAULT-INJECTION: PASS (5/5)

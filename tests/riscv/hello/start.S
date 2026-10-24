@@ -22,7 +22,7 @@ _start:
     csrw    mie, zero
 
     /* 使能浮点与向量单元。NEMU 复位后 mstatus.FS = mstatus.VS = Off
-     * (src/isa/riscv64/init.c:69-70)，不置位则 vsetivli/csrr vlenb 会触发
+     * (src/isa/riscv64/init.c:72-73)，不置位则 vsetivli/csrr vlenb 会触发
      * 非法指令异常。FS=Dirty(3)<<13, VS=Dirty(3)<<9 */
     li      t0, (3 << 13) | (3 << 9)
     csrs    mstatus, t0

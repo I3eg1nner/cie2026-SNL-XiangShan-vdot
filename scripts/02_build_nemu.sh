@@ -91,4 +91,13 @@ esac
 echo
 echo "######## 构建完成，build/ 目录一览 ########"
 ls -l "${NEMU_HOME}/build/" | grep -v '^d' || true
+
+# 工作区状态快照：让每份构建日志都自带「这次构建用的是哪个 commit、带没带改动」。
+# 阶段一应为「零改动」（无 M/?? 行）；阶段三起会看到 vdot patch 的改动。
+# 追加在日志末尾，不影响前文已被文档引用的行号。
+echo
+echo "######## 工作区状态快照（供复核「零 patch」主张）########"
+echo "\$ git rev-parse HEAD";     git -C "${NEMU_HOME}" rev-parse HEAD
+echo "\$ git status --short";     git -C "${NEMU_HOME}" status --short || true
+echo "（空输出 = 工作区干净；非空见 nemu/patch/ 与 docs/stage1/01_环境部署报告.md §3.4）"
 echo "DONE $(date -u '+%Y-%m-%dT%H:%M:%SZ') UTC"

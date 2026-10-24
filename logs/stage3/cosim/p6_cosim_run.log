@@ -1,0 +1,82 @@
+==============================================================
+ [5] 协同仿真实跑   2026-10-24T13:03:14Z UTC
+==============================================================
+==============================================================
+ NEMU <-> RTL 逐指令锁步协同仿真 (P6 / 赛题 3.1.2)
+==============================================================
+[REF] 共享库          : /work/work/NEMU/build/riscv64-nemu-interpreter-so
+[REF] DIFFTEST_REG_SIZE = 1400 B（与本进程 RefRegState 一致）
+[REF] difftest_init() 完成，nemu_state.state=0
+[REF] 自检 vdot.vv (vs1=vs2=1..16, vl=16, vta=1): trap=0  vd.u32[0]=0x000005d8 (期望 0x000005d8 = Σ i^2, i=1..16)
+[DUT] VDotTop    : Verilated（work/XiangShan-cosim/yunsuan 精化）
+[DUT] 译码探针   : Verilated VdotDecodeProbe = DecodeUnit + VecExceptionGen
+[STIM] seed=20260324  每指令随机 10000 条  非法面随机 3000 条
+
+  [DBG] /work/tests/vectors/boundary.txt:20 instr=e63100d7 sew=8 vstart=0 vl=16 vm=1 lmul=0 | REF trap=0 mcause=0 | DUT illegal=0 (simple=0 vec=0 complex=1) fuType=0x200000 fuOpType=0xe7
+  [DBG] /work/tests/vectors/boundary.txt:21 instr=e63100d7 sew=8 vstart=0 vl=16 vm=1 lmul=0 | REF trap=0 mcause=0 | DUT illegal=0 (simple=0 vec=0 complex=1) fuType=0x200000 fuOpType=0xe7
+  [DBG] /work/tests/vectors/boundary.txt:22 instr=e63100d7 sew=8 vstart=0 vl=16 vm=1 lmul=0 | REF trap=0 mcause=0 | DUT illegal=0 (simple=0 vec=0 complex=1) fuType=0x200000 fuOpType=0xe7
+  [DBG] /work/tests/vectors/boundary.txt:23 instr=e63100d7 sew=8 vstart=0 vl=16 vm=1 lmul=0 | REF trap=0 mcause=0 | DUT illegal=0 (simple=0 vec=0 complex=1) fuType=0x200000 fuOpType=0xe7
+  [DBG] /work/tests/vectors/boundary.txt:24 instr=e63100d7 sew=8 vstart=0 vl=16 vm=1 lmul=0 | REF trap=0 mcause=0 | DUT illegal=0 (simple=0 vec=0 complex=1) fuType=0x200000 fuOpType=0xe7
+  [DBG] /work/tests/vectors/boundary.txt:25 instr=e63100d7 sew=8 vstart=0 vl=16 vm=1 lmul=0 | REF trap=0 mcause=0 | DUT illegal=0 (simple=0 vec=0 complex=1) fuType=0x200000 fuOpType=0xe7
+
+------------------------- 分 suite 结果 -------------------------
+boundary.txt                 attempted=103     合法一致=94      非法一致=9      判定分歧=0      值比对=94      PASS=94      FAIL=0     跳过值比对=9(REF异常 9 / RTL非法 0)
+negative.txt                 attempted=44      合法一致=44      非法一致=0      判定分歧=0      值比对=44      PASS=44      FAIL=0     跳过值比对=0(REF异常 0 / RTL非法 0)
+positive.txt                 attempted=40      合法一致=40      非法一致=0      判定分歧=0      值比对=40      PASS=40      FAIL=0     跳过值比对=0(REF异常 0 / RTL非法 0)
+random.txt                   attempted=10000   合法一致=8459    非法一致=1541   判定分歧=0      值比对=8459    PASS=8459    FAIL=0     跳过值比对=1541(REF异常 1541 / RTL非法 0)
+vdot4a_boundary.txt          attempted=115     合法一致=106     非法一致=3      判定分歧=6      值比对=106     PASS=106     FAIL=0     跳过值比对=9(REF异常 3 / RTL非法 6)
+    · 分歧      3 条 : RTL非法/REF合法 op=vdot4a sew=32 vstart=1 lmul=0
+    · 分歧      3 条 : RTL非法/REF合法 op=vdot4a sew=32 vstart=3 lmul=0
+vdot4a_negative.txt          attempted=44      合法一致=44      非法一致=0      判定分歧=0      值比对=44      PASS=44      FAIL=0     跳过值比对=0(REF异常 0 / RTL非法 0)
+vdot4a_positive.txt          attempted=40      合法一致=40      非法一致=0      判定分歧=0      值比对=40      PASS=40      FAIL=0     跳过值比对=0(REF异常 0 / RTL非法 0)
+vdot4a_random.txt            attempted=10000   合法一致=8461    非法一致=0      判定分歧=1539   值比对=8461    PASS=8461    FAIL=0     跳过值比对=1539(REF异常 0 / RTL非法 1539)
+    · 分歧    506 条 : RTL非法/REF合法 op=vdot4a sew=32 vstart=1 lmul=0
+    · 分歧    508 条 : RTL非法/REF合法 op=vdot4a sew=32 vstart=2 lmul=0
+    · 分歧    525 条 : RTL非法/REF合法 op=vdot4a sew=32 vstart=3 lmul=0
+vdotacc_boundary.txt         attempted=103     合法一致=94      非法一致=9      判定分歧=0      值比对=94      PASS=94      FAIL=0     跳过值比对=9(REF异常 9 / RTL非法 0)
+vdotacc_negative.txt         attempted=44      合法一致=44      非法一致=0      判定分歧=0      值比对=44      PASS=44      FAIL=0     跳过值比对=0(REF异常 0 / RTL非法 0)
+vdotacc_positive.txt         attempted=40      合法一致=40      非法一致=0      判定分歧=0      值比对=40      PASS=40      FAIL=0     跳过值比对=0(REF异常 0 / RTL非法 0)
+vdotacc_random.txt           attempted=10000   合法一致=8428    非法一致=1572   判定分歧=0      值比对=8428    PASS=8428    FAIL=0     跳过值比对=1572(REF异常 1572 / RTL非法 0)
+vstart_relaxed.txt           attempted=90      合法一致=13      非法一致=77     判定分歧=0      值比对=13      PASS=13      FAIL=0     跳过值比对=77(REF异常 77 / RTL非法 0)
+vstart_range.txt             attempted=47      合法一致=0       非法一致=39     判定分歧=8      值比对=0       PASS=0       FAIL=0     跳过值比对=47(REF异常 39 / RTL非法 8)
+    · 分歧      8 条 : RTL非法/REF合法 op=vdot4a sew=32 vstart=3 lmul=0
+random:vdot                  attempted=10000   合法一致=10000   非法一致=0      判定分歧=0      值比对=10000   PASS=10000   FAIL=0     跳过值比对=0(REF异常 0 / RTL非法 0)
+random:vdotacc               attempted=10000   合法一致=10000   非法一致=0      判定分歧=0      值比对=10000   PASS=10000   FAIL=0     跳过值比对=0(REF异常 0 / RTL非法 0)
+random:vdot4a                attempted=10000   合法一致=10000   非法一致=0      判定分歧=0      值比对=10000   PASS=10000   FAIL=0     跳过值比对=0(REF异常 0 / RTL非法 0)
+illegal:sew-mismatch         attempted=3000    合法一致=0       非法一致=3000   判定分歧=0      值比对=0       PASS=0       FAIL=0     跳过值比对=3000(REF异常 3000 / RTL非法 0)
+illegal:vstart               attempted=3000    合法一致=0       非法一致=2607   判定分歧=393    值比对=0       PASS=0       FAIL=0     跳过值比对=3000(REF异常 2607 / RTL非法 393)
+    · 分歧    116 条 : RTL非法/REF合法 op=vdot4a sew=32 vstart=1 lmul=0
+    · 分歧    134 条 : RTL非法/REF合法 op=vdot4a sew=32 vstart=2 lmul=0
+    · 分歧    143 条 : RTL非法/REF合法 op=vdot4a sew=32 vstart=3 lmul=0
+illegal:lmul!=1              attempted=3000    合法一致=0       非法一致=1531   判定分歧=1469   值比对=0       PASS=0       FAIL=0     跳过值比对=3000(REF异常 3000 / RTL非法 0)
+    · 分歧    176 条 : REF非法/RTL合法 op=vdot sew=8 vstart=0 lmul=5
+    · 分歧    191 条 : REF非法/RTL合法 op=vdot sew=8 vstart=0 lmul=6
+    · 分歧    162 条 : REF非法/RTL合法 op=vdot sew=8 vstart=0 lmul=7
+    · 分歧    147 条 : REF非法/RTL合法 op=vdot4a sew=32 vstart=0 lmul=5
+    · 分歧    157 条 : REF非法/RTL合法 op=vdot4a sew=32 vstart=0 lmul=6
+    · 分歧    153 条 : REF非法/RTL合法 op=vdot4a sew=32 vstart=0 lmul=7
+    · 分歧    158 条 : REF非法/RTL合法 op=vdotacc sew=8 vstart=0 lmul=5
+    · 分歧    163 条 : REF非法/RTL合法 op=vdotacc sew=8 vstart=0 lmul=6
+    · 分歧    162 条 : REF非法/RTL合法 op=vdotacc sew=8 vstart=0 lmul=7
+-----------------------------------------------------------------
+TOTAL  attempted = 69710
+  [A] 值比对（REF 与 RTL 都判合法）: 比对 55907 条, PASS 55907, FAIL 0
+  [B] 非法指令判定一致性          : 合法一致 55907, 非法一致 10388, 分歧 3415
+      其中 REF 非法/RTL 合法 = 1469,  RTL 非法/REF 合法 = 1946
+  [C] 跳过值比对 13803 条 : REF 抛异常 11857（FU 级平台不建模异常）, RTL 译码判非法 1946（该指令不会进入 FU）
+  [D] 判定分歧明细：
+          176 条 : REF非法/RTL合法 op=vdot sew=8 vstart=0 lmul=5
+          191 条 : REF非法/RTL合法 op=vdot sew=8 vstart=0 lmul=6
+          162 条 : REF非法/RTL合法 op=vdot sew=8 vstart=0 lmul=7
+          147 条 : REF非法/RTL合法 op=vdot4a sew=32 vstart=0 lmul=5
+          157 条 : REF非法/RTL合法 op=vdot4a sew=32 vstart=0 lmul=6
+          153 条 : REF非法/RTL合法 op=vdot4a sew=32 vstart=0 lmul=7
+          158 条 : REF非法/RTL合法 op=vdotacc sew=8 vstart=0 lmul=5
+          163 条 : REF非法/RTL合法 op=vdotacc sew=8 vstart=0 lmul=6
+          162 条 : REF非法/RTL合法 op=vdotacc sew=8 vstart=0 lmul=7
+          625 条 : RTL非法/REF合法 op=vdot4a sew=32 vstart=1 lmul=0
+          642 条 : RTL非法/REF合法 op=vdot4a sew=32 vstart=2 lmul=0
+          679 条 : RTL非法/REF合法 op=vdot4a sew=32 vstart=3 lmul=0
+
+RESULT(VALUE)   : PASS   (值比对失配 0 条)
+RESULT(LEGALITY): DIVERGENT   (判定分歧 3415 条)

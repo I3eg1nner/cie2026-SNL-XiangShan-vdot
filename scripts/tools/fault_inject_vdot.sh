@@ -28,10 +28,24 @@ cp -f "${TOP}"  "${BK}/VDotTop.scala"
 restore() { cp -f "${BK}/VDotTree.scala" "${TREE}"; cp -f "${BK}/VDotTop.scala" "${TOP}"; }
 trap 'restore' EXIT
 
+# 重建 emu。返回非 0 表示构建失败。
+# 另外校验 build/emu 的内容确实变了 —— 否则「故障没被检出」可能只是因为根本没重编。
 rebuild() {
-  make -C "${YS_DIR}" emu > /tmp/fault_rebuild.log 2>&1
-  local rc=$?
-  if [ $rc -ne 0 ]; then echo "    [BUILD FAILED rc=$rc] 见 /tmp/fault_rebuild.log"; tail -20 /tmp/fault_rebuild.log; return 1; fi
+  local expect_change="${1:-yes}"
+  local before=""
+  [ -f "${YS_DIR}/build/emu" ] && before=$(md5 -q "${YS_DIR}/build/emu")
+  bash "${REPO_ROOT}/scripts/tools/mill_state_guard.sh" "${YS_DIR}" >/dev/null 2>&1 || true
+  if ! make -C "${YS_DIR}" emu > /tmp/fault_rebuild.log 2>&1; then
+    echo "    [BUILD FAILED] 见 /tmp/fault_rebuild.log"
+    tail -25 /tmp/fault_rebuild.log | sed 's/^/      /'
+    return 1
+  fi
+  local after; after=$(md5 -q "${YS_DIR}/build/emu")
+  echo "    emu md5: ${before:-<none>} -> ${after}"
+  if [ "${expect_change}" = "yes" ] && [ -n "${before}" ] && [ "${before}" = "${after}" ]; then
+    echo "    [警告] emu 二进制没有变化，故障可能没有真正进入构建"
+    return 1
+  fi
   return 0
 }
 
@@ -83,7 +97,7 @@ inject() {   # $1=编号 $2=描述 $3=文件 $4..=sed 表达式
 
 echo "=== vdot RTL 故障注入自测  $(date '+%Y-%m-%d %H:%M:%S %Z') ==="
 echo "基线：先确认未注入故障时全部检测项 PASS"
-rebuild || exit 1
+rebuild no || exit 1
 echo "  --- 基线检测结果（期望全部 not detected，即全 PASS）---"
 run_detect || true
 
