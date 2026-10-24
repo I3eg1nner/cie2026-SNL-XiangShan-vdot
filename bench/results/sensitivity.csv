@@ -1,0 +1,8 @@
+scenario,assumption,baseline_cycles,vdot_cycles,speedup
+基准（本次实测值）,"vsetvli=0, vwmul=2, vwredsum=2, vdot=2；完美前递、无发射冲突",4,2,2.000
+vdot 延迟退化为 3,若加法树无法在 2 级内收敛（例如 VLEN 加倍后）,4,3,1.333
+vdot 延迟退化为 4,更保守的综合结果,4,4,1.000
+vsetvli 实际花 1 拍,把 vsetvli 的唤醒开销计入两侧（各 +1）,5,3,1.667
+基线三条 vsetvli 全部串行,最坏情况：vtype 写后读无旁路，每条 vsetvli 多 1 拍,7,3,2.333
+vwredsum 按 4 个 uop 串行展开,VEC_VWW 在 LMUL=2 下拆 4 个 uop，若后继 uop 依赖前一个 uop 的部分和则为 4x2=8 拍,10,2,5.000
+基线的 vsetvli 可与向量指令双发射,BJU2 与 VFEX0/1 并行，vsetvli 完全隐藏,4,2,2.000

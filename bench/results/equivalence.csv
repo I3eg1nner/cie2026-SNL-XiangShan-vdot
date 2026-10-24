@@ -1,0 +1,16 @@
+suite,cases,run,pass,fail,skip,kind,evidence
+positive,40,40,40,0,0,实测,p7_baseline_equiv.log
+negative,44,44,44,0,0,实测,p7_baseline_equiv.log
+boundary,103,94,94,0,9,实测,p7_baseline_equiv.log
+vdotacc_positive,40,40,40,0,0,实测,p7_baseline_equiv.log
+vdotacc_negative,44,44,44,0,0,实测,p7_baseline_equiv.log
+vdotacc_boundary,103,94,94,0,9,实测,p7_baseline_equiv.log
+vdot4a_positive,40,40,40,0,0,实测,p7_baseline_equiv.log
+vdot4a_negative,44,44,44,0,0,实测,p7_baseline_equiv.log
+vdot4a_boundary,115,106,106,0,9,实测,p7_baseline_equiv.log
+vstart_relaxed(strict),90,13,13,0,77,实测,p7_baseline_equiv.log
+random,10000,8459,8459,0,1541,实测,p7_baseline_equiv.log
+vdotacc_random,10000,8428,8428,0,1572,实测,p7_baseline_equiv.log
+vdot4a_random,10000,8461,8461,0,1539,实测,p7_baseline_equiv.log
+vstart_range(extra),47,0,0,0,47,实测,p7_baseline_equiv.log
+TOTAL,30710,25907,25907,0,4803,实测,p7_baseline_equiv.log

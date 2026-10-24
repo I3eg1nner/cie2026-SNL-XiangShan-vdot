@@ -1,0 +1,9 @@
+instruction,vstart=0,vstart=1,kind,evidence
+vadd.vv,no trap,TRAP  mcause=2,实测,NEMU vcompute_impl.c:544 check_vstart_exception()
+vwmul.vv,no trap,TRAP  mcause=2,实测,NEMU vcompute_impl.c:544 check_vstart_exception()
+vwredsum.vs,no trap,TRAP  mcause=2,实测,NEMU vcompute_impl.c:544 check_vstart_exception()
+vmv.s.x,no trap,TRAP  mcause=2,实测,NEMU vcompute_impl.c:544 check_vstart_exception()
+vsll.vi,no trap,TRAP  mcause=2,实测,NEMU vcompute_impl.c:544 check_vstart_exception()
+vsra.vi,no trap,TRAP  mcause=2,实测,NEMU vcompute_impl.c:544 check_vstart_exception()
+vmacc.vv,no trap,TRAP  mcause=2,实测,NEMU vcompute_impl.c:544 check_vstart_exception()
+vdot4a.vv,no trap,no trap,实测,NEMU vcompute_impl.c:544 check_vstart_exception()

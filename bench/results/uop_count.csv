@@ -1,0 +1,10 @@
+instruction,scenario,uop_split_type,vlmul,uops,kind,source
+vsetvli,任意,VSET,-,2,源码推导(非实测),UopInfoGen.scala:199
+vmv.s.x,e32/m1,VEC_0XV,m1,2,源码推导(非实测),UopInfoGen.scala:200 + VecDecoder.scala:466
+vwmul.vv,e8/m1 -> e16/m2,VEC_VVW,m1,2,源码推导(非实测),"UopInfoGen.scala:214 (numOfUopWV, vlmul=000 -> 2) + VecDecoder.scala:436"
+vwadd.wv,e16/m2 -> e32/m4,VEC_WVW,m2,4,源码推导(非实测),"UopInfoGen.scala:215 (numOfUopWV, vlmul=001 -> 4) + VecDecoder.scala:430"
+vwredsum.vs,e16/m2,VEC_VWW,m2,4,源码推导(非实测),"UopInfoGen.scala:229 (Cat(lmul,0) = 2*lmul = 4) + VecDecoder.scala:244"
+vredsum.vs,e32/m4,VEC_VRED,m4,4,源码推导(非实测),UopInfoGen.scala:224 (lmul = 4) + VecDecoder.scala:419
+vdot.vv,e8/m1,VEC_VVV,m1,1,源码推导(非实测),UopInfoGen.scala:201 (lmul = 1) + VecDecoder.scala:256
+vdotacc.vv,e8/m1,VEC_VVV,m1,1,源码推导(非实测),UopInfoGen.scala:201 (lmul = 1) + VecDecoder.scala:257
+vdot4a.vv,e32/m1,VEC_VVV,m1,1,源码推导(非实测),UopInfoGen.scala:201 (lmul = 1) + VecDecoder.scala:258
