@@ -128,7 +128,7 @@ index c0da348..cbec737 100644
    virtual ElementOutput calculation_e8(ElementInput input);
    virtual ElementOutput calculation_e16(ElementInput input);
 diff --git a/src/test/csrc/include/test_driver.h b/src/test/csrc/include/test_driver.h
-index 9c7f7f6..21dc467 100644
+index 9c7f7f6..4352cb6 100644
 --- a/src/test/csrc/include/test_driver.h
 +++ b/src/test/csrc/include/test_driver.h
 @@ -4,6 +4,7 @@
@@ -161,7 +161,15 @@ index 9c7f7f6..21dc467 100644
  
    void get_random_input();
    void get_expected_output();
-@@ -85,6 +94,7 @@ public:
+@@ -81,10 +90,15 @@ public:
+ 
+   bool verbose;
+   bool keepinput;
++  // YS_DUMP=N：把前 N 条**比对通过**的用例的输入 / 期望值 / DUT 实测值整条打印出来，
++  // 供测试报告引用「输入-期望-实际」三元组（通过时上游只在失配时才打印）。
++  long dump_n;
++  long dump_idx;
+   void verbose_exec() {
      verbose = true;
      vfd.verbose_exec(); valu.verbose_exec();
      vperm.verbose_exec();vid.verbose_exec();
@@ -206,7 +214,7 @@ index 1bcebb2..2bd98ee 100644
  constexpr uint8_t binstoi(const char str[]) {
    uint8_t num = 0;
 diff --git a/src/test/csrc/test_driver.cpp b/src/test/csrc/test_driver.cpp
-index 1f25cc1..3a0f075 100644
+index 1f25cc1..f3b7cde 100644
 --- a/src/test/csrc/test_driver.cpp
 +++ b/src/test/csrc/test_driver.cpp
 @@ -1,6 +1,7 @@
@@ -222,7 +230,7 @@ index 1f25cc1..3a0f075 100644
  
  TestDriver::TestDriver():
 -  issued(false), verbose(false), keepinput(false)
-+  issued(false), vec_idx(0), vec_mode(false), verbose(false), keepinput(false)
++  issued(false), vec_idx(0), vec_mode(false), verbose(false), keepinput(false), dump_n(0), dump_idx(0)
  {
    // aviod random value
    set_test_type();
@@ -299,7 +307,7 @@ index 1f25cc1..3a0f075 100644
  TestDriver::~TestDriver() {
  }
  
-@@ -26,12 +94,31 @@ void TestDriver::set_default_value(VSimTop *dut_ptr) {
+@@ -26,12 +94,34 @@ void TestDriver::set_default_value(VSimTop *dut_ptr) {
    dut_ptr->io_out_ready = true;
  }
  // fix set_test_type to select fuType
@@ -327,12 +335,15 @@ index 1f25cc1..3a0f075 100644
 +  if (env_vectors != NULL) {
 +    load_vdot_vectors(env_vectors);
 +  }
++  // YS_DUMP=N：打印前 N 条通过用例的「输入 / 期望 / DUT 实测」三元组
++  const char *env_dump = getenv("YS_DUMP");
++  if (env_dump != NULL) { dump_n = strtol(env_dump, NULL, 0); }
 +  printf("Set Test Type Res: fuType:%d fuOpType:%d (pick_fuType=%d pick_fuOpType=%d)\n",
 +         test_type.fuType, test_type.fuOpType, test_type.pick_fuType, test_type.pick_fuOpType);
  }
  
  void TestDriver::gen_next_test_case() {
-@@ -120,6 +207,11 @@ uint8_t TestDriver::gen_random_optype() {
+@@ -120,6 +210,11 @@ uint8_t TestDriver::gen_random_optype() {
          return i2fcvt_64_optype[rand() % I2FCVT_64_NUM];
          break;
      }
@@ -344,7 +355,7 @@ index 1f25cc1..3a0f075 100644
      default:
        printf("Unsupported FuType %d\n", input.fuType);
        exit(1);
-@@ -136,6 +228,12 @@ uint8_t TestDriver::gen_random_sew() {
+@@ -136,6 +231,12 @@ uint8_t TestDriver::gen_random_sew() {
      case VFloatCvt: return rand()%4; break;
      case FloatCvtF2X: return (rand()%3)+1 ; break;
      case FloatCvtI2F: return 0 ; break;
@@ -357,7 +368,7 @@ index 1f25cc1..3a0f075 100644
      default: return (rand()%3)+1; break;
    }
  }
-@@ -212,6 +310,8 @@ void TestDriver::gen_random_vecinfo() {
+@@ -212,6 +313,8 @@ void TestDriver::gen_random_vecinfo() {
    uint8_t vlmul_list[7] = {3, 2, 1, 0,  7,   6,   5};
  
    input.vinfo.vlmul = vlmul_list[rand() % (7 - input.sew)];
@@ -366,7 +377,7 @@ index 1f25cc1..3a0f075 100644
    int elements_per_reg = (VLEN / 8) >> input.sew;
    int vlmax = (input.vinfo.vlmul > 4) ? (elements_per_reg >> (8 - input.vinfo.vlmul)) : (elements_per_reg << input.vinfo.vlmul);
    switch (input.fuType) {
-@@ -225,6 +325,9 @@ void TestDriver::gen_random_vecinfo() {
+@@ -225,6 +328,9 @@ void TestDriver::gen_random_vecinfo() {
      default: input.vinfo.vstart = 0; break;
    } // The vstart of an arithmetic instruction is generally equal to 0
    input.vinfo.vl = rand() % vlmax + 1; // TODO: vl == 0 may be illegal
@@ -376,7 +387,7 @@ index 1f25cc1..3a0f075 100644
  
    input.vinfo.vm = rand() % 2;
    input.vinfo.ta = rand() % 2;
-@@ -362,6 +465,14 @@ void TestDriver::gen_random_idiv_input() {
+@@ -362,6 +468,14 @@ void TestDriver::gen_random_idiv_input() {
  
  void TestDriver::get_random_input() {
    if (keepinput) { return; }
@@ -391,7 +402,7 @@ index 1f25cc1..3a0f075 100644
   
    input.src1[0] = rand64();
    input.src1[1] = rand64();
-@@ -464,6 +575,9 @@ void TestDriver::get_expected_output() {
+@@ -464,6 +578,9 @@ void TestDriver::get_expected_output() {
      case FloatCvtI2F:
        if (verbose) { printf("FuType:%d, choose FloatCvtI2F %d\n", input.fuType, FloatCvtI2F); }
        expect_output = scvt.get_expected_output(input); return; 
@@ -401,6 +412,21 @@ index 1f25cc1..3a0f075 100644
      default:
        printf("Unsupported FuType %d\n", input.fuType);
        exit(1);
+@@ -527,6 +644,14 @@ int TestDriver::diff_output_falling(VSimTop *dut_ptr) {
+       display();
+       return STATE_BADTRAP;
+     } else {
++      if (dump_n > 0) {
++        printf("---- case #%ld : MATCH ----\n", dump_idx);
++        display_ref_input();
++        display_ref_output();
++        display_dut();
++        dump_n--;
++      }
++      dump_idx++;
+       gen_next_test_case();
+     }
+     return STATE_FINISH_OPERATION;
 diff --git a/src/test/scala/top/VectorSimTop.scala b/src/test/scala/top/VectorSimTop.scala
 index ae5b922..0722baa 100644
 --- a/src/test/scala/top/VectorSimTop.scala

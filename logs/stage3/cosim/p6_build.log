@@ -1,36 +1,17 @@
 ==============================================================
- [1] NEMU difftest 参考共享库（riscv64-xs-kmhv2-ref_defconfig + XVDOT）   2026-10-24T13:02:20Z UTC
+ [1] NEMU difftest 参考共享库（riscv64-xs-kmhv2-ref_defconfig + XVDOT）   2026-10-24T13:15:22Z UTC
 ==============================================================
-$ git log --oneline -1
-9090839 feat(difftest): support fast shared reference execution (#1247)
-vdot patch 已处于已应用状态，跳过
-Makefile:40: You have set CONFIG_FLASH_IMG_PATH option, but the specified path '""' does not exist!
-103:#define CONFIG_CUSTOM_XVDOT 1
-+ CXX src/base/output.cpp
-+ CXX src/cpu/difftest/ame/amu_ctrl_queue_wrapper.cpp
-+ CXX src/cpu/difftest/ame/msync_queue_wrapper.cpp
-+ CXX src/memory/store_queue_wrapper.cpp
-+ g++ /work/work/NEMU/build/riscv64-nemu-interpreter-so
--rwxr-xr-x 1 root root 1570936 Oct 24 13:02 build/riscv64-nemu-interpreter-so
-build/riscv64-nemu-interpreter-so: ELF 64-bit LSB shared object, ARM aarch64, version 1 (SYSV), dynamically linked, BuildID[sha1]=25c22d14dd54a976d6a7991274957d6168ccb714, not stripped
--rw-r--r-- 1 root root 20224 Oct 24 13:02 build/obj-riscv64-nemu-interpreter-so/src/isa/riscv64/instr/rvv/vdot.o
-00000000000ecc28 R DIFFTEST_REG_SIZE
-0000000000034ba4 T difftest_exec
-000000000002b2d0 T difftest_init
-000000000002b0c0 T difftest_memcpy
-000000000002b110 T difftest_regcpy
-000000000003db20 T isa_difftest_regcpy
-000000004fbcb160 B ref_difftest_exec
-00000000002dd890 B ref_difftest_memcpy
-000000004fbcb158 B ref_difftest_regcpy
+已存在且比 vdot.c 新，跳过重建（FORCE_NEMU=1 可强制重建）：
+-rw-r--r--  1 i3eg1nner  staff    20224 10 24 21:13 /Users/i3eg1nner/code/cie/work/NEMU/build/obj-riscv64-nemu-interpreter-so/src/isa/riscv64/instr/rvv/vdot.o
+-rwxr-xr-x@ 1 i3eg1nner  staff  1570936 10 24 21:13 /Users/i3eg1nner/code/cie/work/NEMU/build/riscv64-nemu-interpreter-so
 ==============================================================
- [2] 从 work/XiangShan-cosim 精化 RTL   2026-10-24T13:02:29Z UTC
+ [2] 从 work/XiangShan-cosim 精化 RTL   2026-10-24T13:15:22Z UTC
 ==============================================================
 java      : openjdk version "17.0.21.0.2" 2026-10-22
 verilator : Verilator 5.052 2026-09-05 rev vUNKNOWN-built20260905
 --- yunsuan: VDotTop ---
 Generating the VDotTop hardware
--rw-r--r--@ 1 i3eg1nner  staff  134630 10 24 21:02 /Users/i3eg1nner/code/cie/work/XiangShan-cosim/yunsuan/build/vdot/VDotTop.sv
+-rw-r--r--@ 1 i3eg1nner  staff  134630 10 24 21:15 /Users/i3eg1nner/code/cie/work/XiangShan-cosim/yunsuan/build/vdot/VDotTop.sv
 --- xiangshan: VdotDecodeProbe (DecodeUnit + VecExceptionGen) ---
 =============== xiangshan.test.runMain xiangshan...dir build/vdot --target verilog ===============
 ==================================================================================================
@@ -38,16 +19,16 @@ Generating the VDotTop hardware
 [860] ImmUnion max len: 22
 [860/860] =============== xiangshan.test.runMain xi...ild/vdot --target verilog =============== 6s
 ==================================================================================================
--rw-r--r--@ 1 i3eg1nner  staff  745686 10 24 21:02 /Users/i3eg1nner/code/cie/work/XiangShan-cosim/build/vdot/VdotDecodeProbe.v
+-rw-r--r--@ 1 i3eg1nner  staff  745686 10 24 21:15 /Users/i3eg1nner/code/cie/work/XiangShan-cosim/build/vdot/VdotDecodeProbe.v
 ==============================================================
- [3] verilator --cc（宿主机 verilator 5.052）   2026-10-24T13:02:40Z UTC
+ [3] verilator --cc（宿主机 verilator 5.052）   2026-10-24T13:15:32Z UTC
 ==============================================================
 - V e r i l a t i o n   R e p o r t: Verilator 5.052 2026-09-05 rev vUNKNOWN-built20260905
 - Verilator: Built from 0.093 MB sources in 6 modules, into 1.171 MB in 11 C++ files needing 0.001 MB
-- Verilator: Walltime 0.114 s (elab=0.011, cvt=0.077, bld=0.000); cpu 0.101 s on 1 threads; allocated 34.562 MB
+- Verilator: Walltime 0.114 s (elab=0.011, cvt=0.074, bld=0.000); cpu 0.097 s on 1 threads; allocated 34.141 MB
 - V e r i l a t i o n   R e p o r t: Verilator 5.052 2026-09-05 rev vUNKNOWN-built20260905
 - Verilator: Built from 0.662 MB sources in 6 modules, into 1.183 MB in 5 C++ files needing 0.001 MB
-- Verilator: Walltime 0.109 s (elab=0.011, cvt=0.067, bld=0.000); cpu 0.107 s on 1 threads; allocated 32.547 MB
+- Verilator: Walltime 0.103 s (elab=0.011, cvt=0.065, bld=0.000); cpu 0.102 s on 1 threads; allocated 30.609 MB
 verilator runtime <- /opt/homebrew/Cellar/verilator/5.052/share/verilator/include
 VDotTopDut___024root__0__Slow.cpp
 VDotTopDut___024root__0.cpp
@@ -56,11 +37,11 @@ DecodeProbeDut___024root__0__Slow.cpp
 DecodeProbeDut___024root__0.cpp
 DecodeProbeDut___024root__Slow.cpp
 ==============================================================
- [4] 容器内 g++ 编译协同仿真驱动   2026-10-24T13:02:41Z UTC
+ [4] 容器内 g++ 编译协同仿真驱动   2026-10-24T13:15:33Z UTC
 ==============================================================
 aarch64
 g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
 rm -f build/cosim
 g++ -O2 -std=c++17 -Wno-attributes -I/work/tests/cosim/build/verilator/include -I/work/tests/cosim/build/verilator/include/vltstd -Ibuild/vdut -Ibuild/ddut -I. -o build/cosim cosim_main.cpp build/vdut/VDotTopDut.cpp build/vdut/VDotTopDut_CSA4to2__0.cpp build/vdut/VDotTopDut_CSA4to2__0__Slow.cpp build/vdut/VDotTopDut_CSA4to2__Slow.cpp build/vdut/VDotTopDut_VIMac64b__0.cpp build/vdut/VDotTopDut_VIMac64b__0__Slow.cpp build/vdut/VDotTopDut_VIMac64b__Slow.cpp build/vdut/VDotTopDut__Syms__Slow.cpp build/vdut/VDotTopDut___024root__0.cpp build/vdut/VDotTopDut___024root__0__Slow.cpp build/vdut/VDotTopDut___024root__Slow.cpp build/ddut/DecodeProbeDut.cpp build/ddut/DecodeProbeDut__Syms__Slow.cpp build/ddut/DecodeProbeDut___024root__0.cpp build/ddut/DecodeProbeDut___024root__0__Slow.cpp build/ddut/DecodeProbeDut___024root__Slow.cpp /work/tests/cosim/build/verilator/include/verilated.cpp /work/tests/cosim/build/verilator/include/verilated_threads.cpp -ldl -lpthread
--rwxr-xr-x 1 root root 480888 Oct 24 13:03 build/cosim
-build/cosim: ELF 64-bit LSB pie executable, ARM aarch64, version 1 (GNU/Linux), dynamically linked, interpreter /lib/ld-linux-aarch64.so.1, BuildID[sha1]=96303ea8a50ad60f2da29e2d566c6871e6ed4abe, for GNU/Linux 3.7.0, not stripped
+-rwxr-xr-x 1 root root 481192 Oct 24 13:16 build/cosim
+build/cosim: ELF 64-bit LSB pie executable, ARM aarch64, version 1 (GNU/Linux), dynamically linked, interpreter /lib/ld-linux-aarch64.so.1, BuildID[sha1]=a0a4a59f81b3f7851f7c687293fc22bcc104b68c, for GNU/Linux 3.7.0, not stripped

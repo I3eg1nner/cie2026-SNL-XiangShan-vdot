@@ -1,0 +1,71 @@
+=== vdot 波形抓取  2026-10-24 21:12:00 CST ===
+
+--- (1) 以 EMU_TRACE=1 重建仿真器 ---
+[mill-state-guard] /Users/i3eg1nner/code/cie/work/XiangShan-vdot/yunsuan: 清理了 0 个失效的增量编译状态
+    emu（trace 版）: 3359296 bytes
+
+--- (2) 构造单条定向语料 ---
+  vdot.vv（全 0x80 × 全 0x80，期望 0x00040000 = 262144）
+    用例： vdot 8 0 16 1 1 1 80808080808080808080808080808080 80808080808080808080808080808080 00000000000000000000000000000000 00000400ffffffffffffffffffffffff 00000000000000000000000000000000 OK
+  vdotacc.vv（vl=16，带累加器）
+    用例： vdotacc 8 0 16 1 1 1 0102030405060708090a0b0c0d0e0f10 0102030405060708090a0b0c0d0e0f10 e8030000000000000000000000000000 c0090000ffffffffffffffffffffffff 00000000000000000000000000000000 OK
+  vdot4a.vv（vl=4，4 组分组点积）
+    用例： vdot4a 32 0 4 1 1 1 0102030405060708090a0b0c0d0e0f10 0102030405060708090a0b0c0d0e0f10 00000000000000000000000000000000 1e000000ae000000be0100004e030000 00000000000000000000000000000000 OK
+
+--- 抓取 vdotvv_vdottop_fuType10_seed1 ---
+    Emu compiled at Oct 24 2026, 21:12:19
+    [vdot-vectors] loaded 1 cases from /var/folders/mm/k9qhqcg91qs6xnm6zdsnwb6c0000gn/T/wvdot.nzoB2M32Am (skipped 0 non-OK, 0 unparsed)
+    [vdot-vectors] run with -O 1 to execute every case exactly once
+    Set Test Type Res: fuType:7 fuOpType:225 (pick_fuType=0 pick_fuOpType=0)
+    [vdot-vectors] all 1 cases consumed
+    Using seed = 1
+    dump wave to /Users/i3eg1nner/code/cie/work/XiangShan-vdot/yunsuan/build/2026-10-24@21:13:28_dump_wave_seed_1.vcd...
+    EMU EXCEEDED LIMIT
+    HAS Executed Cycles:26 Operations:1
+    EMU has executed 9 ms.
+    VCD: /Users/i3eg1nner/code/cie/logs/stage2/waveform/vdotvv_vdottop_fuType10_seed1.vcd  (24766 行, 831727 bytes)
+    轨迹: /Users/i3eg1nner/code/cie/logs/stage2/waveform/vdotvv_vdottop_fuType10_seed1_signal_trace.txt  (38 行)
+
+--- 抓取 vdotaccvv_vdottop_fuType10_seed1 ---
+    Emu compiled at Oct 24 2026, 21:12:19
+    [vdot-vectors] loaded 1 cases from /var/folders/mm/k9qhqcg91qs6xnm6zdsnwb6c0000gn/T/wvdotacc.tmyaQ7Q4tJ (skipped 0 non-OK, 0 unparsed)
+    [vdot-vectors] run with -O 1 to execute every case exactly once
+    Set Test Type Res: fuType:7 fuOpType:225 (pick_fuType=0 pick_fuOpType=0)
+    [vdot-vectors] all 1 cases consumed
+    Using seed = 1
+    dump wave to /Users/i3eg1nner/code/cie/work/XiangShan-vdot/yunsuan/build/2026-10-24@21:13:28_dump_wave_seed_1.vcd...
+    EMU EXCEEDED LIMIT
+    HAS Executed Cycles:26 Operations:1
+    EMU has executed 5 ms.
+    VCD: /Users/i3eg1nner/code/cie/logs/stage2/waveform/vdotaccvv_vdottop_fuType10_seed1.vcd  (24883 行, 837584 bytes)
+    轨迹: /Users/i3eg1nner/code/cie/logs/stage2/waveform/vdotaccvv_vdottop_fuType10_seed1_signal_trace.txt  (38 行)
+
+--- 抓取 vdot4avv_vdottop_fuType10_seed1 ---
+    Emu compiled at Oct 24 2026, 21:12:19
+    [vdot-vectors] loaded 1 cases from /var/folders/mm/k9qhqcg91qs6xnm6zdsnwb6c0000gn/T/wvdot4a.NTEIPvvjfD (skipped 0 non-OK, 0 unparsed)
+    [vdot-vectors] run with -O 1 to execute every case exactly once
+    Set Test Type Res: fuType:7 fuOpType:225 (pick_fuType=0 pick_fuOpType=0)
+    [vdot-vectors] all 1 cases consumed
+    Using seed = 1
+    dump wave to /Users/i3eg1nner/code/cie/work/XiangShan-vdot/yunsuan/build/2026-10-24@21:13:29_dump_wave_seed_1.vcd...
+    EMU EXCEEDED LIMIT
+    HAS Executed Cycles:26 Operations:1
+    EMU has executed 4 ms.
+    VCD: /Users/i3eg1nner/code/cie/logs/stage2/waveform/vdot4avv_vdottop_fuType10_seed1.vcd  (25334 行, 848687 bytes)
+    轨迹: /Users/i3eg1nner/code/cie/logs/stage2/waveform/vdot4avv_vdottop_fuType10_seed1_signal_trace.txt  (38 行)
+
+--- (3) 波形产物清单 ---
+total 5032
+drwxr-xr-x   8 i3eg1nner  staff     256 10 24 21:13 .
+drwxr-xr-x  12 i3eg1nner  staff     384 10 24 21:12 ..
+-rw-r--r--   1 i3eg1nner  staff   14385 10 24 21:13 vdot4avv_vdottop_fuType10_seed1_signal_trace.txt
+-rw-r--r--   1 i3eg1nner  staff  848687 10 24 21:13 vdot4avv_vdottop_fuType10_seed1.vcd
+-rw-r--r--   1 i3eg1nner  staff   14389 10 24 21:13 vdotaccvv_vdottop_fuType10_seed1_signal_trace.txt
+-rw-r--r--   1 i3eg1nner  staff  837584 10 24 21:13 vdotaccvv_vdottop_fuType10_seed1.vcd
+-rw-r--r--   1 i3eg1nner  staff   14377 10 24 21:13 vdotvv_vdottop_fuType10_seed1_signal_trace.txt
+-rw-r--r--   1 i3eg1nner  staff  831727 10 24 21:13 vdotvv_vdottop_fuType10_seed1.vcd
+
+--- (4) 还原不带 trace 的 emu ---
+    emu（非 trace 版）: 2229024 bytes
+
+=== 波形抓取完成 ===

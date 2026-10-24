@@ -169,7 +169,7 @@ step "1/7 2.3.1 正数测试"
   run_corpus "2.3.1 正数" "positive(vdot.vv)"        "${VEC_DIR}/positive.txt"
   run_corpus "2.3.1 正数" "positive(vdotacc.vv)"     "${VEC_DIR}/vdotacc_positive.txt"
   run_corpus "2.3.1 正数" "positive(vdot4a.vv)"      "${VEC_DIR}/vdot4a_positive.txt"
-  worked_example "${VEC_DIR}/positive.txt" '$8=="100f0e0d0c0b0a090807060504030201"' \
+  worked_example "${VEC_DIR}/positive.txt" '$8=="0102030405060708090a0b0c0d0e0f10" && $9==$8' \
     "vdot.vv：vs1=vs2=[1..16]，Σ i² = 1496 = 0x5D8"
   worked_example "${VEC_DIR}/vdotacc_positive.txt" '$4==16 && $6==1' \
     "vdotacc.vv：带累加器的正数点积"
@@ -225,8 +225,8 @@ step "3/7 2.3.3 边界值测试"
   done
   worked_example "${VEC_DIR}/boundary.txt" '$4==0' \
     "vdot.vv vl=0：裁定 S-5，连 tail 都不写，vd 原样保留"
-  worked_example "${VEC_DIR}/boundary.txt" '$5==0 && $12=="0000000000000000000000000000a5a5"' \
-    "vdot.vv 全 0 掩码：裁定 S-4，仍然写 vd[0]=0"
+  worked_example "${VEC_DIR}/boundary.txt" '$5==0 && $12 ~ /^0000a5a5/ && $6==1' \
+    "vdot.vv 全 0 掩码（v0 低 16 位全 0、高位填 0xA5 用于检验无关掩码位被忽略）：裁定 S-4，仍然写 vd[0]=0"
   worked_example "${VEC_DIR}/vdot4a_boundary.txt" '$3==1 && $4==4' \
     "vdot4a.vv vstart=1：prestart 元素 0 保持不变（裁定 S-7，RTL 实现说明 §10 第 3 条的缺口）"
 } 2>&1 | tee "${LOG_DIR}/p5_func_boundary.log"
@@ -332,6 +332,31 @@ step "5/7 既有指令回归"
 } 2>&1 | tee "${LOG_DIR}/p5_regression.log"
 
 # ---------------------------------------------------------------------------
+# 5.5 补丁可应用性 + 译码级非法指令判定（含本阶段修复的 LMUL 守卫）
+# ---------------------------------------------------------------------------
+step "5.5/7 补丁可应用性与译码级非法指令判定"
+{
+  bash "${REPO_ROOT}/scripts/tools/verify_patches.sh"
+  echo ""
+  bash "${REPO_ROOT}/scripts/tools/run_decode_tb.sh"
+} 2>&1 | tee "${LOG_DIR}/p5_decode_illegal.log"
+if grep -q "^VECEXC-TB: PASS" "${LOG_DIR}/p5_decode_illegal.log"; then
+  nd=$(grep -oE "共 [0-9]+ 条" "${LOG_DIR}/p5_decode_illegal.log" | head -1 | grep -oE "[0-9]+")
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "译码级" "VecExceptionGen 定向" "${nd:-0}" "${nd:-0}" 0 0 "PASS" \
+    "scripts/tools/run_decode_tb.sh" >> "${ROWS}"
+else
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "译码级" "VecExceptionGen 定向" 0 0 0 0 "FAIL" \
+    "见 p5_decode_illegal.log" >> "${ROWS}"
+fi
+if grep -q "^PATCH-VERIFY: PASS" "${LOG_DIR}/p5_decode_illegal.log"; then
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "交付物" "三份补丁干净应用到 pristine" 3 3 0 0 "PASS" \
+    "scripts/tools/verify_patches.sh" >> "${ROWS}"
+else
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "交付物" "三份补丁干净应用到 pristine" 3 0 3 0 "FAIL" \
+    "见 p5_decode_illegal.log" >> "${ROWS}"
+fi
+
+# ---------------------------------------------------------------------------
 # 6. VIMacU 等价性（真正被集成进香山的模块）
 # ---------------------------------------------------------------------------
 step "6/7 VIMacU 等价性验证"
@@ -379,7 +404,7 @@ step "汇总"
   }' "${ROWS}"
   echo ""
   echo "日志："
-  for l in p5_func_positive p5_func_negative p5_func_boundary p5_func_random p5_regression p5_vimacu_equiv p5_fault_injection; do
+  for l in p5_func_positive p5_func_negative p5_func_boundary p5_func_random p5_regression p5_decode_illegal p5_vimacu_equiv p5_fault_injection p5_waveform; do
     [ -f "${LOG_DIR}/${l}.log" ] && printf "  %-26s %s\n" "${l}.log" "$(wc -l < "${LOG_DIR}/${l}.log" | tr -d ' ') 行"
   done
 } 2>&1 | tee "${SUMMARY}"

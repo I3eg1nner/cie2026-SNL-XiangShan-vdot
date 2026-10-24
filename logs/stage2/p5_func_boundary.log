@@ -1,0 +1,176 @@
+=== 2.3.3 边界值测试  2026-10-24 21:21:52 CST ===
+
+########################################################################
+# suite  : boundary(vdot.vv)
+# file   : tests/vectors/boundary.txt
+# 用例数 : 总 103，可执行 94，跳过 9 （ERR_SEW×3 ILLEGAL_VSTART×6 ）
+# 命令   : YS_VDOT_VECTORS=tests/vectors/boundary.txt ./build/emu -O 94 -s 7
+########################################################################
+Emu compiled at Oct 24 2026, 21:13:35
+[vdot-vectors] loaded 94 cases from /Users/i3eg1nner/code/cie/tests/vectors/boundary.txt (skipped 9 non-OK, 0 unparsed)
+[vdot-vectors] run with -O 94 to execute every case exactly once
+Set Test Type Res: fuType:7 fuOpType:225 (pick_fuType=0 pick_fuOpType=0)
+Using seed = 7
+[vdot-vectors] all 94 cases consumed
+EMU EXCEEDED LIMIT
+HAS Executed Cycles:395 Operations:94
+EMU has executed 4 ms.
+# 判定   : PASS（attempted=94 passed=94 failed=0 skipped=9）
+
+########################################################################
+# suite  : boundary(vdotacc.vv)
+# file   : tests/vectors/vdotacc_boundary.txt
+# 用例数 : 总 103，可执行 94，跳过 9 （ERR_SEW×3 ILLEGAL_VSTART×6 ）
+# 命令   : YS_VDOT_VECTORS=tests/vectors/vdotacc_boundary.txt ./build/emu -O 94 -s 7
+########################################################################
+Emu compiled at Oct 24 2026, 21:13:35
+[vdot-vectors] loaded 94 cases from /Users/i3eg1nner/code/cie/tests/vectors/vdotacc_boundary.txt (skipped 9 non-OK, 0 unparsed)
+[vdot-vectors] run with -O 94 to execute every case exactly once
+Set Test Type Res: fuType:7 fuOpType:225 (pick_fuType=0 pick_fuOpType=0)
+Using seed = 7
+[vdot-vectors] all 94 cases consumed
+EMU EXCEEDED LIMIT
+HAS Executed Cycles:395 Operations:94
+EMU has executed 4 ms.
+# 判定   : PASS（attempted=94 passed=94 failed=0 skipped=9）
+
+########################################################################
+# suite  : boundary(vdot4a.vv)
+# file   : tests/vectors/vdot4a_boundary.txt
+# 用例数 : 总 115，可执行 112，跳过 3 （ERR_SEW×3 ）
+# 命令   : YS_VDOT_VECTORS=tests/vectors/vdot4a_boundary.txt ./build/emu -O 112 -s 7
+########################################################################
+Emu compiled at Oct 24 2026, 21:13:35
+[vdot-vectors] loaded 112 cases from /Users/i3eg1nner/code/cie/tests/vectors/vdot4a_boundary.txt (skipped 3 non-OK, 0 unparsed)
+[vdot-vectors] run with -O 112 to execute every case exactly once
+Set Test Type Res: fuType:7 fuOpType:225 (pick_fuType=0 pick_fuOpType=0)
+Using seed = 7
+[vdot-vectors] all 112 cases consumed
+EMU EXCEEDED LIMIT
+HAS Executed Cycles:467 Operations:112
+EMU has executed 5 ms.
+# 判定   : PASS（attempted=112 passed=112 failed=0 skipped=3）
+
+########################################################################
+# suite  : vstart_relaxed(vdot/vdotacc)
+# file   : tests/vectors/vstart_relaxed.txt
+# 用例数 : 总 90，可执行 90，跳过 0 
+# 命令   : YS_VDOT_VECTORS=tests/vectors/vstart_relaxed.txt ./build/emu -O 90 -s 7
+########################################################################
+Emu compiled at Oct 24 2026, 21:13:35
+[vdot-vectors] loaded 90 cases from /Users/i3eg1nner/code/cie/tests/vectors/vstart_relaxed.txt (skipped 0 non-OK, 0 unparsed)
+[vdot-vectors] run with -O 90 to execute every case exactly once
+Set Test Type Res: fuType:7 fuOpType:225 (pick_fuType=0 pick_fuOpType=0)
+Using seed = 7
+[vdot-vectors] all 90 cases consumed
+EMU EXCEEDED LIMIT
+HAS Executed Cycles:379 Operations:90
+EMU has executed 4 ms.
+# 判定   : PASS（attempted=90 passed=90 failed=0 skipped=0）
+
+---- 边界覆盖点自查（直接从语料文件统计，不依赖仿真）----
+[boundary]
+  vl 取值     : 0 1 2 3 4 8 15 16 
+  vstart 取值 : 0 1 15 
+  vta 取值    : 0 1 
+  vma 取值    : 0 1 
+  vm  取值    : 0 1 
+  带掩码(vm=0)用例数 : 24
+  vstart!=0 且可执行 : 0
+  全零操作数用例数   : 1
+  全 0x80 操作数用例 : 4
+[vdotacc_boundary]
+  vl 取值     : 0 1 2 3 4 8 15 16 
+  vstart 取值 : 0 1 15 
+  vta 取值    : 0 1 
+  vma 取值    : 0 1 
+  vm  取值    : 0 1 
+  带掩码(vm=0)用例数 : 24
+  vstart!=0 且可执行 : 0
+  全零操作数用例数   : 1
+  全 0x80 操作数用例 : 4
+[vdot4a_boundary]
+  vl 取值     : 0 1 2 3 4 
+  vstart 取值 : 0 1 3 
+  vta 取值    : 0 1 
+  vma 取值    : 0 1 
+  vm  取值    : 0 1 
+  带掩码(vm=0)用例数 : 24
+  vstart!=0 且可执行 : 6
+  全零操作数用例数   : 1
+  全 0x80 操作数用例 : 4
+
+======================================================================
+== 代表性用例：vdot.vv vl=0：裁定 S-5，连 tail 都不写，vd 原样保留
+== 来源：tests/vectors/boundary.txt   过滤：$4==0
+== 语料原文（op vsew vstart vl vm vta vma vs1 vs2 vd_in vd_expected v0 status）：
+==   vdot 8 0 0 1 0 1 0102030405060708090a0b0c0d0e0f10 707172737475767778797a7b7c7d7e7f a5a5a5a55a5a5a5a1111111122222222 a5a5a5a55a5a5a5a1111111122222222 00000000000000000000000000000000 OK
+======================================================================
+Emu compiled at Oct 24 2026, 21:13:35
+[vdot-vectors] loaded 1 cases from /var/folders/mm/k9qhqcg91qs6xnm6zdsnwb6c0000gn/T/vdotcase.dkzGdhOoE5 (skipped 0 non-OK, 0 unparsed)
+[vdot-vectors] run with -O 1 to execute every case exactly once
+Set Test Type Res: fuType:7 fuOpType:225 (pick_fuType=0 pick_fuOpType=0)
+[vdot-vectors] all 1 cases consumed
+Using seed = 7
+---- case #0 : MATCH ----
+REF Input:
+  src1 7f7e7d7c7b7a7978_7776757473727170 src2 100f0e0d0c0b0a09_0807060504030201 src3 2222222211111111_5a5a5a5aa5a5a5a5 src4 0000000000000000_0000000000000000
+  fuType a fuOpType 0 sew 0 uop_idx 0 src_widen 0 widen 0 is_frs1 0 rm 0
+  vstart 0 vl 0 vlmul 0 vm 1 ta 0 ma 1
+Expected Output 
+  result  2222222211111111_5a5a5a5aa5a5a5a5 fflags: 0_0  vxsat: 0
+DUT Output:
+  result  2222222211111111_5a5a5a5aa5a5a5a5 fflags: 0_0  vxsat: 0
+EMU EXCEEDED LIMIT
+HAS Executed Cycles:23 Operations:1
+EMU has executed 1 ms.
+
+======================================================================
+== 代表性用例：vdot.vv 全 0 掩码（v0 低 16 位全 0、高位填 0xA5 用于检验无关掩码位被忽略）：裁定 S-4，仍然写 vd[0]=0
+== 来源：tests/vectors/boundary.txt   过滤：$5==0 && $12 ~ /^0000a5a5/ && $6==1
+== 语料原文（op vsew vstart vl vm vta vma vs1 vs2 vd_in vd_expected v0 status）：
+==   vdot 8 0 16 0 1 0 7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f 02020202020202020202020202020202 01000000020000000300000004000000 00000000ffffffffffffffffffffffff 0000a5a5a5a5a5a5a5a5a5a5a5a5a5a5 OK
+======================================================================
+Emu compiled at Oct 24 2026, 21:13:35
+[vdot-vectors] loaded 1 cases from /var/folders/mm/k9qhqcg91qs6xnm6zdsnwb6c0000gn/T/vdotcase.5XwKzFZwHO (skipped 0 non-OK, 0 unparsed)
+[vdot-vectors] run with -O 1 to execute every case exactly once
+Set Test Type Res: fuType:7 fuOpType:225 (pick_fuType=0 pick_fuOpType=0)
+[vdot-vectors] all 1 cases consumed
+Using seed = 7
+---- case #0 : MATCH ----
+REF Input:
+  src1 0202020202020202_0202020202020202 src2 7f7f7f7f7f7f7f7f_7f7f7f7f7f7f7f7f src3 0000000400000003_0000000200000001 src4 a5a5a5a5a5a5a5a5_a5a5a5a5a5a50000
+  fuType a fuOpType 0 sew 0 uop_idx 0 src_widen 0 widen 0 is_frs1 0 rm 0
+  vstart 0 vl 16 vlmul 0 vm 0 ta 1 ma 0
+Expected Output 
+  result  ffffffffffffffff_ffffffff00000000 fflags: 0_0  vxsat: 0
+DUT Output:
+  result  ffffffffffffffff_ffffffff00000000 fflags: 0_0  vxsat: 0
+EMU EXCEEDED LIMIT
+HAS Executed Cycles:23 Operations:1
+EMU has executed 1 ms.
+
+======================================================================
+== 代表性用例：vdot4a.vv vstart=1：prestart 元素 0 保持不变（裁定 S-7，RTL 实现说明 §10 第 3 条的缺口）
+== 来源：tests/vectors/vdot4a_boundary.txt   过滤：$3==1 && $4==4
+== 语料原文（op vsew vstart vl vm vta vma vs1 vs2 vd_in vd_expected v0 status）：
+==   vdot4a 32 1 4 1 1 1 0102030405060708090a0b0c0d0e0f10 02020202020202020202020202020202 00010000000200000003000000040000 00010000340200005403000074040000 00000000000000000000000000000000 OK
+======================================================================
+Emu compiled at Oct 24 2026, 21:13:35
+[vdot-vectors] loaded 1 cases from /var/folders/mm/k9qhqcg91qs6xnm6zdsnwb6c0000gn/T/vdotcase.vJ1223kGiI (skipped 0 non-OK, 0 unparsed)
+[vdot-vectors] run with -O 1 to execute every case exactly once
+Set Test Type Res: fuType:7 fuOpType:225 (pick_fuType=0 pick_fuOpType=0)
+[vdot-vectors] all 1 cases consumed
+Using seed = 7
+---- case #0 : MATCH ----
+REF Input:
+  src1 0202020202020202_0202020202020202 src2 100f0e0d0c0b0a09_0807060504030201 src3 0000040000000300_0000020000000100 src4 0000000000000000_0000000000000000
+  fuType a fuOpType 2 sew 2 uop_idx 0 src_widen 0 widen 0 is_frs1 0 rm 0
+  vstart 1 vl 4 vlmul 0 vm 1 ta 1 ma 1
+Expected Output 
+  result  0000047400000354_0000023400000100 fflags: 0_0  vxsat: 0
+DUT Output:
+  result  0000047400000354_0000023400000100 fflags: 0_0  vxsat: 0
+EMU EXCEEDED LIMIT
+HAS Executed Cycles:23 Operations:1
+EMU has executed 1 ms.

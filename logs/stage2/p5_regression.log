@@ -1,0 +1,30 @@
+=== 既有指令 / 既有功能单元回归  2026-10-24 21:22:02 CST ===
+
+--- (A) 上游 CI 的随机混合测试（.github/workflows/main.yml:42 原样命令）---
+命令： ./build/emu -O 10000
+Emu compiled at Oct 24 2026, 21:13:35
+Set Test Type Res: fuType:7 fuOpType:225 (pick_fuType=0 pick_fuOpType=0)
+Using seed = 0
+EMU EXCEEDED LIMIT
+HAS Executed Cycles:54823 Operations:10000
+EMU has executed 589 ms.
+
+--- (B) 逐个既有功能单元定向回归（2000 条 / 个）---
+    fuType 对照表见 docs/stage1/03_仿真平台搭建报告.md §4.3
+    fuType=1   EMU EXCEEDED LIMIT   cycles=10019   
+    fuType=2   EMU EXCEEDED LIMIT   cycles=24138   
+    fuType=3   EMU EXCEEDED LIMIT   cycles=4019    
+    fuType=4   EMU EXCEEDED LIMIT   cycles=6019    
+    fuType=6   EMU EXCEEDED LIMIT   cycles=23372   
+    fuType=7   EMU EXCEEDED LIMIT   cycles=8019    
+    fuType=8   EMU EXCEEDED LIMIT   cycles=8019    
+    fuType=9   EMU EXCEEDED LIMIT   cycles=8019    
+
+--- (C) fuType=5（VIAluFWrapper / vadd.vv）需要钉住 fuOpType ---
+    上游 gen_random_optype() 对 fuType=5 会生成 golden model 不支持的 optype 3，
+    这是上游既有限制，与 vdot 无关；阶段一的做法同样是钉 YS_FUOPTYPE=0。
+    fuType=5 fuOpType=0  EMU EXCEEDED LIMIT   cycles=6019    
+
+--- (D) 与 pristine 基线逐 FU 对拍（证明差异为零）---
+    pristine emu: /Users/i3eg1nner/code/cie/work/XiangShan-kmhv2/yunsuan/build/emu（只读运行，不修改该工作树）
+    fuType     pristine                     vdot-tree                    一致?

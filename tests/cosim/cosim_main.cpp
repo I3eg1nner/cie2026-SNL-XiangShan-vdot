@@ -67,7 +67,10 @@ static const uint32_t F6_VDOT    = 0x39; // 0b111001
 static const uint32_t F6_VDOTACC = 0x3a; // 0b111010
 static const uint32_t F6_VDOT4A  = 0x3b; // 0b111011
 
-// 固定的寄存器编号：vd=v1, vs1=v2, vs2=v3, 掩码恒为 v0
+// 默认寄存器编号：vd=v1, vs1=v2, vs2=v3, 掩码恒为 v0（刻意取非 2 的幂对齐，
+// 以便在 LMUL>1 时触发香山的寄存器组对齐检查）。
+// 「lmul-aligned」诊断 suite 会改用 v8/v16/v24，使对齐检查不再生效，
+// 从而把「香山究竟有没有针对 vdot 的 LMUL 判定」这件事单独暴露出来。
 static const uint32_t RN_VD = 1, RN_VS1 = 2, RN_VS2 = 3;
 
 enum OpKind { OP_VDOT = 0, OP_VDOTACC = 1, OP_VDOT4A = 2 };
@@ -87,6 +90,7 @@ struct Stim {
   int vm = 1;          // 1 = unmasked（与指令编码的 vm 位一致）
   int vta = 0, vma = 0;
   int vlmul_code = 0;  // 0 = LMUL=1
+  uint32_t rn_vd = RN_VD, rn_vs1 = RN_VS1, rn_vs2 = RN_VS2;
   U128 vs1, vs2, vd_in, v0;
   std::string origin;  // 来源（文件:行号 或 random#N）
 };
@@ -151,8 +155,8 @@ static std::string hex128(const U128 &v) {
 
 static uint32_t encode_instr(const Stim &s) {
   uint32_t f6 = (s.op == OP_VDOT) ? F6_VDOT : (s.op == OP_VDOTACC) ? F6_VDOTACC : F6_VDOT4A;
-  return (f6 << 26) | ((uint32_t)(s.vm & 1) << 25) | (RN_VS2 << 20) | (RN_VS1 << 15) |
-         (0u << 12) | (RN_VD << 7) | 0x57u;
+  return (f6 << 26) | ((uint32_t)(s.vm & 1) << 25) | (s.rn_vs2 << 20) | (s.rn_vs1 << 15) |
+         (0u << 12) | (s.rn_vd << 7) | 0x57u;
 }
 
 // -----------------------------------------------------------------------------
@@ -184,10 +188,10 @@ static void ref_run(NemuRefProxy &ref, const Stim &s, RefResult *out) {
              ((uint64_t)sew_code(s.vsew_bits) << 3) | (uint64_t)(s.vlmul_code & 7);
   st.vcsr = 0;
 
-  st.vr[0][0] = s.v0.lo;        st.vr[0][1] = s.v0.hi;
-  st.vr[RN_VS1][0] = s.vs1.lo;  st.vr[RN_VS1][1] = s.vs1.hi;
-  st.vr[RN_VS2][0] = s.vs2.lo;  st.vr[RN_VS2][1] = s.vs2.hi;
-  st.vr[RN_VD][0] = s.vd_in.lo; st.vr[RN_VD][1] = s.vd_in.hi;
+  st.vr[0][0] = s.v0.lo;           st.vr[0][1] = s.v0.hi;
+  st.vr[s.rn_vs1][0] = s.vs1.lo;   st.vr[s.rn_vs1][1] = s.vs1.hi;
+  st.vr[s.rn_vs2][0] = s.vs2.lo;   st.vr[s.rn_vs2][1] = s.vs2.hi;
+  st.vr[s.rn_vd][0] = s.vd_in.lo;  st.vr[s.rn_vd][1] = s.vd_in.hi;
 
   uint32_t words[2] = {INSTR_FENCE_I, encode_instr(s)};
   ref.mem_to_ref(GUEST_PC, words, sizeof(words));
@@ -202,8 +206,8 @@ static void ref_run(NemuRefProxy &ref, const Stim &s, RefResult *out) {
 
   out->trapped = (st.pc != GUEST_PC_OP + 4);
   out->mcause = st.mcause;
-  out->vd.lo = st.vr[RN_VD][0];
-  out->vd.hi = st.vr[RN_VD][1];
+  out->vd.lo = st.vr[s.rn_vd][0];
+  out->vd.hi = st.vr[s.rn_vd][1];
   out->vstart_after = st.vstart;
   out->vl_after = st.vl;
   out->vtype_after = st.vtype;
@@ -375,14 +379,14 @@ static void check_one(NemuRefProxy &ref, DutVDot &dut, DutDecode &dec, const Sti
   } else if (rr.trapped && !dut_illegal) {
     st->dis_ref_only++;
     char k[256];
-    snprintf(k, sizeof(k), "REF非法/RTL合法 op=%s sew=%d vstart=%d lmul=%d",
-             OP_NAME[s.op], s.vsew_bits, s.vstart, s.vlmul_code);
+    snprintf(k, sizeof(k), "REF非法/RTL合法 op=%s sew=%d vstart=%d lmul=%d vd=v%u",
+             OP_NAME[s.op], s.vsew_bits, s.vstart, s.vlmul_code, s.rn_vd);
     st->dis_reason[k]++;
   } else {
     st->dis_dut_only++;
     char k[256];
-    snprintf(k, sizeof(k), "RTL非法/REF合法 op=%s sew=%d vstart=%d lmul=%d",
-             OP_NAME[s.op], s.vsew_bits, s.vstart, s.vlmul_code);
+    snprintf(k, sizeof(k), "RTL非法/REF合法 op=%s sew=%d vstart=%d lmul=%d vd=v%u",
+             OP_NAME[s.op], s.vsew_bits, s.vstart, s.vlmul_code, s.rn_vd);
     st->dis_reason[k]++;
   }
 
@@ -508,10 +512,19 @@ static Stim gen_random_illegal(std::mt19937_64 &rng, long idx, int kind) {
       tag = "vstart";
       break;
     }
-    default: {  // LMUL != 1
+    case 2: {  // LMUL != 1（默认寄存器编号 v1/v2/v3，对齐检查会起作用）
       static const int lmuls[6] = {1, 2, 3, 5, 6, 7}; // m2 m4 m8 mf8 mf4 mf2
       s.vlmul_code = lmuls[rng() % 6];
       tag = "lmul";
+      break;
+    }
+    default: {  // LMUL != 1，但寄存器编号对 LMUL=8 也对齐，屏蔽掉对齐检查的副作用
+      static const int lmuls[6] = {1, 2, 3, 5, 6, 7};
+      s.vlmul_code = lmuls[rng() % 6];
+      s.rn_vd = 8;
+      s.rn_vs1 = 16;
+      s.rn_vs2 = 24;
+      tag = "lmul-aligned";
       break;
     }
   }
@@ -633,8 +646,9 @@ int main(int argc, char **argv) {
 
   // ---- 3) 非法面随机（三类：SEW 不匹配 / vstart 越界 / LMUL != 1）----
   {
-    const char *kind_name[3] = {"illegal:sew-mismatch", "illegal:vstart", "illegal:lmul!=1"};
-    for (int kind = 0; kind < 3; kind++) {
+    const char *kind_name[4] = {"illegal:sew-mismatch", "illegal:vstart", "illegal:lmul!=1",
+                                "illegal:lmul!=1(对齐寄存器)"};
+    for (int kind = 0; kind < 4; kind++) {
       std::mt19937_64 rng(seed + 7000 + kind);
       SuiteStat st;
       st.name = kind_name[kind];

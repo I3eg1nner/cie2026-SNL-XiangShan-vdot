@@ -71,7 +71,7 @@ index 3764191..2dec160 100644
  
    val opivx: Array[(BitPat, XSDecodeBase)] = Array(
 diff --git a/src/main/scala/xiangshan/backend/decode/VecExceptionGen.scala b/src/main/scala/xiangshan/backend/decode/VecExceptionGen.scala
-index b885c68..1791177 100644
+index b885c68..1494279 100644
 --- a/src/main/scala/xiangshan/backend/decode/VecExceptionGen.scala
 +++ b/src/main/scala/xiangshan/backend/decode/VecExceptionGen.scala
 @@ -13,6 +13,7 @@ import xiangshan.backend.fu.FuType
@@ -98,7 +98,7 @@ index b885c68..1791177 100644
    private val maskLogicalInst = Seq(
      VMAND_MM, VMNAND_MM, VMANDN_MM, VMXOR_MM, VMOR_MM, VMNOR_MM, VMORN_MM, VMXNOR_MM
    ).map(_ === inst.ALL).reduce(_ || _)
-@@ -192,7 +202,10 @@ class VecExceptionGen(implicit p: Parameters) extends XSModule{
+@@ -192,7 +202,21 @@ class VecExceptionGen(implicit p: Parameters) extends XSModule{
  
    private val wnEewIllegal = (vdWideningInst || narrowingInst || redWideningInst) && SEW === 3.U
  
@@ -106,11 +106,31 @@ index b885c68..1791177 100644
 +  // vdot / vdotacc 只定义在 SEW=8，vdot4a 只定义在 SEW=32，其余 SEW 一律非法
 +  private val dotEewIllegal = dotRedInst && (SEW =/= 0.U) || dot4aInst && (SEW =/= 2.U)
 +
++  // vdot 指令族本版本固定 LMUL = 1（总体方案裁定 S-6），其余 vlmul 取值一律视为保留。
++  // 归约形态（vdot/vdotacc）在 LMUL>1 时需要跨寄存器组的多 uop 累加链，本版本未实现，
++  // 若不拦截会静默算错；逐元素形态（vdot4a）虽然语义上可平凡扩展，但参考模型
++  // tests/golden/vdot_ref.c 与 NEMU 实现均固定 LMUL=1
++  // （nemu/patch/0001-add-vdot-instruction-family.patch 的 vdot_check()：
++  //  `if (vtype->vlmul != 0) longjmp_exception(EX_II);`），
++  // 三条指令统一拦截才能保证 RTL / NEMU / 参考模型三方语义逐位一致。
++  // 注意这里用 io.vtype.vlmul 的原始编码判 0（= LMUL 1），而不是上面归一化过的 LMUL
++  // （LMUL = Cat(~vlmul(2), vlmul(1,0))，LMUL=1 对应 4.U）。
++  private val dotEmulIllegal = (dotRedInst || dot4aInst) && (io.vtype.vlmul =/= 0.U)
++
 +  private val eewIllegal = fpEewIllegal || intExtEewIllegal || wnEewIllegal || dotEewIllegal
  
    // 4. EMUL Illegal
    private val lsEmulIllegal = (lsStrideInst || lsIndexInst) && (LMUL +& inst.WIDTH(1, 0) < SEW +& 1.U || LMUL +& inst.WIDTH(1, 0) > SEW +& 7.U)
-@@ -242,8 +255,14 @@ class VecExceptionGen(implicit p: Parameters) extends XSModule{
+@@ -213,7 +237,7 @@ class VecExceptionGen(implicit p: Parameters) extends XSModule{
+ 
+   private val lsSegIllegal = (lsStrideInst || lsIndexInst) && inst.NF =/= 0.U && (segRegNum > 8.U || segRegMax > 32.U)
+   
+-  private val emulIllegal = lsEmulIllegal || intExtEmulIllegal || wnEmulIllegal || gather16EmulIllegal || lsSegIllegal
++  private val emulIllegal = lsEmulIllegal || intExtEmulIllegal || wnEmulIllegal || gather16EmulIllegal || lsSegIllegal || dotEmulIllegal
+ 
+   // 5. Reg Number Align
+   private val vs1IsMask = maskArithmeticInst || vcompress
+@@ -242,8 +266,14 @@ class VecExceptionGen(implicit p: Parameters) extends XSModule{
    private val vs2NotAlign = SrcType.isVp(io.decodedInst.srcType(1)) && RegNumNotAlign(inst.VS2, vs2Emul)
  
    private val vdIsMask = lsMaskInst || acsbInst || cmpInst || maskArithmeticInst
@@ -280,6 +300,271 @@ index 27eb801..50f7bb4 100644
 +  io.out.bits.res.vxsat.get := Mux(outIsDot, false.B, (outVxsat & mgu.io.out.active).orR)
    io.out.bits.ctrl.exceptionVec.get(ExceptionNO.illegalInstr) := mgu.io.out.illegal
  }
+diff --git a/src/test/scala/xiangshan/backend/decode/VecExceptionGenTest.scala b/src/test/scala/xiangshan/backend/decode/VecExceptionGenTest.scala
+new file mode 100644
+index 0000000..ff7e26d
+--- /dev/null
++++ b/src/test/scala/xiangshan/backend/decode/VecExceptionGenTest.scala
+@@ -0,0 +1,89 @@
++package xiangshan.backend.decode
++
++import chisel3._
++import chisel3.stage.ChiselGeneratorAnnotation
++import circt.stage.ChiselStage
++import org.chipsalliance.cde.config.Parameters
++import top.DefaultConfig
++import utility.{LogUtilsOptions, LogUtilsOptionsKey, PerfCounterOptions, PerfCounterOptionsKey, XSPerfLevel}
++import xiangshan.{DebugOptionsKey, SrcType, XSCoreParamsKey, XSModule, XSTileKey}
++import xiangshan.backend.Bundles.DecodedInst
++import xiangshan.backend.fu.FuType
++import xiangshan.backend.fu.vector.Bundles.VType
++
++/** VecExceptionGenHarness —— 把 [[VecExceptionGen]] 收窄成一个可以直接用 Verilator 驱动的小模块。
++  *
++  *  [[VecExceptionGen]] 的输入里有一个很宽的 `DecodedInst`，但它实际只读其中 4 个字段
++  *  （`fuType` / `srcType(0)` / `srcType(1)` / `vecWen`，见 VecExceptionGen.scala:53-55、:280-287）。
++  *  本 harness 把这 4 个字段按「向量整数乘累加类指令」的取值写死，只把真正要遍历的
++  *  4 个量（指令字、vtype.vsew、vtype.vlmul、vstart）引出成端口，于是 C++ 测试平台
++  *  只需要驱动 4 个输入、读 1 个输出。
++  *
++  *  用途：验证 vdot 指令族在**译码阶段**的合法性判定，特别是
++  *    - `dotEewIllegal`：vdot/vdotacc 只许 SEW=8，vdot4a 只许 SEW=32；
++  *    - `dotEmulIllegal`：三条指令只许 LMUL=1（vlmul 编码 0），其余取值报非法（裁定 S-6）。
++  *  并同时回归「既有向量指令的判定没有被改坏」。
++  *
++  *  用法：
++  *    mill -i -D jvm-xmx=8G xiangshan.test.runMain \
++  *         xiangshan.backend.decode.VecExceptionGenMain --target-dir build/vdot --target verilog
++  */
++class VecExceptionGenHarness(implicit p: Parameters) extends XSModule {
++  val io = IO(new Bundle {
++    val inst    = Input(UInt(32.W))
++    val vsew    = Input(UInt(2.W))
++    val vlmul   = Input(UInt(3.W))
++    val vill    = Input(Bool())
++    val vstart  = Input(UInt(8.W))
++    val illegal = Output(Bool())
++  })
++
++  private val gen = Module(new VecExceptionGen)
++
++  gen.io.inst := io.inst
++
++  // DecodedInst 里 VecExceptionGen 真正用到的 4 个字段，其余保持 0。
++  private val di = WireInit(0.U.asTypeOf(new DecodedInst))
++  di.fuType     := FuType.vimac.U       // 向量整数乘累加 —— isVArith / isVArithMem 均为真
++  di.srcType(0) := SrcType.vp           // vs1 是向量操作数
++  di.srcType(1) := SrcType.vp           // vs2 是向量操作数
++  di.vecWen     := true.B               // 写向量目的寄存器
++  gen.io.decodedInst := di
++
++  private val vt = Wire(new VType)
++  vt.illegal := io.vill
++  vt.vma     := false.B
++  vt.vta     := true.B
++  vt.vsew    := io.vsew
++  vt.vlmul   := io.vlmul
++  gen.io.vtype := vt
++
++  gen.io.vstart := io.vstart
++
++  io.illegal := gen.io.illegalInst
++}
++
++object VecExceptionGenMain extends App {
++  private val defaultConfig = new DefaultConfig
++  // 与 xiangshan.backend.fu.VIMacUMain 相同的 Key 补齐（不走 top.ArgParser 时必须手动注入）
++  implicit val config: Parameters = defaultConfig.alterPartial({
++    case XSCoreParamsKey => defaultConfig(XSTileKey).head
++    case LogUtilsOptionsKey => LogUtilsOptions(
++      enableDebug  = defaultConfig(DebugOptionsKey).EnableDebug,
++      enablePerf   = defaultConfig(DebugOptionsKey).EnablePerfDebug,
++      fpgaPlatform = defaultConfig(DebugOptionsKey).FPGAPlatform,
++      enableXMR    = defaultConfig(DebugOptionsKey).EnableXMR
++    )
++    case PerfCounterOptionsKey => PerfCounterOptions(
++      enablePerfPrint = false,
++      enablePerfDB    = false,
++      perfLevel       = XSPerfLevel.withName(defaultConfig(DebugOptionsKey).PerfLevel),
++      perfDBHartID    = 0
++    )
++  })
++
++  (new ChiselStage).execute(
++    if (args.isEmpty) Array("--target-dir", "build/vdot", "--target", "verilog") else args,
++    Seq(ChiselGeneratorAnnotation(() => new VecExceptionGenHarness()(config)))
++  )
++}
+diff --git a/src/test/scala/xiangshan/backend/fu/VIMacUHarness.scala b/src/test/scala/xiangshan/backend/fu/VIMacUHarness.scala
+new file mode 100644
+index 0000000..5e691ae
+--- /dev/null
++++ b/src/test/scala/xiangshan/backend/fu/VIMacUHarness.scala
+@@ -0,0 +1,164 @@
++package xiangshan.backend.fu
++
++import chisel3._
++import chisel3.util.{Cat, RegEnable}
++import chisel3.stage.ChiselGeneratorAnnotation
++import circt.stage.ChiselStage
++import org.chipsalliance.cde.config.Parameters
++import top.DefaultConfig
++import utility.{LogUtilsOptions, LogUtilsOptionsKey, PerfCounterOptions, PerfCounterOptionsKey, XSPerfLevel}
++import xiangshan.{DebugOptionsKey, XSCoreParamsKey, XSModule, XSTileKey}
++import xiangshan.backend.fu.FuConfig.VimacCfg
++import xiangshan.backend.fu.vector.Bundles.VConfig
++import xiangshan.backend.fu.wrapper.VIMacU
++
++/** VIMacUHarness —— 把**真正被集成进香山的** [[VIMacU]] 收窄成与 `VDotTop` 完全相同的
++  * 窄 IO，使同一份定向语料可以直接灌进 `VIMacU` 本体。
++  *
++  *  背景（`docs/stage2/11_RTL实现说明.md` §10 第 1 条）：
++  *  L1 的 YunSuan 测试平台测的是 `VDotTop`（算术通路与 `VIMacU` 相同，但掩码/尾部成形
++  *  是另一份手写实现）。「被验证的东西不等于被集成的东西」是本项目最大的验证缺口。
++  *  本 harness 的目的就是把这个缺口补上：它不改 `VIMacU` 一行，只是把
++  *  `FuncUnitInput`（含 5 个源、VPUCtrlSignals、flush 等上百个字段）里 vdot 真正用到的
++  *  那一小撮接出来，其余全部置 0。
++  *
++  *  端口语义与 `VDotTop` 一一对应：
++  *    valid/fuOpType/vsew/vstart/vl/vm/vta/vma/vs2/vs1/oldVd/mask -> outValid/vd/vxsat
++  *
++  *  源下标约定（`VecPipedFuncUnit.scala:62-66`、`FuConfig.scala:555-557`）：
++  *    src(0)=vs1  src(1)=vs2  src(2)=old_vd  src(3)=v0 掩码  src(4)=VConfig{vtype, vl}
++  *
++  *  用法：
++  *    mill -i -D jvm-xmx=8G xiangshan.test.runMain \
++  *         xiangshan.backend.fu.VIMacUHarnessMain --target-dir build/vdot --target verilog
++  */
++class VIMacUHarness(implicit p: Parameters) extends XSModule {
++  val io = IO(new Bundle {
++    val valid    = Input(Bool())
++    val fuOpType = Input(UInt(xiangshan.FuOpTypeWidth.W))  // 完整 9 位 VimacType 编码
++    val vsew     = Input(UInt(2.W))
++    val vstart   = Input(UInt(8.W))
++    val vl       = Input(UInt(8.W))
++    val vm       = Input(Bool())
++    val vta      = Input(Bool())
++    val vma      = Input(Bool())
++    // 128 位操作数一律拆成高/低两个 64 位端口，与 YunSuan 仿真顶层 VSTInputIO 的
++    // src_N_0 / src_N_1 约定一致（docs/stage1/03_仿真平台搭建报告.md §4.3），
++    // 这样 Verilator 侧全是 uint64_t，不出现 VlWide。
++    val vs2Lo    = Input(UInt(64.W))
++    val vs2Hi    = Input(UInt(64.W))
++    val vs1Lo    = Input(UInt(64.W))
++    val vs1Hi    = Input(UInt(64.W))
++    val oldVdLo  = Input(UInt(64.W))
++    val oldVdHi  = Input(UInt(64.W))
++    val maskLo   = Input(UInt(64.W))
++    val maskHi   = Input(UInt(64.W))
++
++    val inReady  = Output(Bool())
++    val outValid = Output(Bool())
++    val vdLo     = Output(UInt(64.W))
++    val vdHi     = Output(UInt(64.W))
++    val vxsat    = Output(Bool())
++    val illegal  = Output(Bool())
++  })
++
++  private val u = Module(new VIMacU(VimacCfg))
++
++  // flush 恒不触发（本 harness 不测流水线冲刷）
++  u.io.flush.valid := false.B
++  u.io.flush.bits  := 0.U.asTypeOf(u.io.flush.bits)
++  u.io.vxrm.foreach(_ := 0.U)
++  u.io.frm.foreach(_ := 0.U)
++  u.io.out.ready   := true.B
++  u.io.in.valid    := io.valid
++
++  private val in = WireInit(0.U.asTypeOf(u.io.in.bits))
++  in.ctrl.fuOpType := io.fuOpType
++
++  private val vpu = WireInit(0.U.asTypeOf(in.ctrl.vpu.get))
++  vpu.vill    := false.B
++  vpu.vma     := io.vma
++  vpu.vta     := io.vta
++  vpu.vsew    := io.vsew
++  vpu.vlmul   := 0.U            // LMUL = 1（裁定 S-6）
++  vpu.vm      := io.vm
++  vpu.vstart  := io.vstart
++  vpu.vuopIdx := 0.U            // 单 uop
++  vpu.lastUop := true.B
++  in.ctrl.vpu.get := vpu
++
++  // VimacCfg 的 vconfigWakeUp / maskWakeUp 都是 true（FuConfig.scala:564-565），
++  // 所以 vl 与 v0 掩码走数据端口 src(4) / src(3)，而不是 ctrl.vpu 里的影子字段。
++  private val vcfg = WireInit(0.U.asTypeOf(new VConfig))
++  vcfg.vtype.illegal := false.B
++  vcfg.vtype.vma     := io.vma
++  vcfg.vtype.vta     := io.vta
++  vcfg.vtype.vsew    := io.vsew
++  vcfg.vtype.vlmul   := 0.U
++  vcfg.vl            := io.vl
++
++  in.data.src(0) := Cat(io.vs1Hi,   io.vs1Lo)
++  in.data.src(1) := Cat(io.vs2Hi,   io.vs2Lo)
++  in.data.src(2) := Cat(io.oldVdHi, io.oldVdLo)
++  in.data.src(3) := Cat(io.maskHi,  io.maskLo)
++  in.data.src(4) := vcfg.asUInt
++
++  // -------------------------------------------------------------------------
++  // ctrlPipe / dataPipe / validPipe —— 昆明湖 V2 的时序优化：功能单元**自己不保存**
++  // 控制/数据的流水副本，而是由 ExeUnit 在外面打好拍后从端口送进来
++  //   FuncUnit.scala:214-216  val validVec = io.in.bits.validPipe.get.zip(validVecThisFu)...
++  //                           val ctrlVec  = io.in.bits.ctrlPipe.get
++  //                           val dataVec  = io.in.bits.dataPipe.get
++  // 因此 harness 必须照 ExeUnit.scala:228-241 的 pipelineReg 复制这条无条件寄存器链，
++  // 否则 outCtrl/outData 恒为 0、io.out.valid 恒为 0，整条 vdot 通路会被当成死逻辑优化掉。
++  // 这里 latency = VimacCfg.latency = 2，故链长 3（下标 0..2）。
++  // -------------------------------------------------------------------------
++  private val nLat   = VimacCfg.latency.latencyVal.get
++  private val vPipe  = Wire(Vec(nLat + 1, Bool()))
++  private val cPipe  = Wire(Vec(nLat + 1, chiselTypeOf(in.ctrl)))
++  private val dPipe  = Wire(Vec(nLat + 1, chiselTypeOf(in.data)))
++  vPipe(0) := io.valid
++  cPipe(0) := in.ctrl
++  dPipe(0) := in.data
++  for (i <- 1 to nLat) {
++    vPipe(i) := RegNext(vPipe(i - 1), false.B)
++    cPipe(i) := RegNext(cPipe(i - 1))
++    dPipe(i) := RegNext(dPipe(i - 1))
++  }
++  in.validPipe.get := vPipe
++  in.ctrlPipe.get  := cPipe
++  in.dataPipe.get  := dPipe
++
++  u.io.in.bits := in
++
++  io.inReady  := u.io.in.ready
++  io.outValid := u.io.out.valid
++  io.vdLo     := u.io.out.bits.res.data(63, 0)
++  io.vdHi     := u.io.out.bits.res.data(127, 64)
++  io.vxsat    := u.io.out.bits.res.vxsat.getOrElse(false.B)
++  io.illegal  := u.io.out.bits.ctrl.exceptionVec.map(_(xiangshan.ExceptionNO.illegalInstr)).getOrElse(false.B)
++}
++
++object VIMacUHarnessMain extends App {
++  private val defaultConfig = new DefaultConfig
++  implicit val config: Parameters = defaultConfig.alterPartial({
++    case XSCoreParamsKey => defaultConfig(XSTileKey).head
++    case LogUtilsOptionsKey => LogUtilsOptions(
++      enableDebug  = defaultConfig(DebugOptionsKey).EnableDebug,
++      enablePerf   = defaultConfig(DebugOptionsKey).EnablePerfDebug,
++      fpgaPlatform = defaultConfig(DebugOptionsKey).FPGAPlatform,
++      enableXMR    = defaultConfig(DebugOptionsKey).EnableXMR
++    )
++    case PerfCounterOptionsKey => PerfCounterOptions(
++      enablePerfPrint = false,
++      enablePerfDB    = false,
++      perfLevel       = XSPerfLevel.withName(defaultConfig(DebugOptionsKey).PerfLevel),
++      perfDBHartID    = 0
++    )
++  })
++
++  (new ChiselStage).execute(
++    if (args.isEmpty) Array("--target-dir", "build/vdot", "--target", "verilog") else args,
++    Seq(ChiselGeneratorAnnotation(() => new VIMacUHarness()(config)))
++  )
++}
 diff --git a/src/test/scala/xiangshan/backend/fu/VIMacUTest.scala b/src/test/scala/xiangshan/backend/fu/VIMacUTest.scala
 new file mode 100644
 index 0000000..fb74c87

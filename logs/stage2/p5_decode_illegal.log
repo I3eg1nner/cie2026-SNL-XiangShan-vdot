@@ -1,0 +1,126 @@
+=== VecExceptionGen 译码级合法性定向测试  2026-10-24 21:09:35 CST ===
+
+--- (1) 精化 VecExceptionGenHarness ---
+[mill-state-guard] /Users/i3eg1nner/code/cie/work/XiangShan-vdot: 清理了 0 个失效的增量编译状态
+[860/860] xiangshan.test.runMain
+[860] ImmUnion max len: 22
+[860/860] =============== xiangshan.test.runMain xi...ild/vdot --target verilog =============== 8s
+==================================================================================================
+    VecExceptionGenHarness.v : 257 行
+
+--- (2) Verilator 构建 ---
+c++ -Os  -I.  -MMD -I/opt/homebrew/Cellar/verilator/5.052/share/verilator/include -I/opt/homebrew/Cellar/verilator/5.052/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=0 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=0 -DVM_TRACE_SAIF=0 -DVM_VPI=0 -faligned-new -fbracket-depth=4096 -fcf-protection=none -Xclang -fno-pch-timestamp -Qunused-arguments -Wno-bool-operation -Wno-c++11-narrowing -Wno-constant-logical-operand -Wno-int-in-bool-context -Wno-non-pod-varargs -Wno-parentheses-equality -Wno-shadow -Wno-sign-compare -Wno-tautological-bitwise-compare -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable -Wno-vla-cxx-extension    -std=c++17 -O2   -c -o verilated.o /opt/homebrew/Cellar/verilator/5.052/share/verilator/include/verilated.cpp
+c++ -Os  -I.  -MMD -I/opt/homebrew/Cellar/verilator/5.052/share/verilator/include -I/opt/homebrew/Cellar/verilator/5.052/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=0 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=0 -DVM_TRACE_SAIF=0 -DVM_VPI=0 -faligned-new -fbracket-depth=4096 -fcf-protection=none -Xclang -fno-pch-timestamp -Qunused-arguments -Wno-bool-operation -Wno-c++11-narrowing -Wno-constant-logical-operand -Wno-int-in-bool-context -Wno-non-pod-varargs -Wno-parentheses-equality -Wno-shadow -Wno-sign-compare -Wno-tautological-bitwise-compare -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable -Wno-vla-cxx-extension    -std=c++17 -O2   -c -o verilated_threads.o /opt/homebrew/Cellar/verilator/5.052/share/verilator/include/verilated_threads.cpp
+python3 /opt/homebrew/Cellar/verilator/5.052/share/verilator/bin/verilator_includer -DVL_INCLUDE_OPT=include VVecExceptionGenHarness.cpp VVecExceptionGenHarness___024root__0.cpp VVecExceptionGenHarness___024root__Slow.cpp VVecExceptionGenHarness___024root__0__Slow.cpp VVecExceptionGenHarness__Syms__Slow.cpp > VVecExceptionGenHarness__ALL.cpp
+c++ -Os  -I.  -MMD -I/opt/homebrew/Cellar/verilator/5.052/share/verilator/include -I/opt/homebrew/Cellar/verilator/5.052/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=0 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=0 -DVM_TRACE_SAIF=0 -DVM_VPI=0 -faligned-new -fbracket-depth=4096 -fcf-protection=none -Xclang -fno-pch-timestamp -Qunused-arguments -Wno-bool-operation -Wno-c++11-narrowing -Wno-constant-logical-operand -Wno-int-in-bool-context -Wno-non-pod-varargs -Wno-parentheses-equality -Wno-shadow -Wno-sign-compare -Wno-tautological-bitwise-compare -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable -Wno-vla-cxx-extension    -std=c++17 -O2   -c -o VVecExceptionGenHarness__ALL.o VVecExceptionGenHarness__ALL.cpp
+c++  -Wl,-U,__Z15vl_time_stamp64v,-U,__Z13sc_time_stampv,-U,_vlog_startup_routines   vecexcgen_tb.o verilated.o verilated_threads.o VVecExceptionGenHarness__ALL.a    -pthread -lpthread   -o /Users/i3eg1nner/code/cie/work/XiangShan-vdot/build/decode-tb/vecexcgen_tb
+- V e r i l a t i o n   R e p o r t: Verilator 5.052 2026-09-05 rev vUNKNOWN-built20260905
+- Verilator: Built from 0.045 MB sources in 3 modules, into 0.202 MB in 5 C++ files needing 0.000 MB
+- Verilator: Walltime 2.154 s (elab=0.005, cvt=0.013, bld=2.125); cpu 0.020 s on 10 threads; allocated 12.312 MB
+
+--- (3) 运行定向用例 ---
+DUT: VecExceptionGenHarness（内部例化真正的 VecExceptionGen）
+vlmul 编码： 0=m1  1=m2  2=m4  3=m8  5=mf8  6=mf4  7=mf2（4 为保留）
+vsew  编码： 0=e8  1=e16 2=e32 3=e64
+
+[A] vdot.vv —— 唯一合法组合 SEW=8 & LMUL=1
+  PASS  vdot 合法基准          inst=e7880457 vsew=0 vlmul=0 vstart=0   期望 illegal=0 实测 illegal=0
+
+[B] vdot.vv —— LMUL>1 必须非法（本阶段新增的 dotEmulIllegal）
+  PASS  vdot LMUL=2                inst=e7880457 vsew=0 vlmul=1 vstart=0   期望 illegal=1 实测 illegal=1
+  PASS  vdot LMUL=4                inst=e7880457 vsew=0 vlmul=2 vstart=0   期望 illegal=1 实测 illegal=1
+  PASS  vdot LMUL=8                inst=e7880457 vsew=0 vlmul=3 vstart=0   期望 illegal=1 实测 illegal=1
+
+[C] vdot.vv —— 分数 LMUL 同样非法（本版本只定义 LMUL=1）
+  PASS  vdot LMUL=1/8              inst=e7880457 vsew=0 vlmul=5 vstart=0   期望 illegal=1 实测 illegal=1
+  PASS  vdot LMUL=1/4              inst=e7880457 vsew=0 vlmul=6 vstart=0   期望 illegal=1 实测 illegal=1
+  PASS  vdot LMUL=1/2              inst=e7880457 vsew=0 vlmul=7 vstart=0   期望 illegal=1 实测 illegal=1
+  PASS  vdot vlmul=保留          inst=e7880457 vsew=0 vlmul=4 vstart=0   期望 illegal=1 实测 illegal=1
+
+[D] vdotacc.vv —— 同样的 LMUL 约束
+  PASS  vdotacc 合法基准       inst=eb880457 vsew=0 vlmul=0 vstart=0   期望 illegal=0 实测 illegal=0
+  PASS  vdotacc LMUL=2             inst=eb880457 vsew=0 vlmul=1 vstart=0   期望 illegal=1 实测 illegal=1
+  PASS  vdotacc LMUL=8             inst=eb880457 vsew=0 vlmul=3 vstart=0   期望 illegal=1 实测 illegal=1
+  PASS  vdotacc LMUL=1/2           inst=eb880457 vsew=0 vlmul=7 vstart=0   期望 illegal=1 实测 illegal=1
+
+[E] vdot4a.vv —— SEW=32 & LMUL=1
+  PASS  vdot4a 合法基准        inst=ef880457 vsew=2 vlmul=0 vstart=0   期望 illegal=0 实测 illegal=0
+  PASS  vdot4a LMUL=2              inst=ef880457 vsew=2 vlmul=1 vstart=0   期望 illegal=1 实测 illegal=1
+  PASS  vdot4a LMUL=4              inst=ef880457 vsew=2 vlmul=2 vstart=0   期望 illegal=1 实测 illegal=1
+  PASS  vdot4a LMUL=1/2            inst=ef880457 vsew=2 vlmul=7 vstart=0   期望 illegal=1 实测 illegal=1
+
+[F] dotEewIllegal 回归 —— vdot/vdotacc 只许 SEW=8
+  PASS  vdot SEW=16                inst=e7880457 vsew=1 vlmul=0 vstart=0   期望 illegal=1 实测 illegal=1
+  PASS  vdot SEW=32                inst=e7880457 vsew=2 vlmul=0 vstart=0   期望 illegal=1 实测 illegal=1
+  PASS  vdot SEW=64                inst=e7880457 vsew=3 vlmul=0 vstart=0   期望 illegal=1 实测 illegal=1
+  PASS  vdotacc SEW=32             inst=eb880457 vsew=2 vlmul=0 vstart=0   期望 illegal=1 实测 illegal=1
+
+[G] dotEewIllegal 回归 —— vdot4a 只许 SEW=32
+  PASS  vdot4a SEW=8               inst=ef880457 vsew=0 vlmul=0 vstart=0   期望 illegal=1 实测 illegal=1
+  PASS  vdot4a SEW=16              inst=ef880457 vsew=1 vlmul=0 vstart=0   期望 illegal=1 实测 illegal=1
+  PASS  vdot4a SEW=64              inst=ef880457 vsew=3 vlmul=0 vstart=0   期望 illegal=1 实测 illegal=1
+
+[H] vstartIllegal 回归 —— 裁定 S-1（归约类 vstart!=0 非法）
+  PASS  vdot vstart=1              inst=e7880457 vsew=0 vlmul=0 vstart=1   期望 illegal=1 实测 illegal=1
+  PASS  vdot vstart=15             inst=e7880457 vsew=0 vlmul=0 vstart=15  期望 illegal=1 实测 illegal=1
+  PASS  vdotacc vstart=1           inst=eb880457 vsew=0 vlmul=0 vstart=1   期望 illegal=1 实测 illegal=1
+
+[I] 既有向量指令不受影响 —— vadd.vv 在各 SEW × LMUL 下仍然合法
+  PASS  vadd SEW=8 LMUL=1          inst=03880457 vsew=0 vlmul=0 vstart=0   期望 illegal=0 实测 illegal=0
+  PASS  vadd SEW=8 LMUL=2          inst=03880457 vsew=0 vlmul=1 vstart=0   期望 illegal=0 实测 illegal=0
+  PASS  vadd SEW=8 LMUL=4          inst=03880457 vsew=0 vlmul=2 vstart=0   期望 illegal=0 实测 illegal=0
+  PASS  vadd SEW=8 LMUL=8          inst=03880457 vsew=0 vlmul=3 vstart=0   期望 illegal=0 实测 illegal=0
+  PASS  vadd SEW=16 LMUL=1         inst=03880457 vsew=1 vlmul=0 vstart=0   期望 illegal=0 实测 illegal=0
+  PASS  vadd SEW=16 LMUL=2         inst=03880457 vsew=1 vlmul=1 vstart=0   期望 illegal=0 实测 illegal=0
+  PASS  vadd SEW=16 LMUL=4         inst=03880457 vsew=1 vlmul=2 vstart=0   期望 illegal=0 实测 illegal=0
+  PASS  vadd SEW=16 LMUL=8         inst=03880457 vsew=1 vlmul=3 vstart=0   期望 illegal=0 实测 illegal=0
+  PASS  vadd SEW=32 LMUL=1         inst=03880457 vsew=2 vlmul=0 vstart=0   期望 illegal=0 实测 illegal=0
+  PASS  vadd SEW=32 LMUL=2         inst=03880457 vsew=2 vlmul=1 vstart=0   期望 illegal=0 实测 illegal=0
+  PASS  vadd SEW=32 LMUL=4         inst=03880457 vsew=2 vlmul=2 vstart=0   期望 illegal=0 实测 illegal=0
+  PASS  vadd SEW=32 LMUL=8         inst=03880457 vsew=2 vlmul=3 vstart=0   期望 illegal=0 实测 illegal=0
+  PASS  vadd SEW=64 LMUL=1         inst=03880457 vsew=3 vlmul=0 vstart=0   期望 illegal=0 实测 illegal=0
+  PASS  vadd SEW=64 LMUL=2         inst=03880457 vsew=3 vlmul=1 vstart=0   期望 illegal=0 实测 illegal=0
+  PASS  vadd SEW=64 LMUL=4         inst=03880457 vsew=3 vlmul=2 vstart=0   期望 illegal=0 实测 illegal=0
+  PASS  vadd SEW=64 LMUL=8         inst=03880457 vsew=3 vlmul=3 vstart=0   期望 illegal=0 实测 illegal=0
+
+[J] 既有 vimac 指令不受影响 —— vmacc.vv LMUL>1 仍然合法
+  PASS  vmacc SEW=8  LMUL=1        inst=b7882457 vsew=0 vlmul=0 vstart=0   期望 illegal=0 实测 illegal=0
+  PASS  vmacc SEW=8  LMUL=2        inst=b7882457 vsew=0 vlmul=1 vstart=0   期望 illegal=0 实测 illegal=0
+  PASS  vmacc SEW=32 LMUL=8        inst=b7882457 vsew=2 vlmul=3 vstart=0   期望 illegal=0 实测 illegal=0
+  PASS  vmacc SEW=64 LMUL=4        inst=b7882457 vsew=3 vlmul=2 vstart=0   期望 illegal=0 实测 illegal=0
+
+----------------------------------------------------------------------
+VecExceptionGen 定向测试： 共 46 条，PASS 46，FAIL 0
+VECEXC-TB: PASS
+
+--- (4) 反向验证：临时撤掉 dotEmulIllegal，确认 LMUL 用例会失败 ---
+    @@ -237,7 +237,7 @@
+     
+       private val lsSegIllegal = (lsStrideInst || lsIndexInst) && inst.NF =/= 0.U && (segRegNum > 8.U || segRegMax > 32.U)
+       
+    -  private val emulIllegal = lsEmulIllegal || intExtEmulIllegal || wnEmulIllegal || gather16EmulIllegal || lsSegIllegal || dotEmulIllegal
+    +  private val emulIllegal = lsEmulIllegal || intExtEmulIllegal || wnEmulIllegal || gather16EmulIllegal || lsSegIllegal  /* dotEmulIllegal 临时移除（反向验证） */
+     
+       // 5. Reg Number Align
+       private val vs1IsMask = maskArithmeticInst || vcompress
+[860] ImmUnion max len: 22
+[860/860] =============== xiangshan.test.runMain xi...ot-nofix --target verilog =============== 8s
+==================================================================================================
+  FAIL  vdot LMUL=2                inst=e7880457 vsew=0 vlmul=1 vstart=0   期望 illegal=1 实测 illegal=0
+  FAIL  vdot LMUL=4                inst=e7880457 vsew=0 vlmul=2 vstart=0   期望 illegal=1 实测 illegal=0
+  FAIL  vdot LMUL=8                inst=e7880457 vsew=0 vlmul=3 vstart=0   期望 illegal=1 实测 illegal=0
+  FAIL  vdot LMUL=1/8              inst=e7880457 vsew=0 vlmul=5 vstart=0   期望 illegal=1 实测 illegal=0
+  FAIL  vdot LMUL=1/4              inst=e7880457 vsew=0 vlmul=6 vstart=0   期望 illegal=1 实测 illegal=0
+  FAIL  vdot LMUL=1/2              inst=e7880457 vsew=0 vlmul=7 vstart=0   期望 illegal=1 实测 illegal=0
+  FAIL  vdot vlmul=保留          inst=e7880457 vsew=0 vlmul=4 vstart=0   期望 illegal=1 实测 illegal=0
+  FAIL  vdotacc LMUL=2             inst=eb880457 vsew=0 vlmul=1 vstart=0   期望 illegal=1 实测 illegal=0
+  FAIL  vdotacc LMUL=8             inst=eb880457 vsew=0 vlmul=3 vstart=0   期望 illegal=1 实测 illegal=0
+  FAIL  vdotacc LMUL=1/2           inst=eb880457 vsew=0 vlmul=7 vstart=0   期望 illegal=1 实测 illegal=0
+  FAIL  vdot4a LMUL=2              inst=ef880457 vsew=2 vlmul=1 vstart=0   期望 illegal=1 实测 illegal=0
+  FAIL  vdot4a LMUL=4              inst=ef880457 vsew=2 vlmul=2 vstart=0   期望 illegal=1 实测 illegal=0
+  FAIL  vdot4a LMUL=1/2            inst=ef880457 vsew=2 vlmul=7 vstart=0   期望 illegal=1 实测 illegal=0
+VecExceptionGen 定向测试： 共 46 条，PASS 33，FAIL 13
+VECEXC-TB: FAIL
+    源码已还原（dotEmulIllegal 恢复）
+[860/860] =============== xiangshan.test.runMain xi...ild/vdot --target verilog =============== 9s
+==================================================================================================

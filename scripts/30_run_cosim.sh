@@ -192,7 +192,7 @@ fault_injection() {
     cp -f "${SV}" "${BUILD}/VDotTop.sv.orig"
     cp -f "${VDOTC}" "${BUILD}/vdot.c.orig"
     # shellcheck disable=SC2064
-    trap "echo '--- 恢复源文件 ---'; cp -f '${BUILD}/VDotTop.sv.orig' '${SV}'; cp -f '${BUILD}/vdot.c.orig' '${VDOTC}'" EXIT
+    trap "echo '--- 异常退出，恢复源文件 ---'; cp -f '${BUILD}/VDotTop.sv.orig' '${SV}'; cp -f '${BUILD}/vdot.c.orig' '${VDOTC}'" EXIT
 
     inject() { # inject <file> <old> <new> <expect_count>
         python3 - "$1" "$2" "$3" "$4" <<'PY'
@@ -206,7 +206,8 @@ print("注入成功：%s  (%d 处)" % (path, n))
 PY
     }
 
-    small_run() { # small_run -> 回显 RESULT 行，返回 cosim 退出码
+    local LAST="${BUILD}/fi_last.txt"
+    small_run() { # 跑一轮小规模协同仿真，输出存到 ${LAST}，返回 cosim 的真实退出码
         set +e
         in_container "
 cd /work/tests/cosim
@@ -216,12 +217,14 @@ cd /work/tests/cosim
   --vectors /work/tests/vectors/boundary.txt \
   --vectors /work/tests/vectors/vdotacc_boundary.txt \
   --vectors /work/tests/vectors/vdot4a_boundary.txt \
-  --random 2000 --illegal 500 --seed ${SEED} 2>&1 | tail -16
-"
+  --random 2000 --illegal 500 --seed ${SEED}
+" > "${LAST}" 2>&1
         local rc=$?
         set -e
+        grep -E '^TOTAL|^  \[A\]|^  \[B\]|^RESULT' "${LAST}" || tail -5 "${LAST}"
         return ${rc}
     }
+    divergence() { grep -E '^RESULT\(LEGALITY\)' "${LAST}" | grep -oE '[0-9]+' | tail -1; }
 
     rebuild_nemu_so() {
         in_container '
@@ -232,20 +235,27 @@ make -j"$(nproc)" 2>&1 | tail -2
 '
     }
 
-    local pass=0 total=0
+    local detected=0 injections=0
+
+    # ---------------- 基线 ----------------
+    banner "[T3-BASE] 注入前基线（期望 RESULT(VALUE): PASS）"
+    small_run || { echo "基线就不过，环境有问题"; exit 1; }
+    local base_div
+    base_div="$(divergence)"
+    echo ">>> 基线：值比对 PASS，已知判定分歧 ${base_div} 条"
 
     # ---------------- RTL 侧注入 1：写回值翻一位 ----------------
     banner "[T3-RTL-1] 在生成的 VDotTop.sv 里把写回结果的 bit0 翻转"
     inject "${SV}" "  assign io_vd =" "  assign io_vd = 128'h1 ^" 1
     verilate >/dev/null
     compile_cosim >/dev/null
-    total=$((total + 1))
+    injections=$((injections + 1))
     echo "--- 注入后实跑（期望 RESULT(VALUE): FAIL）---"
     if small_run; then
         echo ">>> T3-RTL-1 未被检出  => 比对链路失效，FAIL"
     else
         echo ">>> T3-RTL-1 被检出  => OK"
-        pass=$((pass + 1))
+        detected=$((detected + 1))
     fi
     cp -f "${BUILD}/VDotTop.sv.orig" "${SV}"
 
@@ -255,13 +265,13 @@ make -j"$(nproc)" 2>&1 | tail -2
                    "? (vtaS2 ? 32'hFFFFFFFE : oldVdS2[127:96])" 1
     verilate >/dev/null
     compile_cosim >/dev/null
-    total=$((total + 1))
+    injections=$((injections + 1))
     echo "--- 注入后实跑（期望 RESULT(VALUE): FAIL）---"
     if small_run; then
         echo ">>> T3-RTL-2 未被检出  => FAIL"
     else
         echo ">>> T3-RTL-2 被检出  => OK"
-        pass=$((pass + 1))
+        detected=$((detected + 1))
     fi
     cp -f "${BUILD}/VDotTop.sv.orig" "${SV}"
     verilate >/dev/null
@@ -271,41 +281,53 @@ make -j"$(nproc)" 2>&1 | tail -2
     banner "[T3-NEMU-1] 在 NEMU 的 vdot.c 里把每个乘积的 bit0 翻转，并重建参考共享库"
     inject "${VDOTC}" "acc += (uint64_t)(a * b);" "acc += (uint64_t)(a * b) ^ 1;" 2
     rebuild_nemu_so
-    total=$((total + 1))
+    injections=$((injections + 1))
     echo "--- 注入后实跑（期望 RESULT(VALUE): FAIL）---"
     if small_run; then
         echo ">>> T3-NEMU-1 未被检出  => FAIL"
     else
         echo ">>> T3-NEMU-1 被检出  => OK"
-        pass=$((pass + 1))
+        detected=$((detected + 1))
     fi
     cp -f "${BUILD}/vdot.c.orig" "${VDOTC}"
 
-    # ---------------- NEMU 侧注入 2：去掉 vstart!=0 的非法判定（裁定 S-1）----------
+    # ------- NEMU 侧注入 2：删掉 vstart!=0 的非法判定（裁定 S-1），考察非法判定通道 -------
     banner "[T3-NEMU-2] 删掉 vdot_reduce() 里的 check_vstart_exception()，破坏裁定 S-1"
     inject "${VDOTC}" "  check_vstart_exception(s);" "  /* injected: S-1 check removed */" 1
     rebuild_nemu_so
-    total=$((total + 1))
-    echo "--- 注入后实跑（期望 RESULT(LEGALITY) 从 PASS/已知分歧 变成新增大量 RTL非法/REF合法）---"
+    injections=$((injections + 1))
+    echo "--- 注入后实跑（本项考察的是非法判定通道：REF 不再抛异常，"
+    echo "     vdot/vdotacc 的 vstart!=0 用例必然从「非法一致」翻成「RTL非法/REF合法」）---"
     small_run || true
-    echo "（本项看「判定分歧」一栏：注入前 vdot/vdotacc 的 vstart!=0 两侧都判非法；"
-    echo "  注入后 REF 不再抛异常，必然出现大量 'RTL非法/REF合法'）"
-    total=$((total)) # 该项用分歧数判读，不计入 pass/total 的二值统计
+    local inj_div
+    inj_div="$(divergence)"
+    echo ">>> 判定分歧：基线 ${base_div} 条 -> 注入后 ${inj_div} 条"
+    if [ "${inj_div}" -gt "${base_div}" ]; then
+        echo ">>> T3-NEMU-2 被检出  => OK"
+        detected=$((detected + 1))
+    else
+        echo ">>> T3-NEMU-2 未被检出  => FAIL"
+    fi
 
     # ---------------- 恢复 ----------------
     banner "[T3] 恢复源文件并重建"
     cp -f "${BUILD}/vdot.c.orig" "${VDOTC}"
     trap - EXIT
     rebuild_nemu_so
-    echo "--- 恢复后复测（期望 RESULT(VALUE): PASS）---"
+    echo "$ diff <(git -C ${NEMU} diff --stat -- src/isa/riscv64/instr/rvv/vdot.c)"
+    ( cd "${NEMU}" && git status --short -- src/isa/riscv64/instr/rvv/vdot.c ) || true
+    diff "${BUILD}/vdot.c.orig" "${VDOTC}" && echo "vdot.c 已恢复（diff 为空）"
+    diff "${BUILD}/VDotTop.sv.orig" "${SV}" && echo "VDotTop.sv 已恢复（diff 为空）"
+    echo "--- 恢复后复测（期望 RESULT(VALUE): PASS 且判定分歧回到 ${base_div} 条）---"
     if small_run; then
-        echo ">>> 恢复后复测 PASS"
+        echo ">>> 恢复后复测 PASS，判定分歧 $(divergence) 条"
     else
         echo ">>> 恢复后复测 FAIL —— 环境未回到干净状态！"
         exit 1
     fi
     echo
-    echo "FAULT-INJECTION: 值比对通道 ${pass}/${total} 被检出；非法判定通道见 T3-NEMU-2 分歧统计"
+    echo "FAULT-INJECTION: ${detected}/${injections} 被检出"
+    [ "${detected}" -eq "${injections}" ] || exit 1
 }
 
 # -----------------------------------------------------------------------------

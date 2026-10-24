@@ -1,0 +1,95 @@
+==============================================================
+ [T3] 故障注入自测：比对链路必须能检出人为错误   2026-10-24T13:10:49Z UTC
+==============================================================
+==============================================================
+ [T3-BASE] 注入前基线（期望 RESULT(VALUE): PASS）   2026-10-24T13:10:49Z UTC
+==============================================================
+TOTAL  attempted = 8405
+  [A] 值比对（REF 与 RTL 都判合法）: 比对 6378 条, PASS 6378, FAIL 0
+  [B] 非法指令判定一致性          : 合法一致 6378, 非法一致 1210, 分歧 817
+RESULT(VALUE)   : PASS   (值比对失配 0 条)
+RESULT(LEGALITY): DIVERGENT   (判定分歧 817 条)
+>>> 基线：值比对 PASS，已知判定分歧 817 条
+==============================================================
+ [T3-RTL-1] 在生成的 VDotTop.sv 里把写回结果的 bit0 翻转   2026-10-24T13:10:49Z UTC
+==============================================================
+注入成功：/Users/i3eg1nner/code/cie/work/XiangShan-cosim/yunsuan/build/vdot/VDotTop.sv  (1 处)
+%Warning-WIDTHEXPAND: /Users/i3eg1nner/code/cie/work/XiangShan-cosim/yunsuan/build/vdot/VDotTop.sv:1409:25: Operator XOR expects 128 bits on the RHS, but RHS's VARREF 'isDot4aS2' generates 1 bits.
+                                                                                                          : ... note: In instance 'VDotTop'
+ 1409 |   assign io_vd = 128'h1 ^
+      |                         ^
+                      ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=5.052
+                      ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
+%Warning-WIDTHTRUNC: /Users/i3eg1nner/code/cie/work/XiangShan-cosim/yunsuan/build/vdot/VDotTop.sv:1411:7: Logical operator COND expects 1 bit on the Conditional Test, but Conditional Test's XOR generates 128 bits.
+                                                                                                        : ... note: In instance 'VDotTop'
+ 1411 |       ? {vstartGeVlS2 | (|(vstartS2[6:2]))
+      |       ^
+                     ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=5.052
+                     ... Use "/* verilator lint_off WIDTHTRUNC */" and lint_on around source to disable this message.
+--- 注入后实跑（期望 RESULT(VALUE): FAIL）---
+TOTAL  attempted = 8405
+  [A] 值比对（REF 与 RTL 都判合法）: 比对 6378 条, PASS 1262, FAIL 5116
+  [B] 非法指令判定一致性          : 合法一致 6378, 非法一致 1210, 分歧 817
+RESULT(VALUE)   : FAIL   (值比对失配 5116 条)
+RESULT(LEGALITY): DIVERGENT   (判定分歧 817 条)
+>>> T3-RTL-1 被检出  => OK
+==============================================================
+ [T3-RTL-2] 把 vdot4a 最高元素的 tail-agnostic 填充 32'hFFFFFFFF 改成 32'hFFFFFFFE   2026-10-24T13:11:23Z UTC
+==============================================================
+注入成功：/Users/i3eg1nner/code/cie/work/XiangShan-cosim/yunsuan/build/vdot/VDotTop.sv  (1 处)
+--- 注入后实跑（期望 RESULT(VALUE): FAIL）---
+TOTAL  attempted = 8405
+  [A] 值比对（REF 与 RTL 都判合法）: 比对 6378 条, PASS 5792, FAIL 586
+  [B] 非法指令判定一致性          : 合法一致 6378, 非法一致 1210, 分歧 817
+RESULT(VALUE)   : FAIL   (值比对失配 586 条)
+RESULT(LEGALITY): DIVERGENT   (判定分歧 817 条)
+>>> T3-RTL-2 被检出  => OK
+==============================================================
+ [T3-NEMU-1] 在 NEMU 的 vdot.c 里把每个乘积的 bit0 翻转，并重建参考共享库   2026-10-24T13:12:51Z UTC
+==============================================================
+注入成功：/Users/i3eg1nner/code/cie/work/NEMU/src/isa/riscv64/instr/rvv/vdot.c  (2 处)
+Makefile:40: You have set CONFIG_FLASH_IMG_PATH option, but the specified path '""' does not exist!
++ CC src/isa/riscv64/instr/rvv/vdot.c
++ g++ /work/work/NEMU/build/riscv64-nemu-interpreter-so
+--- 注入后实跑（期望 RESULT(VALUE): FAIL）---
+TOTAL  attempted = 8405
+  [A] 值比对（REF 与 RTL 都判合法）: 比对 6378 条, PASS 1434, FAIL 4944
+  [B] 非法指令判定一致性          : 合法一致 6378, 非法一致 1210, 分歧 817
+RESULT(VALUE)   : FAIL   (值比对失配 4944 条)
+RESULT(LEGALITY): DIVERGENT   (判定分歧 817 条)
+>>> T3-NEMU-1 被检出  => OK
+==============================================================
+ [T3-NEMU-2] 删掉 vdot_reduce() 里的 check_vstart_exception()，破坏裁定 S-1   2026-10-24T13:12:58Z UTC
+==============================================================
+注入成功：/Users/i3eg1nner/code/cie/work/NEMU/src/isa/riscv64/instr/rvv/vdot.c  (1 处)
+Makefile:40: You have set CONFIG_FLASH_IMG_PATH option, but the specified path '""' does not exist!
++ CC src/isa/riscv64/instr/rvv/vdot.c
++ g++ /work/work/NEMU/build/riscv64-nemu-interpreter-so
+--- 注入后实跑（本项考察的是非法判定通道：REF 不再抛异常，
+     vdot/vdotacc 的 vstart!=0 用例必然从「非法一致」翻成「RTL非法/REF合法」）---
+TOTAL  attempted = 8405
+  [A] 值比对（REF 与 RTL 都判合法）: 比对 6378 条, PASS 6378, FAIL 0
+  [B] 非法指令判定一致性          : 合法一致 6378, 非法一致 1048, 分歧 979
+RESULT(VALUE)   : PASS   (值比对失配 0 条)
+RESULT(LEGALITY): DIVERGENT   (判定分歧 979 条)
+>>> 判定分歧：基线 817 条 -> 注入后 979 条
+>>> T3-NEMU-2 被检出  => OK
+==============================================================
+ [T3] 恢复源文件并重建   2026-10-24T13:13:04Z UTC
+==============================================================
+Makefile:40: You have set CONFIG_FLASH_IMG_PATH option, but the specified path '""' does not exist!
++ CC src/isa/riscv64/instr/rvv/vdot.c
++ g++ /work/work/NEMU/build/riscv64-nemu-interpreter-so
+$ diff <(git -C /Users/i3eg1nner/code/cie/work/NEMU diff --stat -- src/isa/riscv64/instr/rvv/vdot.c)
+?? src/isa/riscv64/instr/rvv/vdot.c
+vdot.c 已恢复（diff 为空）
+VDotTop.sv 已恢复（diff 为空）
+--- 恢复后复测（期望 RESULT(VALUE): PASS 且判定分歧回到 817 条）---
+TOTAL  attempted = 8405
+  [A] 值比对（REF 与 RTL 都判合法）: 比对 6378 条, PASS 6378, FAIL 0
+  [B] 非法指令判定一致性          : 合法一致 6378, 非法一致 1210, 分歧 817
+RESULT(VALUE)   : PASS   (值比对失配 0 条)
+RESULT(LEGALITY): DIVERGENT   (判定分歧 817 条)
+>>> 恢复后复测 PASS，判定分歧 817 条
+
+FAULT-INJECTION: 4/4 被检出
