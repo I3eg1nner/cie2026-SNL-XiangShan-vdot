@@ -1,0 +1,204 @@
+===============================================================
+P1-T4 全核仿真可行性调查 (full-core simulation feasibility)
+采集时间: 2026-10-24T10:05:10Z UTC
+宿主: Darwin 24.5.0 arm64 / macOS 15.5
+===============================================================
+
+### [1] 宿主与 Docker 资源
+$ sysctl -n hw.memsize hw.ncpu
+17179869184
+10
+$ docker info --format '{{.Architecture}} {{.OSType}} NCPU={{.NCPU}} MemTotal={{.MemTotal}}'
+aarch64 linux NCPU=10 MemTotal=8217575424
+
+### [2] 官方镜像 ghcr.io/openxiangshan/xs-env 的架构支持
+$ docker manifest inspect ghcr.io/openxiangshan/xs-env
+{
+   "schemaVersion": 2,
+   "mediaType": "application/vnd.oci.image.index.v1+json",
+   "manifests": [
+      {
+         "mediaType": "application/vnd.oci.image.manifest.v1+json",
+         "size": 4087,
+         "digest": "sha256:a0aa7dc5554a7273a1f790bd1059b4624460c3191e94873697bbe6a20b0dc667",
+         "platform": {
+            "architecture": "amd64",
+            "os": "linux"
+         }
+      },
+      {
+         "mediaType": "application/vnd.oci.image.manifest.v1+json",
+         "size": 838,
+         "digest": "sha256:76a49427906662c885069e18c39c053419af3fcab9efa41239e70d062d685354",
+         "platform": {
+            "architecture": "unknown",
+            "os": "unknown"
+         }
+      }
+   ]
+}
+-- exit=0 --
+
+### [3] 官方 amd64 镜像的体积（不下载，仅读 manifest）
+$ docker manifest inspect ghcr.io/openxiangshan/xs-env@sha256:a0aa7dc5554a7273a1f790bd1059b4624460c3191e94873697bbe6a20b0dc667
+{
+	"schemaVersion": 2,
+	"mediaType": "application/vnd.oci.image.manifest.v1+json",
+	"config": {
+		"mediaType": "application/vnd.oci.image.config.v1+json",
+		"digest": "sha256:80d911f7f14c2e683f2bad3a6d2e8d42f41284b23baa2411d4d08d17489feb89",
+		"size": 10019
+	},
+	"layers": [
+		{
+			"mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+			"digest": "sha256:09923199ca0ebd3ad9fb1dd1d0ab85d2b86aa388b988c8d4c8ee4f660fdb9e9e",
+			"size": 41572999
+		},
+		{
+			"mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+			"digest": "sha256:d9b9856437537fc061e98f71ecab9d95d7745fbf7d7b871d2e54ca4c3b02ea5a",
+			"size": 391
+		},
+		{
+			"mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+			"digest": "sha256:cd360f2eda9f3940974184264fe38cb5a00ce02ffb973c966040d4d20eef5834",
+			"size": 145
+		},
+		{
+			"mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+			"digest": "sha256:387c2907b2450c606107310f09976a1ba8f006076acf37c7c919feb15790fb83",
+			"size": 202
+		},
+		{
+			"mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+			"digest": "sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1",
+			"size": 32
+		},
+		{
+			"mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+			"digest": "sha256:a6050764928c94902152c2c2c04151df4d134b56ace3e036dd40205c9fa47d58",
+			"size": 875
+		},
+		{
+... (完整 manifest 见下行汇总)
+压缩层总字节数:
+layers=20  compressed_total=1116889765 bytes = 1.04 GiB
+
+### [4] Docker 能否通过 qemu 用户态模拟运行 amd64 镜像
+$ docker run --rm --platform linux/amd64 ubuntu:24.04 bash -c 'uname -m; cat /proc/cpuinfo|head -3'
+Unable to find image 'ubuntu:24.04' locally
+24.04: Pulling from library/ubuntu
+f2b4ef06ff01: Pulling fs layer
+f2b4ef06ff01: Verifying Checksum
+f2b4ef06ff01: Download complete
+f2b4ef06ff01: Pull complete
+Digest: sha256:68ee22004a9109b44973313b02ff7b1de250f1de0f5ecb628d73f579aaff33ac
+Status: Downloaded newer image for ubuntu:24.04
+x86_64
+processor	: 0
+vendor_id	: VirtualApple
+cpu family	: 6
+-- exit=0 --
+
+### [5] amd64 模拟执行的速度代价（同一 CPU 密集负载，coreutils sha256sum）
+负载: dd if=/dev/zero bs=1M count=400 | sha256sum
+
+--- 原生 linux/arm64 ---
+$ docker run --rm --platform linux/arm64 ubuntu:24.04 bash -c 'time (dd ... | sha256sum)'  [run 1]
+Unable to find image 'ubuntu:24.04' locally
+24.04: Pulling from library/ubuntu
+d5aec63251bb: Pulling fs layer
+d5aec63251bb: Verifying Checksum
+d5aec63251bb: Download complete
+d5aec63251bb: Pull complete
+Digest: sha256:68ee22004a9109b44973313b02ff7b1de250f1de0f5ecb628d73f579aaff33ac
+Status: Downloaded newer image for ubuntu:24.04
+6ed5e85372e488807486f4446e2a3a501d319be812e969e3de426db798cc5704  -
+
+real	0m0.231s
+user	0m0.159s
+sys	0m0.149s
+$ docker run --rm --platform linux/arm64 ubuntu:24.04 bash -c 'time (dd ... | sha256sum)'  [run 2]
+6ed5e85372e488807486f4446e2a3a501d319be812e969e3de426db798cc5704  -
+
+real	0m0.230s
+user	0m0.146s
+sys	0m0.159s
+
+--- 模拟 linux/amd64 ---
+$ docker run --rm --platform linux/amd64 ubuntu:24.04 bash -c 'time (dd ... | sha256sum)'  [run 1]
+Unable to find image 'ubuntu:24.04' locally
+24.04: Pulling from library/ubuntu
+Digest: sha256:68ee22004a9109b44973313b02ff7b1de250f1de0f5ecb628d73f579aaff33ac
+Status: Downloaded newer image for ubuntu:24.04
+6ed5e85372e488807486f4446e2a3a501d319be812e969e3de426db798cc5704  -
+
+real	0m0.969s
+user	0m0.928s
+sys	0m0.155s
+$ docker run --rm --platform linux/amd64 ubuntu:24.04 bash -c 'time (dd ... | sha256sum)'  [run 2]
+6ed5e85372e488807486f4446e2a3a501d319be812e969e3de426db798cc5704  -
+
+real	0m0.935s
+user	0m0.892s
+sys	0m0.054s
+
+注：sha256sum 在 arm64 上会用到 SHA-2 硬件扩展，上面的倍率偏悲观/偏乐观都有可能，
+    因此再补一个纯整数解释器负载（bash 算术循环），不依赖任何加密指令。
+负载: bash 算术循环 400000 次
+--- 原生 linux/arm64 ---
+Unable to find image 'ubuntu:24.04' locally
+24.04: Pulling from library/ubuntu
+Digest: sha256:68ee22004a9109b44973313b02ff7b1de250f1de0f5ecb628d73f579aaff33ac
+Status: Downloaded newer image for ubuntu:24.04
+
+real	0m0.575s
+user	0m0.572s
+sys	0m0.002s
+--- 模拟 linux/amd64 ---
+Unable to find image 'ubuntu:24.04' locally
+24.04: Pulling from library/ubuntu
+Digest: sha256:68ee22004a9109b44973313b02ff7b1de250f1de0f5ecb628d73f579aaff33ac
+Status: Downloaded newer image for ubuntu:24.04
+
+real	0m0.969s
+user	0m0.969s
+sys	0m0.000s
+
+### [6] gsim（OpenXiangShan/gsim，Verilator 替代品）是否有 arm64 预编译版本
+$ curl -s https://api.github.com/repos/OpenXiangShan/gsim/releases/latest | grep -E 'tag_name|"name"'
+  "tag_name": "master-2026-10-13-91c79cd",
+  "name": "gsim 2026-10-13 91c79cd",
+      "name": "gsim-clang19.1.7-ARM64",
+      "name": "gsim-clang19.1.7-X64",
+      "name": "gsim-clang21.1.8-ARM64",
+      "name": "gsim-clang21.1.8-X64",
+-- exit=0 --
+
+### [7] 全核构建的内存门槛（官方 Makefile 证据）
+$ sed -n '98,108p' work/XiangShan/Makefile   # 本地 kunminghu-v3 克隆，仅只读查看
+endif
+
+# JVM memory configurations
+JVM_XMX ?= 40G
+JVM_XSS ?= 256m
+
+# mill arguments for build.sc
+MILL_BUILD_ARGS = -Djvm-xmx=$(JVM_XMX) -Djvm-xss=$(JVM_XSS)
+
+# NOTE: ccache is intentionally disabled by default, as:
+#   1. it does not help XiangShan's build performance in most cases, as slight change in chisel result in significant change in cpp code
+
+$ grep -n 'JVM_XMX\|fallocate' work/XiangShan/.github/workflows/release.yml | head
+175:          sudo fallocate -l 32G /mnt/xs-swapfile
+189:          make verilog WITH_CONSTANTIN=0 WITH_CHISELDB=0 CONFIG='XSNoCTopConfig --enable-difftest' ISSUE=B XSTOP_PREFIX=bosc_ JVM_XMX=10g
+207:          make verilog WITH_CONSTANTIN=0 WITH_CHISELDB=0 CONFIG='XSNoCTopConfig --enable-difftest' ISSUE=E.b XSTOP_PREFIX=bosc_ JVM_XMX=10g
+225:          make verilog WITH_CONSTANTIN=0 WITH_CHISELDB=0 CONFIG='XSNoCTopConfig --enable-difftest' ISSUE=E.b XSTOP_PREFIX=bosc_ JVM_XMX=10g YAML_CONFIG=$NOOP_HOME/src/main/resources/config/Poweroff.yml
+
+$ grep -n 'JVM_XMX' work/XiangShan-kmhv2/Makefile   # 目标分支 kunminghu-v2，只读
+81:JVM_XMX ?= 40G
+82:JVM_XSS ?= 256m
+85:MILL_BUILD_ARGS = -Djvm-xmx=$(JVM_XMX) -Djvm-xss=$(JVM_XSS)
+
+本机 Docker Linux VM 总内存 = 8217575424 B = 7.65 GiB，远低于官方默认 JVM_XMX=40G。

@@ -1,0 +1,45 @@
+==============================================================
+P1-T2 L0 精化日志（YunSuan standalone mill 0.11.1）
+开始时间: 2026-10-24 17:57:26 CST
+==============================================================
+
+$ cd work/XiangShan-kmhv2/yunsuan && mill -i YunSuan.compile
+Preparing Java 17.0.21.0.2 runtime; this may take a minute or two ...
+[info] compiling 1 Scala source to /Users/i3eg1nner/code/cie/work/XiangShan-kmhv2/yunsuan/out/mill-build/compile.dest/classes ...
+[info] done compiling
+Compiling compiler interface...
+[info] compiling 80 Scala sources to /Users/i3eg1nner/code/cie/work/XiangShan-kmhv2/yunsuan/out/YunSuan/compile.dest/classes ...
+[info] done compiling
+exit=0
+
+=== [18:01:10] $ mill -i YunSuan.runMain yunsuan.vector.alu.VerilogAlu ===
+Generating the VALU hardware
+[warn] src/main/scala/yunsuan/vector/VectorALU/VMask.scala 331:33: [W003] Dynamic index with width 1 is too small for extractee of width 128
+[warn]     when((!vm_reg && !vmask_bits(i.U >> vsew_reg)) || (i.U >= vlRemainBytes_reg)) {
+[warn]                                 ^
+[warn] src/main/scala/yunsuan/vector/VectorALU/VMask.scala 331:33: [W003] Dynamic index with width 2 is too small for extractee of width 128
+[warn]     when((!vm_reg && !vmask_bits(i.U >> vsew_reg)) || (i.U >= vlRemainBytes_reg)) {
+[warn]                                 ^
+[warn] src/main/scala/yunsuan/vector/VectorALU/VMask.scala 331:33: [W003] Dynamic index with width 3 is too small for extractee of width 128
+[warn]     when((!vm_reg && !vmask_bits(i.U >> vsew_reg)) || (i.U >= vlRemainBytes_reg)) {
+[warn]                                 ^
+[warn] src/main/scala/yunsuan/vector/VectorALU/VMask.scala 331:33: [W003] Dynamic index with width 4 is too small for extractee of width 128
+[warn]     when((!vm_reg && !vmask_bits(i.U >> vsew_reg)) || (i.U >= vlRemainBytes_reg)) {
+[warn]                                 ^
+[warn] There were 4 warning(s) during hardware elaboration.
+exit=0
+
+=== [18:02:30] $ mill -i YunSuan.runMain yunsuan.vector.mac.VerilogVIMac ===
+Generating the VIMac hardware
+exit=0
+build/vifu:
+total 712
+drwxr-xr-x@ 3 i3eg1nner  staff      96 10 24 18:01 .
+drwxr-xr-x@ 4 i3eg1nner  staff     128 10 24 18:02 ..
+-rw-r--r--@ 1 i3eg1nner  staff  364040 10 24 18:01 VIAlu.sv
+
+build/vimac:
+total 568
+drwxr-xr-x@ 3 i3eg1nner  staff      96 10 24 18:02 .
+drwxr-xr-x@ 4 i3eg1nner  staff     128 10 24 18:02 ..
+-rw-r--r--@ 1 i3eg1nner  staff  286950 10 24 18:02 VIMac.sv

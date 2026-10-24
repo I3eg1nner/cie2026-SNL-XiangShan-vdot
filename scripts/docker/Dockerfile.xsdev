@@ -1,0 +1,121 @@
+# =============================================================================
+# xsdev —— 香山 / NEMU 软件侧可复现构建环境（linux/arm64）
+#
+# 设计依据：
+#   1. 对齐官方 xs-env 的 install-scripts/base.sh 依赖清单（NEMU 侧），
+#      仅保留 NEMU 构建与 RISC-V 交叉编译所需的部分；
+#      JDK / mill / Verilator / gsim 由硬件侧工程师在宿主机单独部署，
+#      故本镜像刻意不包含，以缩短构建时间、减小体积。
+#   2. 基础镜像选 ubuntu:24.04：其 apt 自带 GCC 13/14 级别的 RISC-V 交叉
+#      工具链与 binutils 2.42，可完整汇编 RVV 1.0（ubuntu:22.04 的
+#      binutils 2.38 / GCC 11 对 RVV 1.0 支持不完整，实测不可用）。
+#   3. 宿主为 macOS/arm64，Docker Desktop 的 Linux VM 亦为 aarch64，
+#      因此全程使用原生 linux/arm64，不引入 qemu 用户态模拟。
+#      NEMU 源码中的 x86 intrinsic 均由 __x86_64__ 宏保护，arm64 下可编译。
+# =============================================================================
+FROM --platform=linux/arm64 ubuntu:24.04
+
+LABEL org.opencontainers.image.title="xsdev"
+LABEL org.opencontainers.image.description="XiangShan/NEMU software-side build environment (arm64)"
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV LC_ALL=C.UTF-8
+ENV LANG=C.UTF-8
+
+RUN echo 'Acquire::Retries "3";' > /etc/apt/apt.conf.d/80-retries
+
+# ---------------------------------------------------------------------------
+# 第 1 层：NEMU 构建与通用开发依赖
+#   - build-essential/make/cmake/ninja-build : 通用构建
+#   - bison/flex                              : NEMU tools/kconfig 需要
+#   - libreadline-dev                         : NEMU 独立模式的 sdb 交互命令行（-lreadline）
+#   - libsdl2-dev                             : NEMU VGA/键盘设备（-lSDL2），kmhv2 独立配置启用
+#   - libz-dev/zlib1g-dev                     : NEMU 链接 -lz
+#   - libncurses-dev                          : make menuconfig
+#   - libsqlite3-dev/libzstd-dev              : NEMU checkpoint / 压缩相关可选特性
+#   - device-tree-compiler                    : 生成/反解 dtb（xs-env base.sh 同款）
+#   - python3                                 : NEMU scripts/ 下的辅助脚本
+# ---------------------------------------------------------------------------
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential \
+        g++ \
+        gcc \
+        make \
+        cmake \
+        ninja-build \
+        bison \
+        flex \
+        git \
+        curl \
+        ca-certificates \
+        vim \
+        less \
+        time \
+        file \
+        bc \
+        xxd \
+        pkg-config \
+        autoconf \
+        libtool \
+        libreadline-dev \
+        libsdl2-dev \
+        libz-dev \
+        zlib1g-dev \
+        libncurses-dev \
+        libsqlite3-dev \
+        zstd \
+        libzstd-dev \
+        device-tree-compiler \
+        python3 \
+        python3-pip \
+        python-is-python3 \
+        numactl \
+    && rm -rf /var/lib/apt/lists/*
+
+# ---------------------------------------------------------------------------
+# 第 2 层：RISC-V 交叉工具链
+#   riscv64-linux-gnu-*        : GCC 13.2（glibc 目标），本项目用 -nostdlib
+#                                 交叉编译裸机程序，不依赖 glibc 运行时
+#   riscv64-unknown-elf-*      : GCC 13.2 + newlib，裸机标准工具链
+#   gcc-14-riscv64-linux-gnu   : GCC 14.2，RVV 1.0 intrinsic 支持更完整，
+#                                 作为备选（riscv64-linux-gnu-gcc-14）
+#   binutils 2.42 可汇编 RVV 1.0 全部指令
+# ---------------------------------------------------------------------------
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        gcc-riscv64-linux-gnu \
+        g++-riscv64-linux-gnu \
+        binutils-riscv64-linux-gnu \
+        gcc-14-riscv64-linux-gnu \
+        gcc-riscv64-unknown-elf \
+        binutils-riscv64-unknown-elf \
+        picolibc-riscv64-unknown-elf \
+    && rm -rf /var/lib/apt/lists/*
+
+# ---------------------------------------------------------------------------
+# 第 3 层：工具链自检 —— 在镜像构建期就证明交叉编译器能汇编 RVV 1.0。
+#   若 vsetvli / vadd.vv / vle8.v 任一条不被支持，构建会在此失败，
+#   从而避免产出一个"看起来能用但编不了向量指令"的镜像。
+# ---------------------------------------------------------------------------
+RUN set -eux; \
+    printf '%s\n' \
+      '    .text' \
+      '    .globl rvv_probe' \
+      'rvv_probe:' \
+      '    vsetvli t0, a0, e8, m1, ta, ma' \
+      '    vle8.v  v1, (a1)' \
+      '    vle8.v  v2, (a2)' \
+      '    vadd.vv v3, v1, v2' \
+      '    vse8.v  v3, (a3)' \
+      '    ret' \
+      > /tmp/rvv_probe.S; \
+    riscv64-linux-gnu-gcc -march=rv64gcv_zve64x -mabi=lp64d -c /tmp/rvv_probe.S -o /tmp/rvv_probe.o; \
+    riscv64-linux-gnu-objdump -d /tmp/rvv_probe.o | grep -q 'vadd\.vv'; \
+    echo "RVV 1.0 assembler probe OK: $(riscv64-linux-gnu-gcc --version | head -n1)"; \
+    rm -f /tmp/rvv_probe.S /tmp/rvv_probe.o
+
+# NEMU 相关环境变量（容器内默认挂载点 /work）
+ENV NEMU_HOME=/work/work/NEMU
+ENV XS_PROJECT_ROOT=/work/work
+
+WORKDIR /work
+CMD ["/bin/bash"]

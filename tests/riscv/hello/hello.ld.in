@@ -1,0 +1,42 @@
+/* =========================================================================
+ * hello.ld.in —— 链接脚本模板。@MBASE@ 由 Makefile 用 NEMU 实际构建配置中的
+ * CONFIG_MBASE 替换，保证加载地址与模拟器内存布局严格一致。
+ * NEMU 把 image 原样读入 pmem 起始处（src/monitor/image_loader.c:281-282），
+ * 故产物必须是 objcopy 出来的扁平 binary，且第一条指令就是 _start。
+ * ========================================================================= */
+OUTPUT_ARCH(riscv)
+ENTRY(_start)
+
+MEMORY {
+  ram (rwxai) : ORIGIN = @MBASE@, LENGTH = 16M
+}
+
+SECTIONS {
+  . = @MBASE@;
+
+  .text : {
+    *(.text.init)        /* _start 必须排在最前 */
+    *(.text .text.*)
+  } > ram
+
+  .rodata : { *(.rodata .rodata.*) *(.srodata .srodata.*) } > ram
+
+  .data : {
+    . = ALIGN(8);
+    _gp = . + 0x800;
+    *(.data .data.*)
+    *(.sdata .sdata.*)
+  } > ram
+
+  . = ALIGN(8);
+  _bss_start = .;
+  .bss : { *(.bss .bss.*) *(.sbss .sbss.*) *(COMMON) } > ram
+  . = ALIGN(8);
+  _bss_end = .;
+
+  . = ALIGN(16);
+  . = . + 0x10000;        /* 64 KiB 栈 */
+  _stack_top = .;
+
+  /DISCARD/ : { *(.comment) *(.note*) *(.eh_frame*) *(.riscv.attributes) }
+}

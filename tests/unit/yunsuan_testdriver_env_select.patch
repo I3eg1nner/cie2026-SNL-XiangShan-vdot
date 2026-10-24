@@ -1,0 +1,33 @@
+diff --git a/src/test/csrc/test_driver.cpp b/src/test/csrc/test_driver.cpp
+index 1f25cc1..64a1f88 100644
+--- a/src/test/csrc/test_driver.cpp
++++ b/src/test/csrc/test_driver.cpp
+@@ -26,12 +26,27 @@ void TestDriver::set_default_value(VSimTop *dut_ptr) {
+   dut_ptr->io_out_ready = true;
+ }
+ // fix set_test_type to select fuType
++// 支持通过环境变量在运行时锁定被测功能单元与操作码，便于定向测试（如 vadd）：
++//   YS_FUTYPE=<十进制或0x十六进制>   锁定 fuType
++//   YS_FUOPTYPE=<十进制或0x十六进制> 锁定 fuOpType
++// 两者均未设置时，行为与上游完全一致（随机遍历 ALL_FUTYPES）。
+ void TestDriver::set_test_type() {
+   test_type.pick_fuType = false;
+   test_type.pick_fuOpType = false;
+   test_type.fuType = VFloatCvt;
+   test_type.fuOpType = VFREC7;
+-  printf("Set Test Type Res: fuType:%d fuOpType:%d\n", test_type.fuType, test_type.fuOpType);
++  const char *env_futype = getenv("YS_FUTYPE");
++  if (env_futype != NULL) {
++    test_type.pick_fuType = true;
++    test_type.fuType = (uint8_t)strtoul(env_futype, NULL, 0);
++  }
++  const char *env_fuoptype = getenv("YS_FUOPTYPE");
++  if (env_fuoptype != NULL) {
++    test_type.pick_fuOpType = true;
++    test_type.fuOpType = (uint8_t)strtoul(env_fuoptype, NULL, 0);
++  }
++  printf("Set Test Type Res: fuType:%d fuOpType:%d (pick_fuType=%d pick_fuOpType=%d)\n",
++         test_type.fuType, test_type.fuOpType, test_type.pick_fuType, test_type.pick_fuOpType);
+ }
+ 
+ void TestDriver::gen_next_test_case() {

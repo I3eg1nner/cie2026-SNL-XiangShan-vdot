@@ -1,0 +1,269 @@
+==============================================================
+ P1-T2 NEMU 构建   2026-10-24T10:15:25Z UTC
+==============================================================
+$ uname -a
+Linux b5b6f03bfb96 6.12.5-linuxkit #1 SMP Tue Jan 21 10:23:32 UTC 2025 aarch64 aarch64 aarch64 GNU/Linux
+$ cat /etc/os-release
+PRETTY_NAME="Ubuntu 24.04.4 LTS"
+NAME="Ubuntu"
+$ gcc --version
+gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+$ nproc
+10
+$ free -h
+               total        used        free      shared  buff/cache   available
+Mem:           7.7Gi       792Mi       414Mi       608Ki       6.7Gi       6.9Gi
+Swap:          1.0Gi          0B       1.0Gi
+NEMU_HOME=/work/work/NEMU
+$ git log --oneline -1
+9090839 feat(difftest): support fast shared reference execution (#1247)
+$ git rev-parse HEAD
+90908390002fb7da885e5d880bba3bef2a225b2a
+
+######## [A] 独立解释器：riscv64-xs-kmhv2_defconfig ########
+$ make riscv64-xs-kmhv2_defconfig
+Cloning into '/work/work/NEMU/resource/nanopb'...
+Cloning into '/work/work/NEMU/resource/LibCheckpoint'...
+Submodule 'resource/nanopb' (https://github.com/nanopb/nanopb) registered for path 'resource/nanopb'
+Cloning into '/work/work/NEMU/resource/LibCheckpoint/resource/nanopb'...
+Submodule path 'resource/nanopb': checked out '671672b4d7994a9b07a307ae654885c7202ae886'
+Cloning into '/work/work/NEMU/resource/gcpt_restore'...
+/work/work/NEMU/scripts/config.mk:20: [1;31mWarning: .config does not exists![0m
+/work/work/NEMU/scripts/config.mk:21: [1;31mTo build the project, first run 'make menuconfig'.[0m
++ CC confdata.c
++ CC expr.c
++ CC preprocess.c
++ CC symbol.c
++ CC util.c
++ YACC build/parser.tab.h
++ LEX build/lexer.lex.c
++ CC build/lexer.lex.c
++ CC build/parser.tab.c
++ CC conf.c
++ g++ /work/work/NEMU/tools/kconfig/build/conf
++ CC fixdep.c
++ g++ /work/work/NEMU/tools/fixdep/build/fixdep
+$ make -j$(nproc)
+Makefile:40: You have set CONFIG_FLASH_IMG_PATH option, but the specified path '""' does not exist!
+Cloning into 'resource/softfloat/repo'...
++ CC src/nemu-main.c
++ CC src/device/device.c
++ CC src/device/alarm.c
++ CC src/device/intr.c
++ CC src/device/uart16550.c
++ CC src/device/uartlite.c
++ CC src/device/plic.c
++ CC src/device/keyboard.c
++ CC src/device/vga.c
++ CC src/device/sdcard.c
++ CC src/device/flash.c
++ CC src/cpu/instr_stat.c
++ CC src/cpu/difftest/ref.c
++ CC src/cpu/difftest/ame/amuctrl.c
++ CC src/cpu/difftest/ame/amuhash_portable.c
++ CC src/cpu/difftest/ame/amuhash.c
++ CC src/cpu/difftest/ame/amuhash_x86.c
++ CC src/cpu/difftest/ame/msync.c
++ CC src/cpu/difftest/dut.c
++ CC src/cpu/cpu-exec.c
++ CC src/cpu/tcache.c
++ CC src/monitor/watchpoint.c
++ CC src/monitor/monitor.c
++ CC src/monitor/image_loader.c
++ CC src/monitor/fdt_rng_seed.c
++ CC src/monitor/ui.c
++ CC src/monitor/aligncheck.c
++ CC src/utils/log.c
++ CC src/utils/timer.c
++ CC src/utils/store_hash.c
++ CC src/utils/state.c
++ CC src/utils/filename.c
++ CC src/utils/hash.c
++ CC src/utils/br_log.c
++ CC src/utils/dynamic-config.c
++ CC src/utils/iqueue.c
++ CC src/utils/expr.c
++ CC src/memory/paddr.c
++ CC src/memory/host-tlb.c
++ CC src/memory/vaddr.c
++ CC src/memory/store_log_hash.c
++ CC src/isa/riscv64/difftest/ref.c
++ CC src/isa/riscv64/difftest/dut.c
++ CC src/isa/riscv64/init.c
++ CC src/isa/riscv64/reg.c
++ CC src/isa/riscv64/system/priv.c
++ CC src/isa/riscv64/system/timer.c
++ CC src/isa/riscv64/system/aia.c
++ CC src/isa/riscv64/system/trigger.c
++ CC src/isa/riscv64/system/mmu.c
++ CC src/isa/riscv64/system/intr.c
++ CC src/isa/riscv64/ame/raw_fp4_memory.c
++ CC src/isa/riscv64/clint.c
++ CC src/isa/riscv64/logo.c
++ CC src/isa/riscv64/instr/fp.c
++ CC src/isa/riscv64/instr/rvv/vcommon.c
++ CC src/isa/riscv64/instr/rvv/vreg_impl.c
++ CC src/isa/riscv64/instr/rvv/vfexp2.c
++ CC src/isa/riscv64/instr/rvv/vcompute_impl.c
++ CC src/isa/riscv64/instr/rvv/vldst_impl.c
++ CC src/isa/riscv64/instr/mp.c
++ CC src/isa/riscv64/instr/rvb/rvintrin.c
++ CC src/isa/riscv64/instr/rvk/aes_common.c
++ CC src/isa/riscv64/instr/rvk/crypto_impl.c
++ CC src/isa/riscv64/instr/decode.c
++ CC src/isa/riscv64/instr/ame/mldst_fast.c
++ CC src/isa/riscv64/instr/ame/mreg.c
++ CC src/isa/riscv64/instr/ame/mcompute_impl.c
++ CC src/isa/riscv64/instr/ame/mldst_impl.c
++ CC src/isa/riscv64/instr/ame/mldst_transpose_fast.c
++ CC src/isa/riscv64/instr/priv/system.c
++ CC src/isa/riscv64/instr/vp.c
++ CC src/isa/riscv64/instr/rva/amo.c
++ CC src/isa/riscv64/instr/rvt/matmul_subfloat.c
++ CC src/isa/riscv64/instr/rvt/sfu.c
++ CC src/isa/riscv64/instr/rvt/conv2d.c
++ CC src/isa/riscv64/instr/rvt/register.c
++ CC src/isa/riscv64/instr/rvt/convert.c
++ CC src/isa/riscv64/instr/rvt/pooling.c
++ CC src/isa/riscv64/instr/rvt/element_wise.c
++ CC src/isa/riscv64/instr/rvt/matmul.c
++ CC src/isa/riscv64/instr/rvt/type.c
++ CC src/isa/riscv64/instr/rvt/tensor_init.c
++ CC src/isa/riscv64/instr/rvt/tensor_copy.c
++ CC src/isa/riscv64/instr/rvcbo/cbo_impl.c
++ CC src/engine/interpreter/fp.c
++ CC src/engine/interpreter/init.c
++ CC src/engine/interpreter/hostcall.c
++ CC src/device/io/port-io.c
++ CC src/device/io/map.c
++ CC src/device/io/mmio.c
++ CC src/profiling/profiling_control.c
++ CC src/checkpoint/cpt_env.c
++ CXX src/checkpoint/path_manager.cpp
++ CXX src/checkpoint/simpoint.cpp
++ CXX src/checkpoint/serializer.cpp
++ CXX src/checkpoint/semantic_point.cpp
++ CXX src/base/output.cpp
++ CXX src/iostream3/zfstream.cpp
++ CXX src/memory/store_queue_wrapper.cpp
++ CXX src/memory/elfloader.cpp
+SPECIALIZE_TYPE=RISCV  make -s -C /work/work/NEMU/resource/softfloat/repo/build/Linux-x86_64-GCC all
+mkdir -p resource/softfloat/build
+ln -sf /work/work/NEMU/resource/softfloat/repo/build/Linux-x86_64-GCC/softfloat.a resource/softfloat/build/softfloat.a
++ g++ /work/work/NEMU/build/riscv64-nemu-interpreter
+--- 产物 ---
+-rwxr-xr-x 1 root root 589080 Oct 24 10:16 build/riscv64-nemu-interpreter
+build/riscv64-nemu-interpreter: ELF 64-bit LSB pie executable, ARM aarch64, version 1 (SYSV), dynamically linked, interpreter /lib/ld-linux-aarch64.so.1, BuildID[sha1]=db6d5c30d563733057ec2f72f829364838a34544, for GNU/Linux 3.7.0, not stripped
+
+######## [B] difftest 参考实现：riscv64-xs-kmhv2-ref_defconfig ########
+$ make riscv64-xs-kmhv2-ref_defconfig
+Makefile:40: You have set CONFIG_FLASH_IMG_PATH option, but the specified path '""' does not exist!
+$ make -j$(nproc)
+Makefile:40: You have set CONFIG_FLASH_IMG_PATH option, but the specified path '""' does not exist!
++ CC src/nemu-main.c
++ CC src/device/device.c
++ CC src/device/alarm.c
++ CC src/device/intr.c
++ CC src/device/flash.c
++ CC src/cpu/instr_stat.c
++ CC src/cpu/difftest/ref.c
++ CC src/cpu/difftest/ame/amuctrl.c
++ CC src/cpu/difftest/ame/amuhash_portable.c
++ CC src/cpu/difftest/ame/amuhash.c
++ CC src/cpu/difftest/ame/amuhash_x86.c
++ CC src/cpu/difftest/ame/msync.c
++ CC src/cpu/difftest/dut.c
++ CC src/cpu/cpu-exec.c
++ CC src/cpu/tcache.c
++ CC src/monitor/watchpoint.c
++ CC src/monitor/monitor.c
++ CC src/monitor/image_loader.c
++ CC src/monitor/fdt_rng_seed.c
++ CC src/monitor/ui.c
++ CC src/monitor/aligncheck.c
++ CC src/utils/log.c
++ CC src/utils/timer.c
++ CC src/utils/store_hash.c
++ CC src/utils/state.c
++ CC src/utils/filename.c
++ CC src/utils/hash.c
++ CC src/utils/br_log.c
++ CC src/utils/dynamic-config.c
++ CC src/utils/iqueue.c
++ CC src/utils/expr.c
++ CC src/memory/paddr.c
++ CC src/memory/host-tlb.c
++ CC src/memory/vaddr.c
++ CC src/memory/store_log_hash.c
++ CC src/isa/riscv64/difftest/ref.c
++ CC src/isa/riscv64/difftest/dut.c
++ CC src/isa/riscv64/init.c
++ CC src/isa/riscv64/reg.c
++ CC src/isa/riscv64/system/priv.c
++ CC src/isa/riscv64/system/timer.c
++ CC src/isa/riscv64/system/aia.c
++ CC src/isa/riscv64/system/trigger.c
++ CC src/isa/riscv64/system/mmu.c
++ CC src/isa/riscv64/system/intr.c
++ CC src/isa/riscv64/ame/raw_fp4_memory.c
++ CC src/isa/riscv64/clint.c
++ CC src/isa/riscv64/logo.c
++ CC src/isa/riscv64/instr/fp.c
++ CC src/isa/riscv64/instr/rvv/vcommon.c
++ CC src/isa/riscv64/instr/rvv/vreg_impl.c
++ CC src/isa/riscv64/instr/rvv/vfexp2.c
++ CC src/isa/riscv64/instr/rvv/vcompute_impl.c
++ CC src/isa/riscv64/instr/rvv/vldst_impl.c
++ CC src/isa/riscv64/instr/mp.c
++ CC src/isa/riscv64/instr/rvb/rvintrin.c
++ CC src/isa/riscv64/instr/rvk/aes_common.c
++ CC src/isa/riscv64/instr/rvk/crypto_impl.c
++ CC src/isa/riscv64/instr/decode.c
++ CC src/isa/riscv64/instr/ame/mldst_fast.c
++ CC src/isa/riscv64/instr/ame/mreg.c
++ CC src/isa/riscv64/instr/ame/mcompute_impl.c
++ CC src/isa/riscv64/instr/ame/mldst_impl.c
++ CC src/isa/riscv64/instr/ame/mldst_transpose_fast.c
++ CC src/isa/riscv64/instr/priv/system.c
++ CC src/isa/riscv64/instr/vp.c
++ CC src/isa/riscv64/instr/rva/amo.c
++ CC src/isa/riscv64/instr/rvt/matmul_subfloat.c
++ CC src/isa/riscv64/instr/rvt/sfu.c
++ CC src/isa/riscv64/instr/rvt/conv2d.c
++ CC src/isa/riscv64/instr/rvt/register.c
++ CC src/isa/riscv64/instr/rvt/convert.c
++ CC src/isa/riscv64/instr/rvt/pooling.c
++ CC src/isa/riscv64/instr/rvt/element_wise.c
++ CC src/isa/riscv64/instr/rvt/matmul.c
++ CC src/isa/riscv64/instr/rvt/type.c
++ CC src/isa/riscv64/instr/rvt/tensor_init.c
++ CC src/isa/riscv64/instr/rvt/tensor_copy.c
++ CC src/isa/riscv64/instr/rvcbo/cbo_impl.c
++ CC src/engine/interpreter/fp.c
++ CC src/engine/interpreter/init.c
++ CC src/engine/interpreter/hostcall.c
++ CC src/device/io/port-io.c
++ CC src/device/io/map.c
++ CC src/device/io/mmio.c
++ CC src/profiling/profiling_control.c
++ CC src/checkpoint/cpt_env.c
++ CXX src/checkpoint/path_manager.cpp
++ CXX src/checkpoint/simpoint.cpp
++ CXX src/checkpoint/serializer.cpp
++ CXX src/checkpoint/semantic_point.cpp
++ CXX src/base/output.cpp
++ CXX src/iostream3/zfstream.cpp
++ CXX src/cpu/difftest/ame/amu_ctrl_queue_wrapper.cpp
++ CXX src/cpu/difftest/ame/msync_queue_wrapper.cpp
++ CXX src/memory/store_queue_wrapper.cpp
++ CXX src/memory/elfloader.cpp
++ g++ /work/work/NEMU/build/riscv64-nemu-interpreter-so
+--- 产物 ---
+-rwxr-xr-x 1 root root 1570888 Oct 24 10:16 build/riscv64-nemu-interpreter-so
+build/riscv64-nemu-interpreter-so: ELF 64-bit LSB shared object, ARM aarch64, version 1 (SYSV), dynamically linked, BuildID[sha1]=0bf22ae4f39ea52af69d8def2c56c3a821c1bdc0, not stripped
+
+######## 构建完成，build/ 目录一览 ########
+total 2840
+-rwxr-xr-x 1 root root  589080 Oct 24 10:16 riscv64-nemu-interpreter
+-rwxr-xr-x 1 root root 1570888 Oct 24 10:16 riscv64-nemu-interpreter-so
+DONE 2026-10-24T10:16:17Z UTC
