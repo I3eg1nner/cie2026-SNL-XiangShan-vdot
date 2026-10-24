@@ -1,0 +1,55 @@
+=== vdot 功能测试汇总  2026-10-24 21:56:17 CST ===
+
+分类         suite                              attempted    passed   failed  skipped 结果
+--------------------------------------------------------------------------------------------------
+2.3.1 正数   positive(vdot.vv)                         40        40        0        0   PASS
+2.3.1 正数   positive(vdotacc.vv)                      40        40        0        0   PASS
+2.3.1 正数   positive(vdot4a.vv)                       40        40        0        0   PASS
+2.3.2 负数   negative(vdot.vv)                         44        44        0        0   PASS
+2.3.2 负数   negative(vdotacc.vv)                      44        44        0        0   PASS
+2.3.2 负数   negative(vdot4a.vv)                       44        44        0        0   PASS
+2.3.3 边界   boundary(vdot.vv)                         94        94        0        9   PASS
+2.3.3 边界   boundary(vdotacc.vv)                      94        94        0        9   PASS
+2.3.3 边界   boundary(vdot4a.vv)                      112       112        0        3   PASS
+2.3.3 边界   vstart_relaxed(vdot/vdotacc)              90        90        0        0   PASS
+随机差分   random.txt(vdot.vv)                     8459      8459        0     1541   PASS
+随机差分   random.txt(vdotacc.vv)                  8428      8428        0     1572   PASS
+随机差分   random.txt(vdot4a.vv)                  10000     10000        0        0   PASS
+随机差分   driver/vdot.vv seed=11                 20000     20000        0        0   PASS
+随机差分   driver/vdot.vv seed=12                 20000     20000        0        0   PASS
+随机差分   driver/vdot.vv seed=13                 20000     20000        0        0   PASS
+随机差分   driver/vdotacc.vv seed=11              20000     20000        0        0   PASS
+随机差分   driver/vdotacc.vv seed=12              20000     20000        0        0   PASS
+随机差分   driver/vdotacc.vv seed=13              20000     20000        0        0   PASS
+随机差分   driver/vdot4a.vv seed=11               20000     20000        0        0   PASS
+随机差分   driver/vdot4a.vv seed=12               20000     20000        0        0   PASS
+随机差分   driver/vdot4a.vv seed=13               20000     20000        0        0   PASS
+随机差分   driver/三条混合 seed=14            30000     30000        0        0   PASS
+既有回归   上游CI混合随机(含VDot)          10000     10000        0        0   PASS
+既有回归   fuType=1 定向 2000 条                2000      2000        0        0   PASS
+既有回归   fuType=2 定向 2000 条                2000      2000        0        0   PASS
+既有回归   fuType=3 定向 2000 条                2000      2000        0        0   PASS
+既有回归   fuType=4 定向 2000 条                2000      2000        0        0   PASS
+既有回归   fuType=6 定向 2000 条                2000      2000        0        0   PASS
+既有回归   fuType=7 定向 2000 条                2000      2000        0        0   PASS
+既有回归   fuType=8 定向 2000 条                2000      2000        0        0   PASS
+既有回归   fuType=9 定向 2000 条                2000      2000        0        0   PASS
+既有回归   fuType=5(vadd.vv) 2000 条              2000      2000        0        0   PASS
+译码级      VecExceptionGen 定向                    46        46        0        0   PASS
+交付物      三份补丁干净应用到 pristine         3         3        0        0   PASS
+VIMacU 等价  VIMacU 直驱语料回放              27529     27529        0     3134   PASS
+--------------------------------------------------------------------------------------------------
+合计                                               293107    293107        0     6268
+
+失败的 suite 数：0
+
+日志：
+  p5_func_positive.log       128 行
+  p5_func_negative.log       127 行
+  p5_func_boundary.log       176 行
+  p5_func_random.log         167 行
+  p5_regression.log          56 行
+  p5_decode_illegal.log      112 行
+  p5_vimacu_equiv.log        102 行
+  p5_fault_injection.log     202 行
+  p5_waveform.log            71 行

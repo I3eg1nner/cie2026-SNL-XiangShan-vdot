@@ -1,4 +1,4 @@
-=== 2.3.3 边界值测试  2026-10-24 21:21:52 CST ===
+=== 2.3.3 边界值测试  2026-10-24 21:55:31 CST ===
 
 ########################################################################
 # suite  : boundary(vdot.vv)
@@ -107,7 +107,7 @@ EMU has executed 4 ms.
 ==   vdot 8 0 0 1 0 1 0102030405060708090a0b0c0d0e0f10 707172737475767778797a7b7c7d7e7f a5a5a5a55a5a5a5a1111111122222222 a5a5a5a55a5a5a5a1111111122222222 00000000000000000000000000000000 OK
 ======================================================================
 Emu compiled at Oct 24 2026, 21:13:35
-[vdot-vectors] loaded 1 cases from /var/folders/mm/k9qhqcg91qs6xnm6zdsnwb6c0000gn/T/vdotcase.dkzGdhOoE5 (skipped 0 non-OK, 0 unparsed)
+[vdot-vectors] loaded 1 cases from /var/folders/mm/k9qhqcg91qs6xnm6zdsnwb6c0000gn/T/vdotcase.RQrABcA0GH (skipped 0 non-OK, 0 unparsed)
 [vdot-vectors] run with -O 1 to execute every case exactly once
 Set Test Type Res: fuType:7 fuOpType:225 (pick_fuType=0 pick_fuOpType=0)
 [vdot-vectors] all 1 cases consumed
@@ -132,7 +132,7 @@ EMU has executed 1 ms.
 ==   vdot 8 0 16 0 1 0 7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f 02020202020202020202020202020202 01000000020000000300000004000000 00000000ffffffffffffffffffffffff 0000a5a5a5a5a5a5a5a5a5a5a5a5a5a5 OK
 ======================================================================
 Emu compiled at Oct 24 2026, 21:13:35
-[vdot-vectors] loaded 1 cases from /var/folders/mm/k9qhqcg91qs6xnm6zdsnwb6c0000gn/T/vdotcase.5XwKzFZwHO (skipped 0 non-OK, 0 unparsed)
+[vdot-vectors] loaded 1 cases from /var/folders/mm/k9qhqcg91qs6xnm6zdsnwb6c0000gn/T/vdotcase.Wtp9lDi8QO (skipped 0 non-OK, 0 unparsed)
 [vdot-vectors] run with -O 1 to execute every case exactly once
 Set Test Type Res: fuType:7 fuOpType:225 (pick_fuType=0 pick_fuOpType=0)
 [vdot-vectors] all 1 cases consumed
@@ -157,7 +157,7 @@ EMU has executed 1 ms.
 ==   vdot4a 32 1 4 1 1 1 0102030405060708090a0b0c0d0e0f10 02020202020202020202020202020202 00010000000200000003000000040000 00010000340200005403000074040000 00000000000000000000000000000000 OK
 ======================================================================
 Emu compiled at Oct 24 2026, 21:13:35
-[vdot-vectors] loaded 1 cases from /var/folders/mm/k9qhqcg91qs6xnm6zdsnwb6c0000gn/T/vdotcase.vJ1223kGiI (skipped 0 non-OK, 0 unparsed)
+[vdot-vectors] loaded 1 cases from /var/folders/mm/k9qhqcg91qs6xnm6zdsnwb6c0000gn/T/vdotcase.KGD5YhgoMZ (skipped 0 non-OK, 0 unparsed)
 [vdot-vectors] run with -O 1 to execute every case exactly once
 Set Test Type Res: fuType:7 fuOpType:225 (pick_fuType=0 pick_fuOpType=0)
 [vdot-vectors] all 1 cases consumed

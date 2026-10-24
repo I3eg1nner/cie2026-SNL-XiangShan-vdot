@@ -24,6 +24,7 @@
 | 对既有 `vmul`/`vmacc`/`vsmul` 的影响 | **生成的 Verilog 逐字节相同**（去掉源码行号注释后 diff 为 0 行） | §7.1 |
 | L1 冒烟测试（三条指令各 20000 随机 + 混合 20000 + 定向语料 178 条，合计 80178 条） | **全部 PASS，0 失配** | `logs/stage2/p4_smoke_test.log` |
 | 故障注入自测（人为改坏一位） | **按预期 BADTRAP** | `logs/stage2/p4_fault_inject.log` |
+| P4 完整功能测试（含 `VIMacU` 直驱 27529 条、随机 236887 条、5 个故障注入） | **全部 PASS** | `docs/stage2/12_基础功能测试报告.md`、`logs/stage2/p5_*.log` |
 | `FuConfig` / `FuType` / `Parameters` / Dispatch / IQ / WbArbiter | **一行未改**（与设计文档 §5.1 第 15 项一致） | §6 文件清单 |
 
 ---
@@ -342,12 +343,18 @@ T2             : vdS2 / vsmul（vdot 不用）                 | Fold L2 + Acc +
 | 文件 | 改动 | 说明 |
 |---|---|---|
 | `src/main/scala/xiangshan/backend/fu/wrapper/VIMacU.scala` | +93 / −12 | 类型生成、掩码生成、树例化、累加选择、RedTailGen、输出复用 |
-| `src/main/scala/xiangshan/backend/decode/VecExceptionGen.scala` | +25 / −3 | SEW 判定、`vdIsSingleElem`、`vdEew` |
+| `src/main/scala/xiangshan/backend/decode/VecExceptionGen.scala` | +35 / −3 | SEW 判定、**LMUL 判定（P4 阶段补）**、`vdIsSingleElem`、`vdEew` |
 | `src/main/scala/xiangshan/backend/decode/Instructions.scala` | +11 | `object Xsvdot` |
 | `src/main/scala/xiangshan/backend/decode/VecDecoder.scala` | +9 | `opivv` 三行 |
 | `src/main/scala/xiangshan/backend/decode/DecodeUnit.scala` | +5 | `vmaInsts` |
 | `src/test/scala/xiangshan/backend/fu/VIMacUTest.scala` | **新建 49 行** | `VIMacUMain` 精化/Verilog 出口 |
-| 小计 | 5 文件 +143 / −15，1 文件新建 49 行 | |
+| `src/test/scala/xiangshan/backend/fu/VIMacUHarness.scala` | **新建 164 行**（P4 阶段补） | `VIMacU` 直驱验证用的窄 IO 包装 + Verilog 出口 |
+| `src/test/scala/xiangshan/backend/decode/VecExceptionGenTest.scala` | **新建 89 行**（P4 阶段补） | `VecExceptionGen` 定向测试用的窄 IO 包装 + Verilog 出口 |
+| 小计 | 5 文件 +153 / −15，3 文件新建 302 行（`git diff --stat` 实测 445 插入 / 13 删除） | |
+
+> **P4 阶段的后续改动**：`VecExceptionGen.scala` 增加了 `dotEmulIllegal`（拦截 `vlmul != 0`，
+> 见下方 §10 第 8 条的更新），并新增两个测试入口。`rtl/patch/0001-xiangshan-vdot.patch`
+> 已随之重新生成并实测可干净应用（`scripts/tools/verify_patches.sh`）。
 
 **未改动**（与设计文档 §5.1 第 15 项一致）：`FuConfig.scala`、`FuType.scala`、`Parameters.scala`、Dispatch、IssueQueue、WbArbiter、`UopInfoGen.scala`、`DecodeUnitComp.scala`、`xiangshan/package.scala`、`Mgu.scala`、`ByteMaskTailGen.scala`、`VecDataSplitModule.scala`、`VecPipedFuncUnit.scala`、`FuncUnit.scala`。
 
@@ -573,14 +580,19 @@ LMUL>1 的方案（新增 `UopSplitType.VEC_VDOT`）见设计文档 §8.3，**�
 
 ## 10. 局限性
 
-1. **掩码/尾部成形在两处分别实现**。`VIMacU`（XiangShan 侧）用 `ByteMaskTailGen` + `Mgu` + `RedTailGen`；`VDotTop`（YunSuan 侧，L1 用）用手写的等价逻辑。**L1 的 80000 随机 + 178 定向用例验证的是 `VDotTop` 这一侧**。两边的算术通路（`VIMac64b.prod16` + `VDotTree` + `accOperand`）完全相同、是同一份源码，但成形逻辑是两份实现，存在走样的可能。根因是 `ByteMaskTailGen`/`Mgu` 属于 `xiangshan` 工程、YunSuan 工程看不见。缓解：两份实现都逐条对照 `vdot_ref.c` 的行为表写成；`VIMacU` 的成形逻辑由 `VIMacU.v` 的精化结果证明可综合，但**其功能正确性只能由全核 difftest 验证，本机未执行**（见第 2 条）。
+1. ~~**掩码/尾部成形在两处分别实现**~~ —— **已在 P4 阶段关闭**。
+   原问题：`VIMacU`（XiangShan 侧）用 `ByteMaskTailGen` + `Mgu` + `RedTailGen`；`VDotTop`（YunSuan 侧，L1 用）用手写的等价逻辑，L1 验证的只是 `VDotTop` 这一侧，「被验证的东西不等于被集成的东西」。
+   P4 的做法：新增 `VIMacUHarness`（只做连线的窄 IO 包装，`VIMacU.scala` 一行未改）+ `tests/unit/vimacu_tb.cpp`，把同一批共享语料**直接灌进 `VIMacU` 本体**，实测 **27529 条执行、0 失配**；并核对两条路径共享的 `VDotTree` / `CSA4to2` / `CSA3to2` / `ByteMaskTailGen` 网表**逐字节相同**。详见 `docs/stage2/12_基础功能测试报告.md` §8 与 `logs/stage2/p5_vimacu_equiv.log`。
+   **剩余**：全核 difftest 仍未执行（见第 2 条）。
 
 2. **全核层面未验证**。`mill xiangshan.runMain top.TopMain`（全 SoC 精化）与 `make emu`（全核 Verilator）在本机 16 GB 内存下不可行（官方要求 `-Xmx40G`，见 `docs/stage1/03_仿真平台搭建报告.md` §7.1、`MASTER_PLAN.md` D3）。因此：
    - 译码 → uop 拆分 → 发射 → `VIMacU` → 写回的**全链路未在真实流水线上跑过**；
    - 已验证到的最强层级是：`DecodeUnit` 与 `VIMacU` 各自**单独精化成 Verilog 成功**（证明译码表无冲突、FU 可综合），加上 L1 对算术通路的逐位差分。
    - 全链路验证留给 P6（NEMU↔RTL 协同仿真）与可能的全核 difftest。
 
-3. **`vdot4a.vv` 的 `vstart != 0` 在全核上不可达**。`VecExceptionGen.scala:275` 的 `vstartIllegal` 对所有 `isVArith` 指令在 `vstart!=0` 时报非法，而裁定 S-7 要求 `vdot4a` 的 `vstart` 正常生效。按裁定 R-06，数据通路照 S-7 正确实现（`VDotTop` 的 prestart 分支、`VIMacU` 经 `Mgu.info.vstart`），但该路径**只能在 L1 验证**。本次 L1 随机激励里 `vstart` 恒为 0（沿用上游 `gen_random_vecinfo` 对算术指令的约定），**`vdot4a` 的 prestart 路径尚未被实际激励覆盖**，需要 P4 的测试工程师用 `YS_VDOT_VECTORS` + 自定义语料补上。
+3. **`vdot4a.vv` 的 `vstart != 0` 在全核上不可达**（仍然成立），但 **prestart 数据通路已在 P4 阶段被实际激励覆盖**。
+   `VecExceptionGen.scala:305` 的 `vstartIllegal` 对所有 `isVArith` 指令在 `vstart!=0` 时报非法，而裁定 S-7 要求 `vdot4a` 的 `vstart` 正常生效。按裁定 R-06，数据通路照 S-7 正确实现（`VDotTop` 的 prestart 分支、`VIMacU` 经 `Mgu.info.vstart`），但该路径**只能在 L1 验证**。
+   上游 `gen_random_vecinfo()` 对算术指令恒置 `vstart = 0`，随机激励确实覆盖不到；P4 用 `YS_VDOT_VECTORS` 定向语料回放补上：`vdot4a_boundary.txt` 6 条 + `vdot4a_random.txt` 1539 条 `vstart != 0` 用例全部实测通过，归约侧另有 `vstart_relaxed.txt` 90 条（非规范 SKIP 策略）。详见 12 号报告 §5.3。
 
 4. **归约类 `vstart != 0` 在 L1 走的是 SKIP 策略**。FU 级平台不建模异常，RTL 的归约数据通路（`activeEn` 的 `begin = vstart`）天然实现 §5.4 的 prestart 跳过。架构层的 STRICT 行为（S-1：抛 Illegal Instruction）由 `VecExceptionGen` 在译码阶段实现，不在 L1 验证。`vector_dot.cpp` 因此用 `VDOT_VSTART_SKIP` 调参考模型；语料文件里 `status != OK` 的用例被自动跳过（`boundary.txt` 跳过 9 条）。
 
@@ -590,7 +602,12 @@ LMUL>1 的方案（新增 `UopSplitType.VEC_VDOT`）见设计文档 §8.3，**�
 
 7. **未实现的优化**：冗余 lane 操作数门控、非 vdot 指令执行时对 `VDotTree.prod` 输入端的门控（设计文档 §8.1）。两者都是纯功耗项。
 
-8. **LMUL > 1 不支持**（裁定 S-6）。本版本 `uopSplitType` 用 `VEC_VVV`，LMUL>1 时 `numOfUop = lmul`，但 `vdot`/`vdotacc` 的多 uop 累加链语义没有实现，结果会是错的。`VecExceptionGen` 当前**不会**拦截 `vlmul != 0` 的 vdot 指令 —— 这是一个已知缺口，若要在全核上安全运行，应在 `dotEewIllegal` 旁补一条 `dotRedInst && LMUL =/= 0.U`。本版本未加，因为 L1 平台固定 `vlmul = 0`，加了也无法验证；已登记为后续项。
+8. **LMUL > 1 不支持**（裁定 S-6）—— **拦截缺口已在 P4 阶段修复**。
+   本版本 `uopSplitType` 用 `VEC_VVV`，LMUL>1 时 `numOfUop = lmul`，但 `vdot`/`vdotacc` 的多 uop 累加链语义没有实现，结果会是错的。原实现里 `VecExceptionGen` **不会**拦截 `vlmul != 0` 的 vdot 指令，会静默算错。
+   P4 修复：`VecExceptionGen.scala:217` 新增
+   `private val dotEmulIllegal = (dotRedInst || dot4aInst) && (io.vtype.vlmul =/= 0.U)`，并并入 `emulIllegal`（`:240`）。三条指令统一拦截，与 NEMU 侧 `vdot_check()` 的 `if (vtype->vlmul != 0) longjmp_exception(EX_II)` 保持一致。
+   验证：新增 `VecExceptionGenHarness` + `tests/unit/vecexcgen_tb.cpp`，46 条定向用例全 PASS；撤掉该守卫后 13 条立即变红（`PROVE_FAIL=1 bash scripts/tools/run_decode_tb.sh`，日志 `logs/stage2/p5_decode_illegal.log`）。
+   **仍然不支持 LMUL>1 的正确执行**，只是从「静默算错」变成「明确报非法」。
 
 9. **`.insn` 汇编宏未验证**。本机无 RISC-V 工具链，三条指令的机器码只由位域拼接算得（设计文档 §1.2 已标注 UNVERIFIED），P4/P5 需用 `objdump -d` 回读确认。
 
@@ -615,3 +632,8 @@ LMUL>1 的方案（新增 `UopSplitType.VEC_VDOT`）见设计文档 §8.3，**�
 6. **波形**：`WAVE=1 bash scripts/11_build_vdot_sim.sh`。注意切换 `WAVE` 必须重跑 verilator（脚本已自动 `rm -rf build/emu-compile`），且 trace 版 emu 必须带 `--dump-wave` 运行否则空指针崩溃。
 7. **尚未覆盖、需要补的点**：`vdot4a.vv` 的 `vstart != 0`（prestart）路径（见 §10 第 3 条）；`vl = 0` 虽已纳入随机范围但定向用例更可靠；`vm=0` 且 `v0` 全 0 的 S-4 场景建议单独定向。
 8. **不要**同时应用 `tests/unit/yunsuan_testdriver_env_select.patch` 和 `tests/unit/yunsuan_vdot_testbench.patch`，后者已包含前者。
+
+> **P4 已完成情况**：上面第 7 条列出的三个待补点（`vdot4a` 的 `vstart != 0`、`vl = 0` 的定向用例、
+> `vm=0` 且 `v0` 全 0 的 S-4 场景）均已覆盖并通过；另外关闭了 §10 第 1 条（VIMacU 直驱）与
+> 第 8 条（LMUL 拦截）两个缺口。完整结果见 `docs/stage2/12_基础功能测试报告.md`，
+> 一键复跑 `bash scripts/20_run_func_tests.sh`。

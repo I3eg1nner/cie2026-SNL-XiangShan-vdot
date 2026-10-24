@@ -1,4 +1,4 @@
-=== 既有指令 / 既有功能单元回归  2026-10-24 21:22:02 CST ===
+=== 既有指令 / 既有功能单元回归  2026-10-24 21:55:41 CST ===
 
 --- (A) 上游 CI 的随机混合测试（.github/workflows/main.yml:42 原样命令）---
 命令： ./build/emu -O 10000
@@ -7,7 +7,7 @@ Set Test Type Res: fuType:7 fuOpType:225 (pick_fuType=0 pick_fuOpType=0)
 Using seed = 0
 EMU EXCEEDED LIMIT
 HAS Executed Cycles:54823 Operations:10000
-EMU has executed 589 ms.
+EMU has executed 582 ms.
 
 --- (B) 逐个既有功能单元定向回归（2000 条 / 个）---
     fuType 对照表见 docs/stage1/03_仿真平台搭建报告.md §4.3
@@ -27,4 +27,30 @@ EMU has executed 589 ms.
 
 --- (D) 与 pristine 基线逐 FU 对拍（证明差异为零）---
     pristine emu: /Users/i3eg1nner/code/cie/work/XiangShan-kmhv2/yunsuan/build/emu（只读运行，不修改该工作树）
-    fuType     pristine                     vdot-tree                    一致?
+    fuType  pristine 基线                              vdot 工作树                               逐字相同?
+    0       EMU BADTRAP HAS Executed Cycles:63 Operations:13  EMU BADTRAP HAS Executed Cycles:63 Operations:13  YES
+    1       EMU EXCEEDED LIMIT HAS Executed Cycles:10019 Operations:2000  EMU EXCEEDED LIMIT HAS Executed Cycles:10019 Operations:2000  YES
+    2       EMU EXCEEDED LIMIT HAS Executed Cycles:24138 Operations:2000  EMU EXCEEDED LIMIT HAS Executed Cycles:24138 Operations:2000  YES
+    3       EMU EXCEEDED LIMIT HAS Executed Cycles:4019 Operations:2000  EMU EXCEEDED LIMIT HAS Executed Cycles:4019 Operations:2000  YES
+    4       EMU EXCEEDED LIMIT HAS Executed Cycles:6019 Operations:2000  EMU EXCEEDED LIMIT HAS Executed Cycles:6019 Operations:2000  YES
+    6       EMU EXCEEDED LIMIT HAS Executed Cycles:23372 Operations:2000  EMU EXCEEDED LIMIT HAS Executed Cycles:23372 Operations:2000  YES
+    7       EMU EXCEEDED LIMIT HAS Executed Cycles:8019 Operations:2000  EMU EXCEEDED LIMIT HAS Executed Cycles:8019 Operations:2000  YES
+    8       EMU EXCEEDED LIMIT HAS Executed Cycles:8019 Operations:2000  EMU EXCEEDED LIMIT HAS Executed Cycles:8019 Operations:2000  YES
+    9       EMU EXCEEDED LIMIT HAS Executed Cycles:8019 Operations:2000  EMU EXCEEDED LIMIT HAS Executed Cycles:8019 Operations:2000  YES
+
+    注：fuType=0（VFloatAdder）在 pristine 基线上同样 BADTRAP（同一条用例、同一拍），
+        属于上游既有缺陷（它本来就不在上游 ALL_FUTYPES 随机集合里），与 vdot 无关。
+    下面给出两棵树在 fuType=0 上的完整输出 diff（应当只差 wall-clock 行）：
+    => 两棵树在 fuType=0 上的输出逐字节相同（含失配的 REF/DUT 数值），
+       说明该失配是上游既有缺陷，与 vdot 改动无关
+
+--- (E) 生成 Verilog 的逐模块比对（阶段一基线 vs 本阶段）---
+命令： diff <(sed -E 's@//.*@@' rtl/verilog/baseline/VIMac.sv) <(sed -E 's@//.*@@' rtl/verilog/vdot/VIMac.sv)
+    VIMac.sv 去注释后差异行数： 0
+    基线   : /Users/i3eg1nner/code/cie/rtl/verilog/baseline/SimTop.v  (164 个 module)
+    改动后 : /Users/i3eg1nner/code/cie/rtl/verilog/vdot/SimTop_with_vdot.v  (169 个 module)
+    共有 module                 : 164
+    其中去注释后逐字节相同      : 163
+    其中存在差异                : 1  ['SimTop']
+    仅出现在改动后（新增模块）  : 5  ['CSA3to2_64', 'CSA4to2_6', 'VDotTop', 'VDotTree', 'VIMac64b']
+    仅出现在基线（被删除模块）  : 0  

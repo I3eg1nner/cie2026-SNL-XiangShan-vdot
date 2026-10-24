@@ -1,4 +1,4 @@
-=== 随机差分测试  2026-10-24 21:21:52 CST ===
+=== 随机差分测试  2026-10-24 21:55:31 CST ===
 === 参考模型 = tests/golden/vdot_ref.c（直接 #include，禁止重写）===
 
 --- (A) 共享随机语料回放（tests/vectors/*_random.txt，期望值由同一份参考模型现场复算）---
@@ -17,7 +17,7 @@ Using seed = 7
 [vdot-vectors] all 8459 cases consumed
 EMU EXCEEDED LIMIT
 HAS Executed Cycles:33855 Operations:8459
-EMU has executed 345 ms.
+EMU has executed 339 ms.
 # 判定   : PASS（attempted=8459 passed=8459 failed=0 skipped=1541）
 
 ########################################################################
@@ -51,7 +51,7 @@ Using seed = 7
 [vdot-vectors] all 10000 cases consumed
 EMU EXCEEDED LIMIT
 HAS Executed Cycles:40019 Operations:10000
-EMU has executed 409 ms.
+EMU has executed 405 ms.
 # 判定   : PASS（attempted=10000 passed=10000 failed=0 skipped=0）
 
 --- (B) 测试平台随机激励（每次重新随机，与语料文件互相独立）---
@@ -64,7 +64,7 @@ Set Test Type Res: fuType:10 fuOpType:0 (pick_fuType=1 pick_fuOpType=1)
 Using seed = 11
 EMU EXCEEDED LIMIT
 HAS Executed Cycles:80019 Operations:20000
-EMU has executed 774 ms.
+EMU has executed 791 ms.
 # 判定   : PASS（attempted=20000 passed=20000 failed=0）
 
 ########################################################################
@@ -75,7 +75,7 @@ Set Test Type Res: fuType:10 fuOpType:0 (pick_fuType=1 pick_fuOpType=1)
 Using seed = 12
 EMU EXCEEDED LIMIT
 HAS Executed Cycles:80019 Operations:20000
-EMU has executed 781 ms.
+EMU has executed 783 ms.
 # 判定   : PASS（attempted=20000 passed=20000 failed=0）
 
 ########################################################################
@@ -86,7 +86,7 @@ Set Test Type Res: fuType:10 fuOpType:0 (pick_fuType=1 pick_fuOpType=1)
 Using seed = 13
 EMU EXCEEDED LIMIT
 HAS Executed Cycles:80019 Operations:20000
-EMU has executed 812 ms.
+EMU has executed 779 ms.
 # 判定   : PASS（attempted=20000 passed=20000 failed=0）
 
 ########################################################################
@@ -97,7 +97,7 @@ Set Test Type Res: fuType:10 fuOpType:1 (pick_fuType=1 pick_fuOpType=1)
 Using seed = 11
 EMU EXCEEDED LIMIT
 HAS Executed Cycles:80019 Operations:20000
-EMU has executed 779 ms.
+EMU has executed 812 ms.
 # 判定   : PASS（attempted=20000 passed=20000 failed=0）
 
 ########################################################################
@@ -108,7 +108,7 @@ Set Test Type Res: fuType:10 fuOpType:1 (pick_fuType=1 pick_fuOpType=1)
 Using seed = 12
 EMU EXCEEDED LIMIT
 HAS Executed Cycles:80019 Operations:20000
-EMU has executed 746 ms.
+EMU has executed 802 ms.
 # 判定   : PASS（attempted=20000 passed=20000 failed=0）
 
 ########################################################################
@@ -119,7 +119,7 @@ Set Test Type Res: fuType:10 fuOpType:1 (pick_fuType=1 pick_fuOpType=1)
 Using seed = 13
 EMU EXCEEDED LIMIT
 HAS Executed Cycles:80019 Operations:20000
-EMU has executed 758 ms.
+EMU has executed 786 ms.
 # 判定   : PASS（attempted=20000 passed=20000 failed=0）
 
 ########################################################################
@@ -130,7 +130,7 @@ Set Test Type Res: fuType:10 fuOpType:2 (pick_fuType=1 pick_fuOpType=1)
 Using seed = 11
 EMU EXCEEDED LIMIT
 HAS Executed Cycles:80019 Operations:20000
-EMU has executed 767 ms.
+EMU has executed 790 ms.
 # 判定   : PASS（attempted=20000 passed=20000 failed=0）
 
 ########################################################################
@@ -141,7 +141,7 @@ Set Test Type Res: fuType:10 fuOpType:2 (pick_fuType=1 pick_fuOpType=1)
 Using seed = 12
 EMU EXCEEDED LIMIT
 HAS Executed Cycles:80019 Operations:20000
-EMU has executed 757 ms.
+EMU has executed 795 ms.
 # 判定   : PASS（attempted=20000 passed=20000 failed=0）
 
 ########################################################################
@@ -152,7 +152,7 @@ Set Test Type Res: fuType:10 fuOpType:2 (pick_fuType=1 pick_fuOpType=1)
 Using seed = 13
 EMU EXCEEDED LIMIT
 HAS Executed Cycles:80019 Operations:20000
-EMU has executed 764 ms.
+EMU has executed 860 ms.
 # 判定   : PASS（attempted=20000 passed=20000 failed=0）
 
 ########################################################################
@@ -163,5 +163,5 @@ Set Test Type Res: fuType:10 fuOpType:225 (pick_fuType=1 pick_fuOpType=0)
 Using seed = 14
 EMU EXCEEDED LIMIT
 HAS Executed Cycles:120019 Operations:30000
-EMU has executed 1177 ms.
+EMU has executed 1265 ms.
 # 判定   : PASS（attempted=30000 passed=30000 failed=0）

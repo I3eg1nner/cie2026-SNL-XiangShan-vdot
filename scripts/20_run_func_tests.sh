@@ -94,7 +94,7 @@ run_corpus() {
   echo "# 用例数 : 总 ${total}，可执行 ${ok}，跳过 ${skip} ${reasons:+（${reasons}）}"
   echo "# 命令   : YS_VDOT_VECTORS=${f#${REPO_ROOT}/} ./build/emu -O ${ok} -s ${CORPUS_SEED}"
   echo "########################################################################"
-  out=$( cd "${YS_DIR}" && YS_VDOT_VECTORS="${f}" ./build/emu -O "${ok}" -s "${CORPUS_SEED}" 2>&1 ) || true
+  out=$( cd "${YS_DIR}" && YS_VDOT_VECTORS="${f}" ./build/emu -O "${ok}" -s "${CORPUS_SEED}" 2>&1 || true )
   echo "${out}"
   verdict=$(echo "${out}" | grep -oE "EMU (EXCEEDED LIMIT|BADTRAP)" | head -1)
   ops=$(echo "${out}" | sed -n 's/.*Operations:\([0-9]*\).*/\1/p' | head -1)
@@ -106,7 +106,7 @@ run_corpus() {
     pass=$((ops > 0 ? ops - 1 : 0)); fail=$((ok - pass)); res="FAIL"
   fi
   printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
-    "${cat}" "${name}" "${total}" "${pass}" "${fail}" "${skip}" "${res}" "${note}" >> "${ROWS}"
+    "${cat}" "${name}" "${ok}" "${pass}" "${fail}" "${skip}" "${res}" "${note}" >> "${ROWS}"
   echo "# 判定   : ${res}（attempted=${ok} passed=${pass} failed=${fail} skipped=${skip}）"
 }
 
@@ -120,11 +120,11 @@ run_random() {
   if [ "${op}" = "all" ]; then
     cmd="YS_FUTYPE=10 ./build/emu -O ${n} -s ${s}"
     echo "# ${name}：命令 ${cmd}"
-    out=$( cd "${YS_DIR}" && YS_FUTYPE=10 ./build/emu -O "${n}" -s "${s}" 2>&1 ) || true
+    out=$( cd "${YS_DIR}" && YS_FUTYPE=10 ./build/emu -O "${n}" -s "${s}" 2>&1 || true )
   else
     cmd="YS_FUTYPE=10 YS_FUOPTYPE=${op} ./build/emu -O ${n} -s ${s}"
     echo "# ${name}：命令 ${cmd}"
-    out=$( cd "${YS_DIR}" && YS_FUTYPE=10 YS_FUOPTYPE="${op}" ./build/emu -O "${n}" -s "${s}" 2>&1 ) || true
+    out=$( cd "${YS_DIR}" && YS_FUTYPE=10 YS_FUOPTYPE="${op}" ./build/emu -O "${n}" -s "${s}" 2>&1 || true )
   fi
   echo "########################################################################"
   echo "${out}"
@@ -155,7 +155,7 @@ worked_example() {
   echo "== 语料原文（op vsew vstart vl vm vta vma vs1 vs2 vd_in vd_expected v0 status）："
   tail -1 "${tmp}" | sed 's/^/==   /'
   echo "======================================================================"
-  ( cd "${YS_DIR}" && YS_DUMP=1 YS_VDOT_VECTORS="${tmp}" ./build/emu -O 1 -s "${CORPUS_SEED}" 2>&1 ) || true
+  ( cd "${YS_DIR}" && YS_DUMP=1 YS_VDOT_VECTORS="${tmp}" ./build/emu -O 1 -s "${CORPUS_SEED}" 2>&1 || true )
   rm -f "${tmp}"
 }
 
@@ -268,7 +268,7 @@ step "5/7 既有指令回归"
   echo ""
   echo "--- (A) 上游 CI 的随机混合测试（.github/workflows/main.yml:42 原样命令）---"
   echo "命令： ./build/emu -O 10000"
-  out=$( cd "${YS_DIR}" && ./build/emu -O 10000 -s 0 2>&1 ) || true
+  out=$( cd "${YS_DIR}" && ./build/emu -O 10000 -s 0 2>&1 || true )
   echo "${out}"
   v=$(echo "${out}" | grep -oE "EMU (EXCEEDED LIMIT|BADTRAP)" | head -1)
   printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "既有回归" "上游CI混合随机(含VDot)" 10000 \
@@ -279,7 +279,7 @@ step "5/7 既有指令回归"
   echo "--- (B) 逐个既有功能单元定向回归（2000 条 / 个）---"
   echo "    fuType 对照表见 docs/stage1/03_仿真平台搭建报告.md §4.3"
   for FT in 1 2 3 4 6 7 8 9; do
-    out=$( cd "${YS_DIR}" && YS_FUTYPE=${FT} ./build/emu -O 2000 -s 0 2>&1 ) || true
+    out=$( cd "${YS_DIR}" && YS_FUTYPE=${FT} ./build/emu -O 2000 -s 0 2>&1 || true )
     v=$(echo "${out}" | grep -oE "EMU (EXCEEDED LIMIT|BADTRAP)" | head -1)
     c=$(echo "${out}" | sed -n 's/.*Cycles:\([0-9]*\).*/\1/p' | head -1)
     printf '    fuType=%-2s  %-20s cycles=%-8s\n' "${FT}" "${v}" "${c}"
@@ -292,7 +292,7 @@ step "5/7 既有指令回归"
   echo "--- (C) fuType=5（VIAluFWrapper / vadd.vv）需要钉住 fuOpType ---"
   echo "    上游 gen_random_optype() 对 fuType=5 会生成 golden model 不支持的 optype 3，"
   echo "    这是上游既有限制，与 vdot 无关；阶段一的做法同样是钉 YS_FUOPTYPE=0。"
-  out=$( cd "${YS_DIR}" && YS_FUTYPE=5 YS_FUOPTYPE=0 ./build/emu -O 2000 -s 0 2>&1 ) || true
+  out=$( cd "${YS_DIR}" && YS_FUTYPE=5 YS_FUOPTYPE=0 ./build/emu -O 2000 -s 0 2>&1 || true )
   v=$(echo "${out}" | grep -oE "EMU (EXCEEDED LIMIT|BADTRAP)" | head -1)
   c=$(echo "${out}" | sed -n 's/.*Cycles:\([0-9]*\).*/\1/p' | head -1)
   printf '    fuType=5 fuOpType=0  %-20s cycles=%-8s\n' "${v}" "${c}"
@@ -304,20 +304,31 @@ step "5/7 既有指令回归"
   echo "--- (D) 与 pristine 基线逐 FU 对拍（证明差异为零）---"
   if [ -x "${PRISTINE_EMU}" ]; then
     echo "    pristine emu: ${PRISTINE_EMU}（只读运行，不修改该工作树）"
-    printf '    %-10s %-28s %-28s %s\n' "fuType" "pristine" "vdot-tree" "一致?"
+    printf '    %-7s %-44s %-44s %s\n' "fuType" "pristine 基线" "vdot 工作树" "逐字相同?"
     for FT in 0 1 2 3 4 6 7 8 9; do
-      pa=$( cd /tmp && YS_FUTYPE=${FT} "${PRISTINE_EMU}" -O 2000 -s 0 2>&1 | grep -E "^(EMU |HAS Executed)" | tr '\n' ' ' )
-      vb=$( cd "${YS_DIR}" && YS_FUTYPE=${FT} ./build/emu -O 2000 -s 0 2>&1 | grep -E "^(EMU |HAS Executed)" | tr '\n' ' ' )
-      [ "${pa}" = "${vb}" ] && eq="YES" || eq="NO"
-      printf '    %-10s %-28s %-28s %s\n' "${FT}" "$(echo "${pa}" | cut -c1-27)" "$(echo "${vb}" | cut -c1-27)" "${eq}"
+      # emu 在 BADTRAP 时返回 1（fuType=0 两棵树上都会 BADTRAP），这里显式容错
+      pa=$( cd /tmp && YS_FUTYPE=${FT} "${PRISTINE_EMU}" -O 2000 -s 0 2>&1 || true )
+      vb=$( cd "${YS_DIR}" && YS_FUTYPE=${FT} ./build/emu -O 2000 -s 0 2>&1 || true )
+      # 只取判定行与周期/条数行；"EMU has executed N ms" 是 wall-clock，必须排除
+      pa=$( echo "${pa}" | grep -E "^(EMU (EXCEEDED LIMIT|BADTRAP)|HAS Executed)" | tr '\n' ' ' || true )
+      vb=$( echo "${vb}" | grep -E "^(EMU (EXCEEDED LIMIT|BADTRAP)|HAS Executed)" | tr '\n' ' ' || true )
+      if [ "${pa}" = "${vb}" ]; then eq="YES"; else eq="NO"; fi
+      printf '    %-7s %-44s %-44s %s\n' "${FT}" "${pa}" "${vb}" "${eq}"
     done
     echo ""
     echo "    注：fuType=0（VFloatAdder）在 pristine 基线上同样 BADTRAP（同一条用例、同一拍），"
     echo "        属于上游既有缺陷（它本来就不在上游 ALL_FUTYPES 随机集合里），与 vdot 无关。"
     echo "    下面给出两棵树在 fuType=0 上的完整输出 diff（应当只差 wall-clock 行）："
-    diff <( cd /tmp && YS_FUTYPE=0 "${PRISTINE_EMU}" -O 20 -s 0 2>&1 | grep -v "compiled at" | grep -v "executed" ) \
-         <( cd "${YS_DIR}" && YS_FUTYPE=0 ./build/emu -O 20 -s 0 2>&1 | grep -v "compiled at" | grep -v "executed" ) \
-      && echo "    => 两棵树在 fuType=0 上的输出逐字节相同（含失配的 REF/DUT 数值）"
+    ( cd /tmp && YS_FUTYPE=0 "${PRISTINE_EMU}" -O 20 -s 0 2>&1 || true ) \
+      | grep -v "compiled at" | grep -v "executed" > /tmp/ft0_pristine.txt
+    ( cd "${YS_DIR}" && YS_FUTYPE=0 ./build/emu -O 20 -s 0 2>&1 || true ) \
+      | grep -v "compiled at" | grep -v "executed" > /tmp/ft0_vdot.txt
+    if diff /tmp/ft0_pristine.txt /tmp/ft0_vdot.txt; then
+      echo "    => 两棵树在 fuType=0 上的输出逐字节相同（含失配的 REF/DUT 数值），"
+      echo "       说明该失配是上游既有缺陷，与 vdot 改动无关"
+    else
+      echo "    => 两棵树输出不同（见上面的 diff），需要进一步排查"
+    fi
   else
     echo "    [跳过] 未找到 pristine 基线 emu：${PRISTINE_EMU}"
   fi
@@ -336,9 +347,9 @@ step "5/7 既有指令回归"
 # ---------------------------------------------------------------------------
 step "5.5/7 补丁可应用性与译码级非法指令判定"
 {
-  bash "${REPO_ROOT}/scripts/tools/verify_patches.sh"
+  bash "${REPO_ROOT}/scripts/tools/verify_patches.sh" || true
   echo ""
-  bash "${REPO_ROOT}/scripts/tools/run_decode_tb.sh"
+  bash "${REPO_ROOT}/scripts/tools/run_decode_tb.sh" || true
 } 2>&1 | tee "${LOG_DIR}/p5_decode_illegal.log"
 if grep -q "^VECEXC-TB: PASS" "${LOG_DIR}/p5_decode_illegal.log"; then
   nd=$(grep -oE "共 [0-9]+ 条" "${LOG_DIR}/p5_decode_illegal.log" | head -1 | grep -oE "[0-9]+")
@@ -360,10 +371,15 @@ fi
 # 6. VIMacU 等价性（真正被集成进香山的模块）
 # ---------------------------------------------------------------------------
 step "6/7 VIMacU 等价性验证"
-bash "${REPO_ROOT}/scripts/tools/run_vimacu_tb.sh" 2>&1 | tee "${LOG_DIR}/p5_vimacu_equiv.log"
+( bash "${REPO_ROOT}/scripts/tools/run_vimacu_tb.sh" || true ) 2>&1 | tee "${LOG_DIR}/p5_vimacu_equiv.log"
 if grep -q "^VIMACU-TB: PASS" "${LOG_DIR}/p5_vimacu_equiv.log"; then
-  np=$(grep -oE "总计 [0-9]+ 条" "${LOG_DIR}/p5_vimacu_equiv.log" | head -1 | grep -oE "[0-9]+")
-  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "VIMacU 等价" "VIMacU 直驱语料回放" "${np:-0}" "${np:-0}" 0 0 "PASS" \
+  VL=$(grep -E "^VIMacU 直驱汇总" "${LOG_DIR}/p5_vimacu_equiv.log" | head -1)
+  nrun=$(echo  "${VL}" | sed -n 's/.*执行 \([0-9]*\) 条.*/\1/p')
+  npass=$(echo "${VL}" | sed -n 's/.*通过 \([0-9]*\) 条.*/\1/p')
+  nfail=$(echo "${VL}" | sed -n 's/.*失败 \([0-9]*\) 条.*/\1/p')
+  nskip=$(echo "${VL}" | sed -n 's/.*跳过 \([0-9]*\) 条.*/\1/p')
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "VIMacU 等价" "VIMacU 直驱语料回放" \
+    "${nrun:-0}" "${npass:-0}" "${nfail:-0}" "${nskip:-0}" "PASS" \
     "scripts/tools/run_vimacu_tb.sh" >> "${ROWS}"
 else
   printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "VIMacU 等价" "VIMacU 直驱语料回放" "0" "0" "0" "0" "FAIL" \
@@ -375,14 +391,14 @@ fi
 # ---------------------------------------------------------------------------
 if [ "${WITH_WAVE}" = "1" ]; then
   step "7a/7 波形抓取（重建带 trace 的 emu）"
-  bash "${REPO_ROOT}/scripts/tools/capture_vdot_waves.sh" 2>&1 | tee "${LOG_DIR}/p5_waveform.log"
+  ( bash "${REPO_ROOT}/scripts/tools/capture_vdot_waves.sh" || true ) 2>&1 | tee "${LOG_DIR}/p5_waveform.log"
 else
   info "跳过波形抓取（WITH_WAVE=1 开启；已存档波形见 ${WAVE_DIR}）"
 fi
 
 if [ "${WITH_FAULT}" = "1" ]; then
   step "7b/7 故障注入（5 个故障，每个重建一次 emu）"
-  bash "${REPO_ROOT}/scripts/tools/fault_inject_vdot.sh" 2>&1 | tee "${LOG_DIR}/p5_fault_injection.log"
+  ( bash "${REPO_ROOT}/scripts/tools/fault_inject_vdot.sh" || true ) 2>&1 | tee "${LOG_DIR}/p5_fault_injection.log"
 else
   info "跳过故障注入（WITH_FAULT=1 开启；已存档结果见 ${LOG_DIR}/p5_fault_injection.log）"
 fi

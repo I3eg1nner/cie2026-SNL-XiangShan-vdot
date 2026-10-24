@@ -1,0 +1,102 @@
+=== VIMacU 直驱等价性验证  2026-10-24 21:55:54 CST ===
+
+--- (1) 精化 VIMacUHarness（内部例化真正的 VIMacU）---
+[mill-state-guard] /Users/i3eg1nner/code/cie/work/XiangShan-vdot: 清理了 0 个失效的增量编译状态
+[860] elemIdxWidth: 8
+[860] numBytes: 16, byteWidth: 4
+[860] elemIdxWidth: 8
+[860/860] =============== xiangshan.test.runMain xi...ld/vdot --target verilog =============== 10s
+==================================================================================================
+[860] elemIdxWidth: 8
+[860/860] =============== xiangshan.test.runMain xi...ld/vdot2 --target verilog =============== 9s
+==================================================================================================
+    VIMacUHarness.v : 4367 行
+    其中的模块      : 13 个
+      module VIMacSrcTypeModule
+      module VecDataSplitModule
+      module VIMac64b
+      module UIntToContLow1s
+      module UIntToContLow0s
+      module MaskExtractor
+      module ByteMaskTailGen
+      module Mgu
+      module CSA4to2
+      module CSA3to2
+      module VDotTree
+      module VIMacU
+      module VIMacUHarness
+
+--- (2) Verilator 构建 ---
+c++  -I.  -MMD -I/opt/homebrew/Cellar/verilator/5.052/share/verilator/include -I/opt/homebrew/Cellar/verilator/5.052/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=0 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=0 -DVM_TRACE_SAIF=0 -DVM_VPI=0 -faligned-new -fbracket-depth=4096 -fcf-protection=none -Xclang -fno-pch-timestamp -Qunused-arguments -Wno-bool-operation -Wno-c++11-narrowing -Wno-constant-logical-operand -Wno-int-in-bool-context -Wno-non-pod-varargs -Wno-parentheses-equality -Wno-shadow -Wno-sign-compare -Wno-tautological-bitwise-compare -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable -Wno-vla-cxx-extension    -I/Users/i3eg1nner/code/cie/work/XiangShan-vdot/build/vimacu-tb -std=c++17 -O2   -Os  -c -o vimacu_tb.o /Users/i3eg1nner/code/cie/work/XiangShan-vdot/build/vimacu-tb/vimacu_tb.cpp
+c++  -Wl,-U,__Z15vl_time_stamp64v,-U,__Z13sc_time_stampv,-U,_vlog_startup_routines   vimacu_tb.o verilated.o verilated_threads.o VVIMacUHarness__ALL.a    -pthread -lpthread   -o /Users/i3eg1nner/code/cie/work/XiangShan-vdot/build/vimacu-tb/vimacu_tb
+- V e r i l a t i o n   R e p o r t: Verilator 5.052 2026-09-05 rev vUNKNOWN-built20260905
+- Verilator: Built from 0.000 MB sources in 0 modules, into 0.000 MB in 0 C++ files needing 0.000 MB
+- Verilator: Walltime 0.610 s (elab=0.000, cvt=0.000, bld=0.607); cpu 0.002 s on 10 threads; allocated 3.203 MB
+    vimacu_tb : 465016 bytes
+
+--- (3) 回放全部定向语料（与 L1 平台用的是同一批文件）---
+---- VIMacU 用例 MATCH （延迟 2 拍）----
+  op=vdot vsew=8 vstart=0 vl=16 vm=1 vta=1 vma=1
+  vs1            0102030405060708090a0b0c0d0e0f10
+  vs2            0102030405060708090a0b0c0d0e0f10
+  vd_in          00000000000000000000000000000000
+  v0             00000000000000000000000000000000
+  expected       d8050000ffffffffffffffffffffffff
+  VIMacU 实测  d8050000ffffffffffffffffffffffff
+---- VIMacU 用例 MATCH （延迟 2 拍）----
+  op=vdot vsew=8 vstart=0 vl=16 vm=1 vta=1 vma=1
+  vs1            01010101010101010101010101010101
+  vs2            01010101010101010101010101010101
+  vd_in          00000000000000000000000000000000
+  v0             00000000000000000000000000000000
+  expected       10000000ffffffffffffffffffffffff
+  VIMacU 实测  10000000ffffffffffffffffffffffff
+---- VIMacU 用例 MATCH （延迟 2 拍）----
+  op=vdot vsew=8 vstart=0 vl=16 vm=1 vta=1 vma=1
+  vs1            7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f
+  vs2            01010101010101010101010101010101
+  vd_in          00000000000000000000000000000000
+  v0             00000000000000000000000000000000
+  expected       f0070000ffffffffffffffffffffffff
+  VIMacU 实测  f0070000ffffffffffffffffffffffff
+/Users/i3eg1nner/code/cie/tests/vectors/positive.txt 总 40     执行 40     通过 40     失败 0    跳过 0    解析/模型异常 0
+/Users/i3eg1nner/code/cie/tests/vectors/negative.txt 总 44     执行 44     通过 44     失败 0    跳过 0    解析/模型异常 0
+/Users/i3eg1nner/code/cie/tests/vectors/boundary.txt 总 103    执行 94     通过 94     失败 0    跳过 9    解析/模型异常 0
+/Users/i3eg1nner/code/cie/tests/vectors/vdotacc_positive.txt 总 40     执行 40     通过 40     失败 0    跳过 0    解析/模型异常 0
+/Users/i3eg1nner/code/cie/tests/vectors/vdotacc_negative.txt 总 44     执行 44     通过 44     失败 0    跳过 0    解析/模型异常 0
+/Users/i3eg1nner/code/cie/tests/vectors/vdotacc_boundary.txt 总 103    执行 94     通过 94     失败 0    跳过 9    解析/模型异常 0
+/Users/i3eg1nner/code/cie/tests/vectors/vdot4a_positive.txt 总 40     执行 40     通过 40     失败 0    跳过 0    解析/模型异常 0
+/Users/i3eg1nner/code/cie/tests/vectors/vdot4a_negative.txt 总 44     执行 44     通过 44     失败 0    跳过 0    解析/模型异常 0
+/Users/i3eg1nner/code/cie/tests/vectors/vdot4a_boundary.txt 总 115    执行 112    通过 112    失败 0    跳过 3    解析/模型异常 0
+/Users/i3eg1nner/code/cie/tests/vectors/vstart_relaxed.txt 总 90     执行 90     通过 90     失败 0    跳过 0    解析/模型异常 0
+/Users/i3eg1nner/code/cie/tests/vectors/random.txt 总 10000  执行 8459   通过 8459   失败 0    跳过 1541 解析/模型异常 0
+/Users/i3eg1nner/code/cie/tests/vectors/vdotacc_random.txt 总 10000  执行 8428   通过 8428   失败 0    跳过 1572 解析/模型异常 0
+/Users/i3eg1nner/code/cie/tests/vectors/vdot4a_random.txt 总 10000  执行 10000  通过 10000  失败 0    跳过 0    解析/模型异常 0
+----------------------------------------------------------------------
+VIMacU 直驱汇总： 总计 30663 条，执行 27529 条，通过 27529 条，失败 0 条，跳过 3134 条，异常 0 条
+VIMACU-TB: PASS
+
+--- (4) 共享算术核的逐 module 比对 ---
+    把「独立精化的 VIMacU.v」与「harness 里的 VIMacU」逐 module 对比。
+    harness 把 flush / robIdx / vxrm / vlmul / vuopIdx 等端口接成常量，
+    firtool 会据此做常量传播，所以 VIMacU / Mgu / VIMac64b 三个模块的网表会瘦身；
+    但共享的算术核（VDotTree + CSA4to2 + CSA3to2）与掩码生成（ByteMaskTailGen）
+    必须逐字节相同 —— 这正是「两条验证路径跑的是同一套算术」的硬证据。
+    基线   : /Users/i3eg1nner/code/cie/work/XiangShan-vdot/build/vdot2/VIMacU.v  (12 个 module)
+    改动后 : /Users/i3eg1nner/code/cie/work/XiangShan-vdot/build/vdot/VIMacUHarness.v  (13 个 module)
+    共有 module                 : 12
+    其中去注释后逐字节相同      : 9
+    其中存在差异                : 3  ['Mgu', 'VIMac64b', 'VIMacU']
+    仅出现在改动后（新增模块）  : 1  ['VIMacUHarness']
+    仅出现在基线（被删除模块）  : 0  
+
+--- (5) VDotTree / ByteMaskTailGen 单独校验 ---
+    VDotTree               IDENTICAL  (54379e665c453474e0cffe818c3e2e82)
+    CSA4to2                IDENTICAL  (cc532544ea9e287d7ee24f3c8d2a812d)
+    CSA3to2                IDENTICAL  (84acc5b7077d5035cf5b7cf121dac863)
+    ByteMaskTailGen        IDENTICAL  (b18c6ae5fc2867b460beff24d317441b)
+    MaskExtractor          IDENTICAL  (f46a12df1036776911add68f281d1994)
+    UIntToContLow1s        IDENTICAL  (8229eb622d2d4a1aa79ff6f4447457a4)
+    UIntToContLow0s        IDENTICAL  (2b8e2de722c11fcd5bb86c571e59b96d)
+    VecDataSplitModule     IDENTICAL  (200608fc87f63463ed8f816468e29b68)
+    VIMacSrcTypeModule     IDENTICAL  (186a663f3d665d65488c17731db6f282)
