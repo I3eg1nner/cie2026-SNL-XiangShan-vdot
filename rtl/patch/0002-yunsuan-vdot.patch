@@ -1,0 +1,398 @@
+diff --git a/src/main/scala/yunsuan/encoding/Opcode/VimacOpcode.scala b/src/main/scala/yunsuan/encoding/Opcode/VimacOpcode.scala
+index d188aa4..ea2574d 100644
+--- a/src/main/scala/yunsuan/encoding/Opcode/VimacOpcode.scala
++++ b/src/main/scala/yunsuan/encoding/Opcode/VimacOpcode.scala
+@@ -11,6 +11,10 @@ object VimacOpcode {
+   def vmadd   = "b100".U(width.W)
+   def vnmsub  = "b101".U(width.W)
+   def vsmul   = "b110".U(width.W)
++  // vdot 指令族共用 3 位 opcode 空间中仅剩的 b111；三条指令由 VimacType 的 pad 位 [8:7] 区分
++  def vdot    = "b111".U(width.W)
++
++  def isVdot(opcode: UInt) = opcode === vdot
+ 
+   def highHalf(opcode: UInt) = Seq(vmulh).map(_ === opcode).reduce(_ || _)
+ 
+diff --git a/src/main/scala/yunsuan/package.scala b/src/main/scala/yunsuan/package.scala
+index ef6d1e1..f942129 100644
+--- a/src/main/scala/yunsuan/package.scala
++++ b/src/main/scala/yunsuan/package.scala
+@@ -398,6 +398,16 @@ package object yunsuan {
+     def vnmsub             = LiteralCat(0.U(2.W), INT.S, INT.S, INT.S, FMT.VVV, VimacOpcode.vnmsub) // "b00_111_0_101".U(OpTypeWidth.W) // vnmsub  vnmsub.vv/vnmsub.vx
+     def vsmul              = LiteralCat(0.U(2.W), INT.S, INT.S, INT.X, FMT.VVV, VimacOpcode.vsmul)  // "b00_110_0_110".U(OpTypeWidth.W) // vsmul   vsmul.vv/vsmul.vx
+ 
++    // ---------------- vdot 指令族 ----------------
++    // 现有全部 VimacType 取值的 pad 位 [8:7] 恒为 00，高半空间完全空闲；
++    // 三条 vdot 指令共用 VimacOpcode.vdot(b111)，靠 pad 位区分：1=vdot 2=vdotacc 3=vdot4a。
++    // format 一律取 FMT.VVV，使 VIMacU/VIMac 推导出的 widen 恒为 false，从而绕开 2 倍扩宽通路，
++    // 只走新增的 prod16 抽头（见设计文档 §4.2）。
++    //                                  pad       vs2    vs1    vd_old format   opcode
++    def vdot               = LiteralCat(1.U(2.W), INT.S, INT.S, INT.X, FMT.VVV, VimacOpcode.vdot)   // "b01_110_0_111" vdot.vv    全向量归约，不累加
++    def vdotacc            = LiteralCat(2.U(2.W), INT.S, INT.S, INT.S, FMT.VVV, VimacOpcode.vdot)   // "b10_111_0_111" vdotacc.vv 全向量归约 + 累加 vd[0]
++    def vdot4a             = LiteralCat(3.U(2.W), INT.S, INT.S, INT.S, FMT.VVV, VimacOpcode.vdot)   // "b11_111_0_111" vdot4a.vv  4 路分组点积累加
++
+     def getOpcode(fuOpType: UInt) : UInt = fuOpType(2, 0)
+     def getFormat(fuOpType: UInt) : UInt = fuOpType(3)
+ 
+@@ -405,6 +415,13 @@ package object yunsuan {
+     def vs1Sign(fuOpType: UInt) = fuOpType(5)
+     def vdSign (fuOpType: UInt) = fuOpType(4)
+ 
++    // ---------------- vdot 指令族判定 ----------------
++    def dotVariant(fuOpType: UInt) = fuOpType(8, 7)                        // 1=vdot 2=vdotacc 3=vdot4a
++    def isVdot (fuOpType: UInt) = VimacOpcode.isVdot(getOpcode(fuOpType))  // 三条中的任意一条
++    def isDot4a(fuOpType: UInt) = isVdot(fuOpType) && dotVariant(fuOpType) === 3.U
++    def isDotRed(fuOpType: UInt) = isVdot(fuOpType) && dotVariant(fuOpType) =/= 3.U   // vdot / vdotacc
++    def isDotAcc(fuOpType: UInt) = isVdot(fuOpType) && dotVariant(fuOpType) === 2.U   // 仅 vdotacc
++
+     def getSrcVdType(fuOpType: UInt, sew: UInt) = {
+       val isWiden = fuOpType(3)
+       val vs2Sign = fuOpType(6)
+diff --git a/src/main/scala/yunsuan/vector/vectorIMAC/VDotTop.scala b/src/main/scala/yunsuan/vector/vectorIMAC/VDotTop.scala
+new file mode 100644
+index 0000000..8756f82
+--- /dev/null
++++ b/src/main/scala/yunsuan/vector/vectorIMAC/VDotTop.scala
+@@ -0,0 +1,150 @@
++package yunsuan.vector.mac
++
++import chisel3._
++import chisel3.util._
++import yunsuan.VimacType
++import yunsuan.vector._
++import yunsuan.util._
++
++/** VDotTop —— vdot 指令族在 YunSuan 侧的独立功能单元顶层
++  *
++  *  用途：把「2 片 [[VIMac64b]] 的 16 路 8×8 乘法阵列 + [[VDotTree]] 可重构折叠加法树」
++  *  封装成一个可以直接挂进 YunSuan 独立 FU 测试平台（`src/test/scala/top/VectorSimTop.scala`）
++  *  的模块，从而让 vdot 三条指令能在 L1 层做逐周期差分验证。
++  *
++  *  与 XiangShan 侧 `VIMacU` 的关系：
++  *    - **算术通路完全相同**：同样的 VIMac64b.prod16 抽头、同样的 VDotTree 例化、同样的
++  *      accOperand 选择、同样的 latency = 2。
++  *    - **掩码/尾部成形不同**：`VIMacU` 复用 XiangShan 的 `ByteMaskTailGen` + `Mgu`
++  *      （它们是 `xiangshan.backend.fu.vector` 包的模块，YunSuan 不可见），本模块按
++  *      `tests/golden/vdot_ref.c` 的行为表直接实现等价逻辑。两边语义一致，见
++  *      `docs/stage2/11_RTL实现说明.md`「局限性」。
++  *
++  *  流水：latency = 2（与 VIMac64b 的 S0/S1/S2 三段组合逻辑对齐）
++  *    fire  : 输入有效当拍，驱动 VIMac64b 的 S0->S1 寄存器
++  *    fireS1: fire 的下一拍，驱动 VIMac64b 的 S1->S2 寄存器与 VDotTree 的 S1->S2 寄存器
++  */
++class VDotTop extends Module {
++  val VLEN = 128
++
++  val io = IO(new Bundle {
++    val fire     = Input(Bool())
++    /** VimacType 编码的 9 位 fuOpType，取值为 VimacType.vdot / vdotacc / vdot4a */
++    val fuOpType = Input(UInt(9.W))
++    val info     = Input(new VIFuInfo)
++    val vs2      = Input(UInt(VLEN.W))
++    val vs1      = Input(UInt(VLEN.W))
++    val oldVd    = Input(UInt(VLEN.W))
++    val mask     = Input(UInt(VLEN.W))
++
++    val vd       = Output(UInt(VLEN.W))
++  })
++
++  private val fire   = io.fire
++  private val fireS1 = GatedValidRegNext(fire)
++
++  private val isDot4a  = VimacType.isDot4a(io.fuOpType)
++  private val isDotAcc = VimacType.isDotAcc(io.fuOpType)
++
++  // ---------------------------------------------------------------------------
++  // 乘法阵列：2 片 VIMac64b，片 m 处理元素 8m..8m+7。
++  // 三条 vdot 指令一律把源类型固定成 s8（有符号 8 位），与 vtype.vsew 无关：
++  //   vdot/vdotacc 的 vtype.vsew 本就是 e8；
++  //   vdot4a 的 vtype.vsew 是 e32，但乘法阵列必须按 e8 切分子元素。
++  // srcType 编码为 Cat(0, sign, sew[1:0])，s8 = "b0100"，s32 = "b0110"。
++  // ---------------------------------------------------------------------------
++  private val srcTypeS8  = "b0100".U(4.W)
++  private val vdTypeS32  = "b0110".U(4.W)
++  private val vimacs = Seq.fill(2)(Module(new VIMac64b))
++  vimacs.zipWithIndex.foreach { case (mod, i) =>
++    mod.io.fire       := fire
++    mod.io.info       := io.info
++    mod.io.srcType(0) := srcTypeS8
++    mod.io.srcType(1) := srcTypeS8
++    mod.io.vdType     := vdTypeS32
++    mod.io.vs2        := UIntSplit(io.vs2, 64)(i)
++    mod.io.vs1        := UIntSplit(io.vs1, 64)(i)
++    mod.io.oldVd      := UIntSplit(io.oldVd, 64)(i)
++    // 五个判定对 VimacOpcode.vdot(b111) 天然全部返回 false，这里显式接 false 以示意图
++    mod.io.highHalf   := false.B
++    mod.io.isMacc     := false.B
++    mod.io.isSub      := false.B
++    mod.io.widen      := false.B
++    mod.io.isFixP     := false.B
++  }
++
++  // ---------------------------------------------------------------------------
++  // S0：active 使能生成（与乘法阵列并行，不在关键路径上）
++  //   归约形态（vdot/vdotacc）：active(i) = (vstart <= i < vl) && (vm || v0.mask[i])
++  //     其中 vstart >= vl 时整体清零（裁定 S-5）。
++  //     注：架构上 S-1 保证归约类指令的 vstart 恒为 0（否则在译码阶段就报非法），
++  //     这里仍按 prestart 规则实现，使 FU 级平台在放宽策略下也给出规范行为。
++  //   逐元素形态（vdot4a）：掩码粒度是 32 位目的元素，由下面的输出成形逻辑处理，
++  //     乘积一律参与运算，故 active 全 1。
++  // ---------------------------------------------------------------------------
++  private val vl     = io.info.vl
++  private val vstart = io.info.vstart
++  private val redActiveEn = VecInit(Seq.tabulate(16) { i =>
++    (i.U >= vstart) && (i.U < vl) && (io.info.vm || io.mask(i))
++  }).asUInt
++  private val dotActiveEn = Mux(isDot4a, ~0.U(16.W), redActiveEn)
++
++  // ---------------------------------------------------------------------------
++  // S1：折叠加法树
++  // ---------------------------------------------------------------------------
++  private val vdotTree = Module(new VDotTree(numProd = 16, prodWidth = 16, accWidth = 32))
++  vdotTree.io.fire     := fireS1
++  // 片 0 的 prod16(b) 是元素 b，片 1 的 prod16(b) 是元素 8+b（见设计文档 §4.2 元素到硬件的映射表）
++  vdotTree.io.prod     := VecInit(vimacs.flatMap(m => (0 until 8).map(b => m.io.prod16(b))))
++  vdotTree.io.activeEn := RegEnable(dotActiveEn, fire)
++  vdotTree.io.foldLevels := RegEnable(Mux(isDot4a, 0.U(2.W), 2.U(2.W)), fire)
++
++  // S2 级信号
++  private val isDot4aS2  = RegEnable(RegEnable(isDot4a,  fire), fireS1)
++  private val isDotAccS2 = RegEnable(RegEnable(isDotAcc, fire), fireS1)
++  private val oldVdS2    = RegEnable(RegEnable(io.oldVd, fire), fireS1)
++  private val maskS2     = RegEnable(RegEnable(io.mask,  fire), fireS1)
++  private val vlS2       = RegEnable(RegEnable(vl,       fire), fireS1)
++  private val vstartS2   = RegEnable(RegEnable(vstart,   fire), fireS1)
++  private val vmS2       = RegEnable(RegEnable(io.info.vm, fire), fireS1)
++  private val vtaS2      = RegEnable(RegEnable(io.info.ta, fire), fireS1)
++  private val vmaS2      = RegEnable(RegEnable(io.info.ma, fire), fireS1)
++
++  // 累加操作数：vdot4a 逐 lane 注入 oldVd.u32[g]；vdotacc 只在 lane0 注入 oldVd.u32[0]；vdot 全 0
++  for (g <- 0 until 4) {
++    val redAcc = if (g == 0) Mux(isDotAccS2, oldVdS2(31, 0), 0.U(32.W)) else 0.U(32.W)
++    vdotTree.io.accOperand(g) := Mux(isDot4aS2, oldVdS2(32 * g + 31, 32 * g), redAcc)
++  }
++  private val dotVd = vdotTree.io.dotVd
++
++  // ---------------------------------------------------------------------------
++  // S2：写回成形
++  // ---------------------------------------------------------------------------
++  private val vstartGeVlS2 = vstartS2 >= vlS2
++
++  // (1) 归约形态：只写目的元素 0（EEW=32），元素 1..3 按 vta 处理；vma 被忽略（裁定 S-2）。
++  //     照抄 Reduction.scala:644-647 的 red_vd_tail 惯用法，目的 EEW 固定为 32。
++  private val redVdTailOne = Cat(~0.U((VLEN - 32).W), dotVd(31, 0))
++  private val redVdTailOld = Cat(oldVdS2(VLEN - 1, 32), dotVd(31, 0))
++  private val redVd = Mux(vstartGeVlS2, oldVdS2, Mux(vtaS2, redVdTailOne, redVdTailOld))
++
++  // (2) 逐元素形态（vdot4a）：prestart / body-active / body-inactive / tail 四分支，
++  //     掩码粒度为 32 位目的元素，逐条对应 vdot_ref.c:141-176。
++  private val dot4aVd = Cat(Seq.tabulate(4) { i =>
++    val oldElem   = oldVdS2(32 * i + 31, 32 * i)
++    val prestart  = i.U < vstartS2
++    val tail      = i.U >= vlS2
++    val inactive  = !vmS2 && !maskS2(i)
++    Mux(vstartGeVlS2 || prestart, oldElem,
++    Mux(tail,     Mux(vtaS2, ~0.U(32.W), oldElem),
++    Mux(inactive, Mux(vmaS2, ~0.U(32.W), oldElem),
++                  dotVd(32 * i + 31, 32 * i))))
++  }.reverse)
++
++  io.vd := Mux(isDot4aS2, dot4aVd, redVd)
++}
++
++object VerilogVDotTop extends App {
++  println("Generating the VDotTop hardware")
++  emitVerilog(new VDotTop(), Array("--target-dir=build/vdot"))
++}
+diff --git a/src/main/scala/yunsuan/vector/vectorIMAC/VDotTree.scala b/src/main/scala/yunsuan/vector/vectorIMAC/VDotTree.scala
+new file mode 100644
+index 0000000..46e164d
+--- /dev/null
++++ b/src/main/scala/yunsuan/vector/vectorIMAC/VDotTree.scala
+@@ -0,0 +1,161 @@
++package yunsuan.vector.mac
++
++import chisel3._
++import chisel3.util._
++import yunsuan.vector._
++
++/** VDotTree —— vdot 指令族的可重构蝶形折叠加法树
++  *
++  *  输入是 [[VIMac64b]] 在第二级流水（S1）抽出的 `prod16` —— 16 个完整的 16 位二补码乘积
++  *  （证明见设计文档 §4.2）。本模块把它们按模式折叠成 4 个 32 位结果：
++  *
++  *    foldLevels = 0  ->  4 组各自 4 路：R_g = Σ_{j<4} E[4g+j] + acc_g      （vdot4a.vv）
++  *    foldLevels = 2  ->  全 16 路归约： R_0 = Σ_{i<16} E[i]   + acc_0      （vdot.vv / vdotacc.vv）
++  *
++  *  结构（见设计文档 §4.4）：
++  *
++  *    S1：乘积门控 + 符号扩展 -> Fold L0（组内 4 路）-> Fold L1（蝶形 Δ=1）
++  *        ===== RegEnable(fire) 一级流水寄存器：numLane × 2 × accWidth bit =====
++  *    S2：Fold L2（蝶形 Δ=2）-> Acc（注入累加操作数）-> numLane 个独立 CPA
++  *
++  *  两个要点：
++  *   1. 折叠控制只作用在「加数输入端的 AND 门」上，**结果路径上没有任何选择器**。
++  *      依据：CSA4to2(a, b, 0, 0) 的输出满足 out_sum + out_car ≡ a + b (mod 2^width)，
++  *      即关闭折叠时该级是一个合法的 carry-save 直通，不需要 bypass mux。
++  *   2. 伙伴 lane 取 `g XOR Δ`（XOR 蝶形）而不是单向归并，使得每个 lane 执行完全相同的运算。
++  *      于是全折叠模式下 4 个 lane 最终都持有同一个 16 路总和，`vdot` 直接取 lane0，
++  *      元素 0 的定位不需要任何额外选择逻辑。
++  *
++  *  复用：压缩原语 [[CSA4to2]] / [[CSA3to2]] 直接取自 `yunsuan/vector/VectorFloatFMA.scala:1596/:1581`，
++  *  与 `Reduction.scala:456-505` 手工搭 sew=8 归约树的做法完全一致。
++  *  **不能**整体复用 `CSA_Nto2With3to2MainPipeline`：它的 `pipeLevel` 语义是「从第 pipeLevel 层起
++  *  每层都插寄存器」，且压缩拓扑固定为 n→11→8→4→2，无法表达「4 组独立 4 路」这一可重构需求
++  *  （见设计文档 §3.6.3 / 裁定 R-09）。
++  *
++  *  @param numProd   乘积个数（VLEN=128 / SEW=8 时为 16）
++  *  @param prodWidth 单个乘积位宽（8×8 -> 16）
++  *  @param accWidth  树内部与累加器位宽（取 32：既是目的 EEW，也让 32 位累加器零成本并入）
++  */
++class VDotTree(numProd: Int = 16, prodWidth: Int = 16, accWidth: Int = 32) extends Module {
++  require(numProd % 4 == 0 && isPow2(numProd), "numProd 必须是 4 的倍数且为 2 的幂")
++  require(accWidth > prodWidth, "accWidth 必须大于 prodWidth，否则符号扩展无意义")
++
++  /** lane 数 = 结果数。VLEN=128 时为 4，恰好等于 vdot4a 的结果数，也等于 128/32 */
++  val numLane: Int = numProd / 4
++  /** 把 numLane 个 lane 完全折叠成 1 个所需的蝶形级数：log2(numLane)。numLane=4 时为 2 */
++  val numFold: Int = log2Up(numLane)
++  /** 流水切点：前 numFoldS1 级折叠放在 S1，其余放在 S2。
++    * numFold=2 时 numFoldS1=1，即 Fold L1 在 S1、Fold L2 在 S2，与设计文档 §3.6.3 方案 B 一致 */
++  val numFoldS1: Int = numFold / 2
++  /** foldLevels 的位宽：要能表达 0..numFold */
++  val foldSelWidth: Int = log2Up(numFold + 1)
++
++  val io = IO(new Bundle {
++    /** S1→S2 流水寄存器使能，接 VIMacU/VDotTop 的 fireS1（与 VIMac64b.scala:208 的 walOut 同拍） */
++    val fire       = Input(Bool())
++    /** 【S1 时序】16 个 16 位二补码乘积，低下标对应低元素号 */
++    val prod       = Input(Vec(numProd, UInt(prodWidth.W)))
++    /** 【S1 时序】逐乘积的 active 使能；0 表示该元素被 vl / 掩码排除出归约（注入加法单位元 0） */
++    val activeEn   = Input(UInt(numProd.W))
++    /** 【S1 时序】折叠级数：0 = 组内 4 路（vdot4a），numFold = 全路归约（vdot/vdotacc） */
++    val foldLevels = Input(UInt(foldSelWidth.W))
++    /** 【S2 时序】每个 lane 的累加操作数；不累加时外部送 0 */
++    val accOperand = Input(Vec(numLane, UInt(accWidth.W)))
++    /** 【S2 时序】Cat(R_{n-1}, ..., R_1, R_0)，宽度 numLane*accWidth = VLEN */
++    val dotVd      = Output(UInt((numLane * accWidth).W))
++  })
++
++  // ---------------------------------------------------------------------------
++  // S1 ①：乘积门控 + 符号扩展
++  //   E(i) = act(i) ? sext_{accWidth}(prod(i)) : 0
++  //   符号扩展是纯连线（复制 prod(i) 的最高位 accWidth-prodWidth 次），门控是 1 级 AND。
++  //   把掩码/vl 折叠成「对被排除元素注入加法单位元 0」，与 Reduction.scala:186-191
++  //   把被掩掉的源元素替换成运算单位元的做法同构，只是注入点从源元素移到了乘积（裁定 R-12）。
++  // ---------------------------------------------------------------------------
++  private val extProd = Wire(Vec(numProd, UInt(accWidth.W)))
++  for (i <- 0 until numProd) {
++    val signExtended = Cat(Fill(accWidth - prodWidth, io.prod(i)(prodWidth - 1)), io.prod(i))
++    extProd(i) := Fill(accWidth, io.activeEn(i)) & signExtended
++  }
++
++  /** 例化一个 CSA4to2(accWidth)，返回 (sum, carry)，满足 sum + carry ≡ a+b+c+d (mod 2^accWidth) */
++  private def csa4to2(a: UInt, b: UInt, c: UInt, d: UInt): (UInt, UInt) = {
++    val m = Module(new CSA4to2(accWidth))
++    m.io.in_a := a
++    m.io.in_b := b
++    m.io.in_c := c
++    m.io.in_d := d
++    (m.io.out_sum, m.io.out_car)
++  }
++
++  /** 例化一个 CSA3to2(accWidth)，返回 (sum, carry)，满足 sum + carry ≡ a+b+c (mod 2^accWidth) */
++  private def csa3to2(a: UInt, b: UInt, c: UInt): (UInt, UInt) = {
++    val m = Module(new CSA3to2(accWidth))
++    m.io.in_a := a
++    m.io.in_b := b
++    m.io.in_c := c
++    (m.io.out_sum, m.io.out_car)
++  }
++
++  /** 一级蝶形折叠：lane g 与 lane (g XOR delta) 合并。
++    *  en = 0 时伙伴输入被 AND 成 0，CSA4to2(S, C, 0, 0) 是合法直通，该级不改变数值。 */
++  private def foldStage(in: Seq[(UInt, UInt)], delta: Int, en: Bool): Seq[(UInt, UInt)] =
++    Seq.tabulate(numLane) { g =>
++      val partner = in(g ^ delta)
++      csa4to2(in(g)._1, in(g)._2,
++              Fill(accWidth, en) & partner._1,
++              Fill(accWidth, en) & partner._2)
++    }
++
++  // ---------------------------------------------------------------------------
++  // S1 ②：Fold L0（组内 4 路，lane 之间物理隔离）+ 前 numFoldS1 级蝶形折叠
++  //   Fold L0 恒定执行：lane g 压缩 E[4g .. 4g+3]，|Σ| <= 4×2^14 = 2^16
++  // ---------------------------------------------------------------------------
++  private val foldL0: Seq[(UInt, UInt)] =
++    Seq.tabulate(numLane)(g => csa4to2(extProd(4 * g), extProd(4 * g + 1),
++                                       extProd(4 * g + 2), extProd(4 * g + 3)))
++
++  private var csNodeS1: Seq[(UInt, UInt)] = foldL0
++  for (k <- 0 until numFoldS1) {
++    csNodeS1 = foldStage(csNodeS1, 1 << k, io.foldLevels > k.U)
++  }
++
++  // ---------------------------------------------------------------------------
++  // S1 → S2 流水寄存器：numLane × 2 × accWidth bit（VLEN=128 时为 4×2×32 = 256 bit）
++  //   折叠控制位同样打一拍，供 S2 的后续折叠级使用。
++  // ---------------------------------------------------------------------------
++  private val sumRegS2 = RegEnable(VecInit(csNodeS1.map(_._1)), io.fire)
++  private val carRegS2 = RegEnable(VecInit(csNodeS1.map(_._2)), io.fire)
++  private val foldLevelsS2 = RegEnable(io.foldLevels, io.fire)
++
++  // ---------------------------------------------------------------------------
++  // S2 ①：剩余的蝶形折叠级
++  // ---------------------------------------------------------------------------
++  private var csNodeS2: Seq[(UInt, UInt)] =
++    Seq.tabulate(numLane)(g => (sumRegS2(g), carRegS2(g)))
++  for (k <- numFoldS1 until numFold) {
++    csNodeS2 = foldStage(csNodeS2, 1 << k, foldLevelsS2 > k.U)
++  }
++
++  // ---------------------------------------------------------------------------
++  // S2 ②：Acc —— 用 CSA3to2 把累加操作数注入 carry-save 对
++  //   不能走 VIMac64b 的 isMacc 通路：sew=8 时 Wallace 进位掩码把每 lane 锁死在 16 位，
++  //   32 位累加器根本放不进去（设计文档裁定 R-04）。
++  // ---------------------------------------------------------------------------
++  private val accNode: Seq[(UInt, UInt)] =
++    Seq.tabulate(numLane)(g => csa3to2(csNodeS2(g)._1, csNodeS2(g)._2, io.accOperand(g)))
++
++  // ---------------------------------------------------------------------------
++  // S2 ③：CPA —— numLane 个独立的 accWidth 位加法器，lane 之间不串进位。
++  //   丢弃最高位进位即是模 2^32 回绕，正是 RVV §11「overflows wrap around」要求的行为。
++  // ---------------------------------------------------------------------------
++  private val laneRes: Seq[UInt] =
++    Seq.tabulate(numLane)(g => (accNode(g)._1 + accNode(g)._2)(accWidth - 1, 0))
++
++  io.dotVd := Cat(laneRes.reverse)
++}
++
++object VerilogVDotTree extends App {
++  println("Generating the VDotTree hardware")
++  emitVerilog(new VDotTree(), Array("--target-dir=build/vdot"))
++}
+diff --git a/src/main/scala/yunsuan/vector/vectorIMAC/VIMac64b.scala b/src/main/scala/yunsuan/vector/vectorIMAC/VIMac64b.scala
+index 16864ed..2b5efb9 100644
+--- a/src/main/scala/yunsuan/vector/vectorIMAC/VIMac64b.scala
++++ b/src/main/scala/yunsuan/vector/vectorIMAC/VIMac64b.scala
+@@ -27,6 +27,11 @@ class VIMac64b extends Module {
+ 
+     val vd = Output(UInt(64.W))
+     val vxsat = Output(UInt(8.W))
++
++    // vdot 抽头：第二级流水（S1）末尾 8 个 16 位完整有符号乘积，纯读出端口。
++    // sew=8 时 sum_wo(b) 即第 b 个 8 位元素对的 16 位二补码乘积（见设计文档 §4.2 抽头点正确性证明）。
++    // 该端口不参与任何既有逻辑，vmul/vmacc/vsmul 的功能与时序零影响。
++    val prod16 = Output(Vec(8, UInt(16.W)))
+   })
+ 
+   val fire = io.fire
+@@ -199,6 +204,8 @@ class VIMac64b extends Module {
+     }
+     sum_wo(i) := adder_16b.out
+   }
++  // vdot 抽头点（S1 组合输出，与 walOut 寄存器同源）
++  io.prod16 := sum_wo
+ 
+   /**
+    *  Third pipeline stage

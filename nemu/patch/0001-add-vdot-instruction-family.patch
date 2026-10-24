@@ -1,0 +1,361 @@
+diff --git a/configs/riscv64-xs-kmhv2-ref_defconfig b/configs/riscv64-xs-kmhv2-ref_defconfig
+index bc3af31..7c390e8 100644
+--- a/configs/riscv64-xs-kmhv2-ref_defconfig
++++ b/configs/riscv64-xs-kmhv2-ref_defconfig
+@@ -31,6 +31,7 @@ CONFIG_RV_ZFA=y
+ # CONFIG_RV_ZFBF_MIN is not set
+ CONFIG_RVV=y
+ # CONFIG_CUSTOM_XVEXP2 is not set
++CONFIG_CUSTOM_XVDOT=y
+ # CONFIG_CUSTOM_TENSOR is not set
+ # CONFIG_RV_AME is not set
+ # CONFIG_RV_SSTATUS_MS is not set
+diff --git a/configs/riscv64-xs-kmhv2_defconfig b/configs/riscv64-xs-kmhv2_defconfig
+index 127cf5e..a77979e 100644
+--- a/configs/riscv64-xs-kmhv2_defconfig
++++ b/configs/riscv64-xs-kmhv2_defconfig
+@@ -33,6 +33,7 @@ CONFIG_RV_ZFA=y
+ # CONFIG_RV_ZFBF_MIN is not set
+ CONFIG_RVV=y
+ # CONFIG_CUSTOM_XVEXP2 is not set
++CONFIG_CUSTOM_XVDOT=y
+ # CONFIG_CUSTOM_TENSOR is not set
+ # CONFIG_RV_AME is not set
+ # CONFIG_RV_SSTATUS_MS is not set
+diff --git a/src/isa/riscv64/Kconfig b/src/isa/riscv64/Kconfig
+index 6406896..fd74b8e 100644
+--- a/src/isa/riscv64/Kconfig
++++ b/src/isa/riscv64/Kconfig
+@@ -144,6 +144,17 @@ config CUSTOM_XVEXP2_BF16
+   help
+     Enable the non-standard vfexp2bf16.v instruction for BF16.
+ 
++config CUSTOM_XVDOT
++  bool "RISC-V Xvdot Custom Vector Integer Dot-Product Extension"
++  depends on RVV
++  default n
++  help
++    Enable the non-standard int8 dot-product instructions
++    vdot.vv / vdotacc.vv / vdot4a.vv (OPIVV, funct6 = 111001 / 111010 /
++    111011).  They share one 16-lane 8x8 multiplier array with a
++    reconfigurable adder tree and target edge-AI quantized inference.
++    Fixed at LMUL = 1 in this version.
++
+ config CUSTOM_TENSOR
+   depends on !FPU_NONE
+   bool "RISC-V Tensor Extension (Internal Spec)"
+diff --git a/src/isa/riscv64/include/isa-all-instr.h b/src/isa/riscv64/include/isa-all-instr.h
+index 2f18ca1..c8c1ea5 100644
+--- a/src/isa/riscv64/include/isa-all-instr.h
++++ b/src/isa/riscv64/include/isa-all-instr.h
+@@ -152,6 +152,12 @@
+ #define XVEXP2_BF16_INSTR_TERNARY(f)
+ #endif // CONFIG_CUSTOM_XVEXP2_BF16
+ 
++#ifdef CONFIG_CUSTOM_XVDOT
++#define XVDOT_INSTR_TERNARY(f) f(vdot_vv) f(vdotacc_vv) f(vdot4a_vv)
++#else
++#define XVDOT_INSTR_TERNARY(f)
++#endif // CONFIG_CUSTOM_XVDOT
++
+ 
+ #ifdef CONFIG_RVV
+ #define VECTOR_INSTR_TERNARY(f) \
+@@ -492,7 +498,8 @@
+   ZCB_INSTR_TERNARY(f) \
+   TENSOR_INSTR_TERNARY(f) \
+   XVEXP2_INSTR_TERNARY(f) \
+-  XVEXP2_BF16_INSTR_TERNARY(f)
++  XVEXP2_BF16_INSTR_TERNARY(f) \
++  XVDOT_INSTR_TERNARY(f)
+ 
+ #define INSTR_TERNARY_CSR(f) \
+   SYS_INSTR_TERNARY_CSR(f) 
+diff --git a/src/isa/riscv64/instr/rvv/decode.h b/src/isa/riscv64/instr/rvv/decode.h
+index ee7618e..8fe052c 100644
+--- a/src/isa/riscv64/instr/rvv/decode.h
++++ b/src/isa/riscv64/instr/rvv/decode.h
+@@ -211,6 +211,14 @@ def_THelper(vopivv) {
+   def_INSTR_TAB("010100 ? ????? ????? ??? ????? ????? ??", vror);
+   def_INSTR_TAB("110101 ? ????? ????? ??? ????? ????? ??", vwsll);
+ 
++#ifdef CONFIG_CUSTOM_XVDOT
++  // 非标准 int8 点积指令族（Xvdot）。funct6 = 111001/111010/111011 在
++  // RVV 1.0 的 OPIVV 空间内未被占用（整个 111xxx 行均为空位）。
++  def_INSTR_TAB("111001 ? ????? ????? ??? ????? ????? ??", vdot_vv);
++  def_INSTR_TAB("111010 ? ????? ????? ??? ????? ????? ??", vdotacc_vv);
++  def_INSTR_TAB("111011 ? ????? ????? ??? ????? ????? ??", vdot4a_vv);
++#endif
++
+   return EXEC_ID_inv;
+ }
+ 
+diff --git a/src/isa/riscv64/instr/rvv/vcompute.h b/src/isa/riscv64/instr/rvv/vcompute.h
+index 2bcb6aa..37ab077 100644
+--- a/src/isa/riscv64/instr/rvv/vcompute.h
++++ b/src/isa/riscv64/instr/rvv/vcompute.h
+@@ -1352,4 +1352,21 @@ def_EHelper(vwsll) {
+   ARITH_WIDE(SLL, UNSIGNED)
+ }
+ 
++#ifdef CONFIG_CUSTOM_XVDOT
++// 非标准 int8 点积指令族（Xvdot）。三条指令共用 vdot_instr()，
++// 其内部结构分别对照 reduction_instr()（vdot/vdotacc）与
++// arithmetic_instr()（vdot4a），实现见 vdot.c。
++def_EHelper(vdot_vv) {
++  VDOT_ARITH(VDOT)
++}
++
++def_EHelper(vdotacc_vv) {
++  VDOT_ARITH(VDOTACC)
++}
++
++def_EHelper(vdot4a_vv) {
++  VDOT_ARITH(VDOT4A)
++}
++#endif // CONFIG_CUSTOM_XVDOT
++
+ #endif // CONFIG_RVV
+diff --git a/src/isa/riscv64/instr/rvv/vcompute_impl.h b/src/isa/riscv64/instr/rvv/vcompute_impl.h
+index 07406f6..ae04d9d 100644
+--- a/src/isa/riscv64/instr/rvv/vcompute_impl.h
++++ b/src/isa/riscv64/instr/rvv/vcompute_impl.h
+@@ -65,6 +65,10 @@ enum op_t {
+   FWMUL, FWMACC, FWNMACC, FWMSAC, FWNMSAC,
+ 
+   ANDN, BREV_V, BREV8_V, REV8_V, CLZ_V, CTZ_V, CPOP_V, ROL, ROR,
++
++  // 非标准 int8 点积指令族（Xvdot，见 CONFIG_CUSTOM_XVDOT）。
++  // 追加在枚举末尾，不扰动已有取值。
++  VDOT, VDOTACC, VDOT4A,
+ };
+ 
+ enum fp_wop_t {
+@@ -83,6 +87,9 @@ void permutaion_instr(int opcode, Decode *s);
+ void floating_arithmetic_instr(int opcode, int is_signed, int widening, int dest_mask, Decode *s);
+ void mask_instr(int opcode, Decode *s);
+ void reduction_instr(int opcode, int is_signed, int wide, Decode *s);
++#ifdef CONFIG_CUSTOM_XVDOT
++void vdot_instr(int opcode, Decode *s);
++#endif
+ void float_reduction_instr(int opcode, int widening, Decode *s);
+ void float_reduction_step1(uint64_t src1, uint64_t src2, Decode *s);
+ void float_reduction_step2(uint64_t src, Decode *s);
+@@ -110,6 +117,10 @@ void isa_fp_set_ex(uint32_t ex);
+ #define REDUCTION(opcode, is_signed) reduction_instr(opcode, is_signed, 0, s);
+ #define WREDUCTION(opcode, is_signed) reduction_instr(opcode, is_signed, 1, s);
+ 
++#ifdef CONFIG_CUSTOM_XVDOT
++#define VDOT_ARITH(opcode) vdot_instr(opcode, s);
++#endif
++
+ #define FREDUCTION(opcode) float_reduction_instr(opcode, 0, s);
+ #define FWREDUCTION(opcode) float_reduction_instr(opcode, vsWidening, s);
+ 
+diff --git a/src/isa/riscv64/instr/rvv/vdot.c b/src/isa/riscv64/instr/rvv/vdot.c
+new file mode 100644
+index 0000000..90b243b
+--- /dev/null
++++ b/src/isa/riscv64/instr/rvv/vdot.c
+@@ -0,0 +1,201 @@
++/***************************************************************************************
++* vdot.c —— 非标准 int8 点积指令族（Xvdot）的执行引擎
++*
++* 三条指令（均为 OPIVV：funct3 = 000，opcode = 1010111）：
++*
++*   funct6   助记符            生效 SEW   语义
++*   -------- ----------------- ---------- ----------------------------------------
++*   111001   vdot.vv    vd,vs2,vs1   8     vd.u32[0]  = Σ_{i∈active} sext32(vs2.i8[i])*sext32(vs1.i8[i])
++*   111010   vdotacc.vv vd,vs2,vs1   8     vd.u32[0] += Σ ...                （vd 作为第三源）
++*   111011   vdot4a.vv  vd,vs2,vs1  32     ∀i∈active: vd.u32[i] += Σ_{j<4} sext32(vs2.i8[4i+j])*sext32(vs1.i8[4i+j])
++*
++* 设计原则：vl / vstart / vm / vta / vma 全部沿用 NEMU 既有框架，不另起炉灶。
++*   - vdot / vdotacc 是归约形态，整体结构对照 reduction_instr()
++*     （vcompute_impl.c:1529）：vector_reduction_check → check_vstart_exception
++*     → check_vstart_ignore → 主循环 → set_vreg_tail → 只写元素 0。
++*   - vdot4a 是逐元素形态，整体结构对照 arithmetic_instr()
++*     （vcompute_impl.c:488）：vector_vvv_check → check_vstart_ignore
++*     → 主循环（含 vma 处理）→ tail 循环（vta）→ 清 vstart。
++*
++* 溢出：int8×int8 ∈ [-16256, +16384]，16 项求和 |Σ| ≤ 262144 < 2^31，
++* 故 vdot.vv 不可能溢出、无需饱和；vdotacc / vdot4a 的累加按 2^32 模回绕
++* （由 set_vreg 在 vsew=2 时截断到 32 位自然完成），不置 vxsat。
++***************************************************************************************/
++
++#include <common.h>
++#ifdef CONFIG_RVV
++#ifdef CONFIG_CUSTOM_XVDOT
++
++#include "vcompute_impl.h"
++#include "vcommon.h"
++#include <cpu/cpu.h>
++
++#undef s0
++#undef s1
++#define s0 (&tmp_reg[0])
++#define s1 (&tmp_reg[1])
++
++/* 目的元素宽度恒为 32 位 → vsew 编码 2 */
++#define VDOT_DEST_VSEW 2
++/* 源元素宽度恒为 8 位 → vsew 编码 0 */
++#define VDOT_SRC_VSEW  0
++
++/* ---------------------------------------------------------------------------
++ * 合法性检查
++ *
++ * 归约形态复用 vector_reduction_check()（vcompute_impl.c:464，内部做
++ * require_vector(true) + require_aligned(vs2)）；逐元素形态复用
++ * vector_vvv_check()（vcompute_impl.c:407，内部额外做 require_vm()）。
++ * 在此之上追加本指令族特有的两条约束：
++ *   1) vtype.vsew 必须与指令要求一致，否则 Illegal Instruction；
++ *   2) 本版本固定 LMUL = 1（总体方案裁定 S-6），其余 vlmul 取值视为保留；
++ *   3) vstart 超出当前 SEW 的最大元素下标 -> Illegal Instruction（裁定 S-9）。
++ * ------------------------------------------------------------------------ */
++static void vdot_check(Decode *s, int opcode) {
++  if (opcode == VDOT4A) {
++    vector_vvv_check(s, true);
++    if (vtype->vsew != VDOT_DEST_VSEW) {
++      longjmp_exception(EX_II);
++    }
++  } else {
++    vector_reduction_check(s, 0);
++    if (vtype->vsew != VDOT_SRC_VSEW) {
++      longjmp_exception(EX_II);
++    }
++  }
++  if (vtype->vlmul != 0) {   // 仅支持 LMUL = 1
++    longjmp_exception(EX_II);
++  }
++  // 裁定 S-9：vstart 超出当前 SEW 的最大元素下标属 reserved
++  // （RVV 1.0 §3.7，并采纳其 NOTE 中"建议实现 trap"的意见）。
++  // vdot/vdotacc 的 VLMAX = 16，vdot4a 的 VLMAX = 4。
++  if (vstart->val + 1 > (uint64_t)get_vlen_max(vtype->vsew, vtype->vlmul, 0)) {
++    longjmp_exception(EX_II);
++  }
++}
++
++/* 取第 idx 个 int8 源元素并符号扩展，返回 int64。
++ * get_vreg(..., SIGNED, ...) 本身就按 (int64_t)(int8_t) 扩展，这里再调一次
++ * rtl_sext 与 reduction_instr()/arithmetic_instr() 的写法保持一致。 */
++static inline int64_t vdot_get_i8(Decode *s, uint64_t reg, int idx, rtlreg_t *tmp) {
++  get_vreg(reg, idx, tmp, VDOT_SRC_VSEW, vtype->vlmul, SIGNED, 0);
++  rtl_sext(s, tmp, tmp, 1 << VDOT_SRC_VSEW);
++  return (int64_t)*tmp;
++}
++
++/* ---------------------------------------------------------------------------
++ * vdot.vv / vdotacc.vv —— 四倍宽全向量归约（SEW=8 → 目的 EEW=32）
++ *
++ * 结构逐条对照 reduction_instr()（vcompute_impl.c:1529-1572）：
++ *   - check_vstart_exception()：vstart != 0 → Illegal Instruction（裁定 S-1，
++ *     RVV 1.0 §14「Vector reduction operations raise an illegal instruction
++ *     exception if vstart is non-zero」）；
++ *   - check_vstart_ignore()：vstart >= vl（含 vl == 0）→ 连 tail 都不写（S-5）；
++ *   - 掩码为 0 的源元素直接 continue，排除出求和（§14 / S-2：归约无 inactive
++ *     目的元素，故 vma 不参与）；
++ *   - vta=1 时先 set_vreg_tail() 把整个目的寄存器置全 1，再写元素 0，
++ *     净效果为「元素 1..3 全 1（tail，EEW=32，裁定 S-3）+ 元素 0 为结果」。
++ * ------------------------------------------------------------------------ */
++static void vdot_reduce(Decode *s, int accumulate) {
++  check_vstart_exception(s);
++  if (check_vstart_ignore(s)) {
++    vp_set_dirty();
++    return;
++  }
++
++  /* 累加器：在 64 位上累加，写回时由 set_vreg 截断到 32 位（模 2^32 回绕）。
++   * vdotacc 把 vd 作为第三源读取，必须在 set_vreg_tail() 之前读。 */
++  uint64_t acc = 0;
++  if (accumulate) {
++    get_vreg(id_dest->reg, 0, s1, VDOT_DEST_VSEW, vtype->vlmul, UNSIGNED, 0);
++    acc = *s1;
++  }
++
++  for (word_t idx = vstart->val; idx < vl->val; idx++) {
++    rtlreg_t mask = get_mask(0, idx);
++    if (s->vm == 0 && mask == 0) {
++      continue;
++    }
++    int64_t a = vdot_get_i8(s, id_src2->reg, idx, s0);
++    int64_t b = vdot_get_i8(s, id_src->reg,  idx, s1);
++    acc += (uint64_t)(a * b);
++  }
++
++  if (RVV_AGNOSTIC) {
++    if (vtype->vta && vl->val != 0) set_vreg_tail(id_dest->reg);
++  }
++  if (vl->val != 0) {
++    set_vreg(id_dest->reg, 0, acc, VDOT_DEST_VSEW, vtype->vlmul, 0);
++  }
++  vp_set_dirty();
++  vstart->val = 0;
++}
++
++/* ---------------------------------------------------------------------------
++ * vdot4a.vv —— 分组点积累加（SEW=32），逐元素指令
++ *
++ * 结构逐条对照 arithmetic_instr()（vcompute_impl.c:488-1011）：
++ *   - 不调用 check_vstart_exception()：本指令非归约，vstart 正常生效（裁定 S-7）；
++ *   - check_vstart_ignore()：vstart >= vl → 连 tail 都不写；
++ *   - 主循环从 vstart 开始，i < vstart 的 prestart 元素天然保持不变；
++ *   - mask == 0 时按 vma 决定「写全 1」或「保持不变」，掩码粒度是 32 位元素；
++ *   - tail 循环把 [vl, vlmax) 写全 1（vta=1）；
++ *   - 结尾用 vcsr_write(IDXVSTART, 0) 清 vstart。
++ * 子元素定位：element i 的第 j 个 int8 位于字节 4i+j（寄存器内小端，裁定 S-7）。
++ * ------------------------------------------------------------------------ */
++static void vdot4a_exec(Decode *s) {
++  if (check_vstart_ignore(s)) {
++    vp_set_dirty();
++    return;
++  }
++
++  for (word_t idx = vstart->val; idx < vl->val; idx++) {
++    rtlreg_t mask = get_mask(0, idx);
++    if (s->vm == 0 && mask == 0) {
++      if (RVV_AGNOSTIC && vtype->vma) {
++        *s1 = (uint64_t)-1;
++        set_vreg(id_dest->reg, idx, *s1, VDOT_DEST_VSEW, vtype->vlmul, 1);
++      }
++      continue;
++    }
++
++    /* vd 作为第三源读取（复用 vmacc.vv 的三源通路写法） */
++    get_vreg(id_dest->reg, idx, s1, VDOT_DEST_VSEW, vtype->vlmul, UNSIGNED, 1);
++    uint64_t acc = *s1;
++    for (int j = 0; j < 4; j++) {
++      int bidx = (int)(idx * 4) + j;
++      int64_t a = vdot_get_i8(s, id_src2->reg, bidx, s0);
++      int64_t b = vdot_get_i8(s, id_src->reg,  bidx, s1);
++      acc += (uint64_t)(a * b);
++    }
++    *s1 = acc;
++    set_vreg(id_dest->reg, idx, *s1, VDOT_DEST_VSEW, vtype->vlmul, 1);
++  }
++
++  if (RVV_AGNOSTIC) {
++    if (vtype->vta) {
++      int vlmax = get_vlen_max(vtype->vsew, vtype->vlmul, 0);
++      for (int idx = (int)vl->val; idx < vlmax; idx++) {
++        *s1 = (uint64_t)-1;
++        set_vreg(id_dest->reg, idx, *s1, VDOT_DEST_VSEW, vtype->vlmul, 1);
++      }
++    }
++  }
++
++  rtl_li(s, s0, 0);
++  vcsr_write(IDXVSTART, s0);
++  vp_set_dirty();
++}
++
++void vdot_instr(int opcode, Decode *s) {
++  vdot_check(s, opcode);
++  switch (opcode) {
++    case VDOT:    vdot_reduce(s, 0); break;
++    case VDOTACC: vdot_reduce(s, 1); break;
++    case VDOT4A:  vdot4a_exec(s);    break;
++    default:      longjmp_exception(EX_II);
++  }
++}
++
++#endif // CONFIG_CUSTOM_XVDOT
++#endif // CONFIG_RVV

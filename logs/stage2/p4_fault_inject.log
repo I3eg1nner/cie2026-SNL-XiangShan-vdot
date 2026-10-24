@@ -1,0 +1,41 @@
+=== vdot L1 平台故障注入自测  2026-10-24 19:51:45 CST ===
+目的：证明 DUT 与 golden model 的比对是真实生效的 —— 人为把 RTL 改坏一位，必须报错。
+
+--- 0) 基线（未注入故障）：预期 EMU EXCEEDED LIMIT ---
+Emu compiled at Oct 24 2026, 19:51:53
+Set Test Type Res: fuType:10 fuOpType:225 (pick_fuType=1 pick_fuOpType=0)
+Using seed = 0
+EMU EXCEEDED LIMIT
+HAS Executed Cycles:2019 Operations:500
+EMU has executed 22 ms.
+
+--- 1) 注入故障：VDotTree.scala 的最终输出异或 1（翻转 vd[0] 的最低位）---
+injected
+155:  io.dotVd := Cat(laneRes.reverse) ^ 1.U(128.W)  // FAULT-INJECTION
+
+--- 2) 带故障运行：预期 EMU BADTRAP ---
+Emu compiled at Oct 24 2026, 19:53:10
+Set Test Type Res: fuType:10 fuOpType:225 (pick_fuType=1 pick_fuOpType=0)
+Using seed = 0
+Error, compare failed
+REF Input:
+  src1 60b7acd93ab50c2a_000041a710d63af1 src2 06058ed856e509fe_4431b7821c06dac8 src3 31169898427c3c55_56f32f4377a4044d src4 06d7d4b343cd3747_6a5d128c046cdbe2
+  fuType a fuOpType 1 sew 0 uop_idx 0 src_widen 0 widen 0 is_frs1 0 rm 2
+  vstart 0 vl 1 vlmul 0 vm 1 ta 1 ma 1
+Expected Output 
+  result  ffffffffffffffff_ffffffff77a40795 fflags: 0_0  vxsat: 0
+DUT Output:
+  result  ffffffffffffffff_ffffffff77a40794 fflags: 0_0  vxsat: 0
+EMU BADTRAP
+HAS Executed Cycles:28 Operations:1
+
+--- 3) 还原 RTL 并重建，确认恢复 PASS ---
+0
+Emu compiled at Oct 24 2026, 19:54:17
+Set Test Type Res: fuType:10 fuOpType:225 (pick_fuType=1 pick_fuOpType=0)
+Using seed = 0
+EMU EXCEEDED LIMIT
+HAS Executed Cycles:2019 Operations:500
+EMU has executed 40 ms.
+
+=== 故障注入自测结束 2026-10-24 19:54:58 CST ===

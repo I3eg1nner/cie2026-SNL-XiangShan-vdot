@@ -1,0 +1,502 @@
+diff --git a/src/test/csrc/golden_model/vector_dot.cpp b/src/test/csrc/golden_model/vector_dot.cpp
+new file mode 100644
+index 0000000..4d43c63
+--- /dev/null
++++ b/src/test/csrc/golden_model/vector_dot.cpp
+@@ -0,0 +1,102 @@
++/*
++ * vector_dot.cpp —— vdot 指令族（vdot.vv / vdotacc.vv / vdot4a.vv）的 L1 平台参考模型
++ *
++ * 【重要】本文件**不实现任何指令语义**，只做 VecInput/VecOutput 与 vreg128_t 之间的
++ * 字节搬运，真正的语义来自项目的唯一事实来源 tests/golden/vdot_ref.c —— 它被下面
++ * 直接 #include 进来，与 NEMU 扩展、测试向量生成器用的是同一份代码。
++ * 严禁在本文件里重写 / 复制粘贴语义逻辑（MASTER_PLAN P4 验收标准第 4 条）。
++ *
++ * vdot_ref.c / vdot_ref.h 由 scripts/11_build_vdot_sim.sh 从 tests/golden/ 复制到本目录，
++ * 保证两边永远一致；复制步骤是幂等的，重跑脚本即可刷新。
++ */
++#include "../include/gm_common.h"
++#include <stdio.h>
++#include <cstdlib>
++
++/* 语义唯一事实来源：tests/golden/vdot_ref.c（由构建脚本复制到本目录） */
++#include "vdot_ref.c"
++
++/* ---------------------------------------------------------------- *
++ * 平台 IO <-> vreg128_t 的字节搬运
++ *
++ * 平台侧：VecInput.srcN[0] 是向量寄存器的低 64 位（字节 0..7），
++ *         srcN[1] 是高 64 位（字节 8..15）。
++ * 模型侧：vreg128_t.v[i] 就是第 i 个字节（见 vdot_ref.h §1）。
++ * 逐字节移位而不是 memcpy，保证不依赖宿主机字节序。
++ * ---------------------------------------------------------------- */
++static void vdot_pack_vreg(const uint64_t src[2], vreg128_t *r) {
++  for (int i = 0; i < 8; i++) {
++    r->v[i]     = (uint8_t)((src[0] >> (8 * i)) & 0xffu);
++    r->v[i + 8] = (uint8_t)((src[1] >> (8 * i)) & 0xffu);
++  }
++}
++
++static void vdot_unpack_vreg(const vreg128_t *r, uint64_t dst[2]) {
++  dst[0] = 0;
++  dst[1] = 0;
++  for (int i = 0; i < 8; i++) {
++    dst[0] |= ((uint64_t)r->v[i])     << (8 * i);
++    dst[1] |= ((uint64_t)r->v[i + 8]) << (8 * i);
++  }
++}
++
++/* 平台的 8 位紧凑 fuOpType -> enum vdot_op（编号一一对应，见 vpu_constant.h） */
++static int vdot_op_of(uint8_t fuOpType) {
++  switch (fuOpType) {
++    case VDOT_VV:     return VDOT_OP_VDOT;
++    case VDOTACC_VV:  return VDOT_OP_VDOTACC;
++    case VDOT4A_VV:   return VDOT_OP_VDOT4A;
++    default:
++      printf("VGMDot: unsupported fuOpType %d\n", fuOpType);
++      exit(1);
++  }
++}
++
++VecOutput VGMDot::get_expected_output(VecInput input) {
++  VecOutput output;   /* result/fflags/vxsat 由 iotype.h 的默认初值清零 */
++
++  vreg128_t vs2, vs1, vd, v0;
++  vdot_pack_vreg(input.src1, &vs2);   /* SimTop 的 src(0) -> VDotTop.vs2 */
++  vdot_pack_vreg(input.src2, &vs1);   /* SimTop 的 src(1) -> VDotTop.vs1 */
++  vdot_pack_vreg(input.src3, &vd);    /* SimTop 的 src(2) -> VDotTop.oldVd */
++  vdot_pack_vreg(input.src4, &v0);    /* SimTop 的 src(3) -> VDotTop.mask  */
++
++  const vreg128_t *mask = input.vinfo.vm ? NULL : &v0;
++  const int op   = vdot_op_of(input.fuOpType);
++  const int vsew = (op == VDOT_OP_VDOT4A) ? 32 : 8;
++
++  /* vstart 策略取 SKIP：
++   * FU 级平台不建模异常，而 RTL 的归约数据通路（active 使能带 begin=vstart）天然实现的
++   * 就是 §5.4 的 prestart 跳过语义。架构层面的 STRICT 行为（vstart!=0 -> Illegal Instruction，
++   * 裁定 S-1）由 XiangShan 的 VecExceptionGen.scala:275 在译码阶段实现，不在本层验证。
++   * 本平台的 TestDriver 对 VDot 恒置 vstart=0，两种策略在默认激励下完全等价。 */
++  const int st = vdot_exec(op, vsew, &vd, &vs2, &vs1,
++                           (uint32_t)input.vinfo.vstart,
++                           (uint32_t)input.vinfo.vl,
++                           mask,
++                           input.vinfo.ta ? 1 : 0,
++                           input.vinfo.ma ? 1 : 0,
++                           VDOT_VSTART_SKIP);
++  if (st != VDOT_OK) {
++    /* 到这里说明激励越过了架构约束（例如 vl > VLMAX），属于 TestDriver 的配置错误 */
++    printf("VGMDot: vdot_ref returned %s (op=%s vsew=%d vstart=%d vl=%d)\n",
++           vdot_status_name(st), vdot_op_name(op), vsew,
++           input.vinfo.vstart, input.vinfo.vl);
++    exit(1);
++  }
++
++  vdot_unpack_vreg(&vd, output.result);
++  if (verbose) {
++    printf("VGMDot: op=%s vl=%d vm=%d ta=%d ma=%d -> result %016lx_%016lx\n",
++           vdot_op_name(op), input.vinfo.vl, input.vinfo.vm,
++           input.vinfo.ta, input.vinfo.ma, output.result[1], output.result[0]);
++  }
++  return output;
++}
++
++/* 下面四个是 VPUGoldenModel 的纯虚接口（逐元素模型），vdot 走整寄存器模型，
++ * 不经过 select_element 通路，故这里只提供不会被调用的占位实现。 */
++ElementOutput VGMDot::calculation_e8(ElementInput input)  { ElementOutput o = {0, 0, false}; (void)input; return o; }
++ElementOutput VGMDot::calculation_e16(ElementInput input) { ElementOutput o = {0, 0, false}; (void)input; return o; }
++ElementOutput VGMDot::calculation_e32(ElementInput input) { ElementOutput o = {0, 0, false}; (void)input; return o; }
++ElementOutput VGMDot::calculation_e64(ElementInput input) { ElementOutput o = {0, 0, false}; (void)input; return o; }
+diff --git a/src/test/csrc/include/gm_common.h b/src/test/csrc/include/gm_common.h
+index c0da348..cbec737 100644
+--- a/src/test/csrc/include/gm_common.h
++++ b/src/test/csrc/include/gm_common.h
+@@ -143,6 +143,16 @@ class VGMIntegerALUF : public VPUGoldenModel {
+     VecOutput  vialuF_calculation_vvm(VecInput input);
+     VecOutput  vialuF_calculation_mmm(VecInput input);
+ };
++/* vdot / vdotacc / vdot4a 的参考模型（薄壳，语义来自 tests/golden/vdot_ref.c） */
++class VGMDot : public VPUGoldenModel {
++  public:
++    VecOutput get_expected_output(VecInput input);
++    virtual ElementOutput calculation_e8(ElementInput input);
++    virtual ElementOutput calculation_e16(ElementInput input);
++    virtual ElementOutput calculation_e32(ElementInput input);
++    virtual ElementOutput calculation_e64(ElementInput input);
++};
++
+ class VGMIntegerDividier : public VPUGoldenModel{
+   virtual ElementOutput calculation_e8(ElementInput input);
+   virtual ElementOutput calculation_e16(ElementInput input);
+diff --git a/src/test/csrc/include/test_driver.h b/src/test/csrc/include/test_driver.h
+index 9c7f7f6..21dc467 100644
+--- a/src/test/csrc/include/test_driver.h
++++ b/src/test/csrc/include/test_driver.h
+@@ -4,6 +4,7 @@
+ #include <stdio.h>
+ #include <cstdlib>
+ #include <stdint.h>
++#include <vector>
+ #include "vpu_constant.h"
+ #include "VSimTop.h"
+ #include "verilated_vcd_c.h"
+@@ -44,6 +45,13 @@ private:
+   VGMIntegerDividier vid;
+   VGMFloatCvt vcvt;
+   SGMFloatCvt scvt;
++  VGMDot vdot;
++
++  // 定向语料模式（YS_VDOT_VECTORS=<file>）：按 tests/vectors/*.txt 逐行回放用例，
++  // 期望值仍由 golden model（tests/golden/vdot_ref.c）现场计算，与语料文件互为交叉校验。
++  std::vector<VecInput> vec_cases;
++  size_t vec_idx;
++  bool vec_mode;
+ 
+ public:
+   TestDriver();
+@@ -64,6 +72,7 @@ public:
+   void gen_random_uopidx();
+   void gen_input_vperm();
+   void gen_random_idiv_input();
++  void load_vdot_vectors(const char *path);
+ 
+   void get_random_input();
+   void get_expected_output();
+@@ -85,6 +94,7 @@ public:
+     verbose = true;
+     vfd.verbose_exec(); valu.verbose_exec();
+     vperm.verbose_exec();vid.verbose_exec();
++    vdot.verbose_exec();
+   }
+   void keep_input() { keepinput = true; }
+ };
+diff --git a/src/test/csrc/include/vpu_constant.h b/src/test/csrc/include/vpu_constant.h
+index 1bcebb2..2bd98ee 100644
+--- a/src/test/csrc/include/vpu_constant.h
++++ b/src/test/csrc/include/vpu_constant.h
+@@ -24,11 +24,12 @@ extern "C"{
+ #define VFloatCvt (7)
+ #define FloatCvtF2X (8) //f->i/ui/f
+ #define FloatCvtI2F (9) //i/ui->f
++#define VDot (10) // vdot / vdotacc / vdot4a  -> VDotTop
+ // #define ALL_FUTYPES {VFloatAdder,VFloatFMA,VFloatDivider,VIntegerALU,VPermutation,VIntegerALUV2,VIntegerDivider,VFloatCvt}
+ 
+ //will be delated
+-#define FU_NUM 8 
+-#define ALL_FUTYPES {VFloatFMA,VFloatDivider,VIntegerALU,VPermutation,VIntegerDivider,VFloatCvt,FloatCvtF2X,FloatCvtI2F}
++#define FU_NUM 9
++#define ALL_FUTYPES {VFloatFMA,VFloatDivider,VIntegerALU,VPermutation,VIntegerDivider,VFloatCvt,FloatCvtF2X,FloatCvtI2F,VDot}
+ 
+ #define INT_ROUNDING(result, xrm, gb) \
+   do { \
+@@ -361,6 +362,16 @@ extern "C"{
+   #define I2FCVT_64_NUM  12
+   #define I2FCVT_64_OPTYPES {FCVT_H_WU,FCVT_H_W,FCVT_H_LU,FCVT_H_L,FCVT_S_WU,FCVT_S_W,FCVT_S_LU,FCVT_S_L,FCVT_D_WU,FCVT_D_W,FCVT_D_LU,FCVT_D_L}
+ 
++// vdot funcop type
++//   注意：仿真顶层 VSTInputIO.fuOpType 只有 8 位，装不下 9 位的 VimacType 编码，
++//   这里用紧凑编号 0/1/2 选择指令，由 VectorSimTop.scala 翻译成真正的
++//   VimacType.vdot / vdotacc / vdot4a。编号顺序与 enum vdot_op 一致。
++#define VDOT_NUM 3
++#define VDOT_VV      (binstoi("00000000"))
++#define VDOTACC_VV   (binstoi("00000001"))
++#define VDOT4A_VV    (binstoi("00000010"))
++#define VDOT_ALL_OPTYPES {VDOT_VV,VDOTACC_VV,VDOT4A_VV}
++
+ // pre-compile stoi
+ constexpr uint8_t binstoi(const char str[]) {
+   uint8_t num = 0;
+diff --git a/src/test/csrc/test_driver.cpp b/src/test/csrc/test_driver.cpp
+index 1f25cc1..3a0f075 100644
+--- a/src/test/csrc/test_driver.cpp
++++ b/src/test/csrc/test_driver.cpp
+@@ -1,6 +1,7 @@
+ #include <stdio.h>
+ #include <cstdlib>
+ #include <stdint.h>
++#include <string.h>
+ #include <algorithm>
+ extern "C" {
+ #include <softfloat.h>
+@@ -11,13 +12,80 @@ extern "C" {
+ #include "include/test_driver.h"
+ 
+ TestDriver::TestDriver():
+-  issued(false), verbose(false), keepinput(false)
++  issued(false), vec_idx(0), vec_mode(false), verbose(false), keepinput(false)
+ {
+   // aviod random value
+   set_test_type();
+   gen_next_test_case();
+ }
+ 
++// ---------------------------------------------------------------------------
++// 定向语料回放：读取 tests/vectors/*.txt（格式见 docs/stage2/13 §3.1）
++//   op vsew vstart vl vm vta vma vs1_hex vs2_hex vd_in_hex vd_expected_hex v0_hex status
++// 只取输入字段，期望值仍由 golden model 现场算，从而同时校验 RTL 与语料文件。
++// status != OK 的用例（例如归约类 vstart!=0 的 ILLEGAL_VSTART）在 FU 级平台无法建模异常，
++// 直接跳过并统计条数。
++// ---------------------------------------------------------------------------
++static int vdot_hexpair(const char *s, uint64_t out[2]) {
++  out[0] = 0; out[1] = 0;
++  for (int i = 0; i < 16; i++) {
++    int v = 0;
++    for (int k = 0; k < 2; k++) {
++      char c = s[2*i+k];
++      int d;
++      if (c >= '0' && c <= '9') d = c - '0';
++      else if (c >= 'a' && c <= 'f') d = c - 'a' + 10;
++      else if (c >= 'A' && c <= 'F') d = c - 'A' + 10;
++      else return -1;
++      v = (v << 4) | d;
++    }
++    out[i / 8] |= ((uint64_t)(uint8_t)v) << (8 * (i % 8));
++  }
++  return 0;
++}
++
++void TestDriver::load_vdot_vectors(const char *path) {
++  FILE *f = fopen(path, "r");
++  if (f == NULL) { printf("[vdot-vectors] cannot open %s\n", path); exit(1); }
++  char line[1024];
++  char op[32], vs1h[64], vs2h[64], vdh[64], vdeh[64], v0h[64], st[32];
++  int vsew, vstart, vl, vm, vta, vma;
++  long skipped = 0, bad = 0;
++  while (fgets(line, sizeof(line), f) != NULL) {
++    if (line[0] == '#' || line[0] == '\n' || line[0] == '\r') continue;
++    int n = sscanf(line, "%31s %d %d %d %d %d %d %63s %63s %63s %63s %63s %31s",
++                   op, &vsew, &vstart, &vl, &vm, &vta, &vma,
++                   vs1h, vs2h, vdh, vdeh, v0h, st);
++    if (n != 13) { bad++; continue; }
++    if (strcmp(st, "OK") != 0) { skipped++; continue; }
++    VecInput c;
++    memset(&c, 0, sizeof(c));
++    c.fuType = VDot;
++    if      (strcmp(op, "vdot")    == 0) c.fuOpType = VDOT_VV;
++    else if (strcmp(op, "vdotacc") == 0) c.fuOpType = VDOTACC_VV;
++    else if (strcmp(op, "vdot4a")  == 0) c.fuOpType = VDOT4A_VV;
++    else { bad++; continue; }
++    c.sew = (c.fuOpType == VDOT4A_VV) ? 2 : 0;
++    // 语料里的 vs2/vs1 对应 DUT 的 src(0)/src(1)，即 C++ 的 src1/src2
++    if (vdot_hexpair(vs2h, c.src1) || vdot_hexpair(vs1h, c.src2) ||
++        vdot_hexpair(vdh,  c.src3) || vdot_hexpair(v0h,  c.src4)) { bad++; continue; }
++    c.vinfo.vstart = (uint8_t)vstart;
++    c.vinfo.vl     = (uint8_t)vl;
++    c.vinfo.vlmul  = 0;   // LMUL = 1（裁定 S-6）
++    c.vinfo.vm     = vm != 0;
++    c.vinfo.ta     = vta != 0;
++    c.vinfo.ma     = vma != 0;
++    vec_cases.push_back(c);
++  }
++  fclose(f);
++  printf("[vdot-vectors] loaded %zu cases from %s (skipped %ld non-OK, %ld unparsed)\n",
++         vec_cases.size(), path, skipped, bad);
++  printf("[vdot-vectors] run with -O %zu to execute every case exactly once\n",
++         vec_cases.size());
++  if (vec_cases.empty()) { printf("[vdot-vectors] no runnable case, abort\n"); exit(1); }
++  vec_mode = true;
++}
++
+ TestDriver::~TestDriver() {
+ }
+ 
+@@ -26,12 +94,31 @@ void TestDriver::set_default_value(VSimTop *dut_ptr) {
+   dut_ptr->io_out_ready = true;
+ }
+ // fix set_test_type to select fuType
++// 支持通过环境变量在运行时锁定被测功能单元与操作码，便于定向测试（如 vadd）：
++//   YS_FUTYPE=<十进制或0x十六进制>   锁定 fuType
++//   YS_FUOPTYPE=<十进制或0x十六进制> 锁定 fuOpType
++// 两者均未设置时，行为与上游完全一致（随机遍历 ALL_FUTYPES）。
+ void TestDriver::set_test_type() {
+   test_type.pick_fuType = false;
+   test_type.pick_fuOpType = false;
+   test_type.fuType = VFloatCvt;
+   test_type.fuOpType = VFREC7;
+-  printf("Set Test Type Res: fuType:%d fuOpType:%d\n", test_type.fuType, test_type.fuOpType);
++  const char *env_futype = getenv("YS_FUTYPE");
++  if (env_futype != NULL) {
++    test_type.pick_fuType = true;
++    test_type.fuType = (uint8_t)strtoul(env_futype, NULL, 0);
++  }
++  const char *env_fuoptype = getenv("YS_FUOPTYPE");
++  if (env_fuoptype != NULL) {
++    test_type.pick_fuOpType = true;
++    test_type.fuOpType = (uint8_t)strtoul(env_fuoptype, NULL, 0);
++  }
++  const char *env_vectors = getenv("YS_VDOT_VECTORS");
++  if (env_vectors != NULL) {
++    load_vdot_vectors(env_vectors);
++  }
++  printf("Set Test Type Res: fuType:%d fuOpType:%d (pick_fuType=%d pick_fuOpType=%d)\n",
++         test_type.fuType, test_type.fuOpType, test_type.pick_fuType, test_type.pick_fuOpType);
+ }
+ 
+ void TestDriver::gen_next_test_case() {
+@@ -120,6 +207,11 @@ uint8_t TestDriver::gen_random_optype() {
+         return i2fcvt_64_optype[rand() % I2FCVT_64_NUM];
+         break;
+     }
++    case VDot: {
++      uint8_t vdot_all_optype[VDOT_NUM] = VDOT_ALL_OPTYPES;
++      return vdot_all_optype[rand() % VDOT_NUM];
++      break;
++    }
+     default:
+       printf("Unsupported FuType %d\n", input.fuType);
+       exit(1);
+@@ -136,6 +228,12 @@ uint8_t TestDriver::gen_random_sew() {
+     case VFloatCvt: return rand()%4; break;
+     case FloatCvtF2X: return (rand()%3)+1 ; break;
+     case FloatCvtI2F: return 0 ; break;
++    // vdot 指令族的 SEW 由指令本身唯一确定：
++    //   vdot.vv / vdotacc.vv 要求 vtype.vsew = 8  -> 编码 0
++    //   vdot4a.vv            要求 vtype.vsew = 32 -> 编码 2
++    // 注意 default 分支是 (rand()%3)+1，**永远取不到 0**，
++    // 不加这个 case 的话 SEW=8 一次都不会生成，vdot.vv 根本测不到。
++    case VDot: return (input.fuOpType == VDOT4A_VV) ? 2 : 0; break;
+     default: return (rand()%3)+1; break;
+   }
+ }
+@@ -212,6 +310,8 @@ void TestDriver::gen_random_vecinfo() {
+   uint8_t vlmul_list[7] = {3, 2, 1, 0,  7,   6,   5};
+ 
+   input.vinfo.vlmul = vlmul_list[rand() % (7 - input.sew)];
++  // vdot 指令族本版本固定 LMUL = 1（裁定 S-6），且目的寄存器 EMUL 恒为 1
++  if (input.fuType == VDot) { input.vinfo.vlmul = 0; }
+   int elements_per_reg = (VLEN / 8) >> input.sew;
+   int vlmax = (input.vinfo.vlmul > 4) ? (elements_per_reg >> (8 - input.vinfo.vlmul)) : (elements_per_reg << input.vinfo.vlmul);
+   switch (input.fuType) {
+@@ -225,6 +325,9 @@ void TestDriver::gen_random_vecinfo() {
+     default: input.vinfo.vstart = 0; break;
+   } // The vstart of an arithmetic instruction is generally equal to 0
+   input.vinfo.vl = rand() % vlmax + 1; // TODO: vl == 0 may be illegal
++  // vdot 的 vl == 0 行为有明确规范（裁定 S-5：连 tail 都不写），参考模型与 RTL 都实现了，
++  // 所以这里把 0 也纳入随机范围，顺带覆盖该边界
++  if (input.fuType == VDot) { input.vinfo.vl = rand() % (vlmax + 1); }
+ 
+   input.vinfo.vm = rand() % 2;
+   input.vinfo.ta = rand() % 2;
+@@ -362,6 +465,14 @@ void TestDriver::gen_random_idiv_input() {
+ 
+ void TestDriver::get_random_input() {
+   if (keepinput) { return; }
++  if (vec_mode) {   // 定向语料回放，完全不走随机生成
++    input = vec_cases[vec_idx % vec_cases.size()];
++    vec_idx++;
++    if (vec_idx == vec_cases.size()) {
++      printf("[vdot-vectors] all %zu cases consumed\n", vec_cases.size());
++    }
++    return;
++  }
+  
+   input.src1[0] = rand64();
+   input.src1[1] = rand64();
+@@ -464,6 +575,9 @@ void TestDriver::get_expected_output() {
+     case FloatCvtI2F:
+       if (verbose) { printf("FuType:%d, choose FloatCvtI2F %d\n", input.fuType, FloatCvtI2F); }
+       expect_output = scvt.get_expected_output(input); return; 
++    case VDot:
++      if (verbose) { printf("FuType:%d, choose VDot %d\n", input.fuType, VDot); }
++      expect_output = vdot.get_expected_output(input); return;
+     default:
+       printf("Unsupported FuType %d\n", input.fuType);
+       exit(1);
+diff --git a/src/test/scala/top/VectorSimTop.scala b/src/test/scala/top/VectorSimTop.scala
+index ae5b922..0722baa 100644
+--- a/src/test/scala/top/VectorSimTop.scala
++++ b/src/test/scala/top/VectorSimTop.scala
+@@ -9,6 +9,8 @@ import yunsuan.vector.VectorConvert.VectorCvt
+ import yunsuan.vector._
+ import yunsuan.scalar.INT2FP
+ import yunsuan.scalar.FPCVT
++import yunsuan.VimacType
++import yunsuan.vector.mac.VDotTop
+ 
+ trait VSPParameter {
+   val VLEN       : Int = 128
+@@ -21,6 +23,7 @@ trait VSPParameter {
+   val VPERM_latency: Int = 1
+   val VID_latency: Int = 99
+   val VCVT_latency: Int = 2 // ??
++  val VDOT_latency: Int = 2 // vdot 指令族：与 VIMac64b 的 S0/S1/S2 三段组合逻辑对齐
+ }
+ 
+ object VPUTestFuType { // only use in test, difftest with xs
+@@ -34,9 +37,10 @@ object VPUTestFuType { // only use in test, difftest with xs
+   def vcvt= "b0000_0111".U(8.W)
+   def fcvtf2x= "b0000_1000".U(8.W)
+   def fcvti2f= "b0000_1001".U(8.W)
++  def vdot   = "b0000_1010".U(8.W)   // 新增：vdot 指令族（VDotTop）
+ 
+   def unknown(typ: UInt) = {
+-    (typ > 9.U)
++    (typ > 10.U)
+   }
+ }
+ 
+@@ -111,7 +115,8 @@ class SimTop() extends VPUTestModule {
+       VPUTestFuType.vid -> VID_latency.U,
+       VPUTestFuType.vcvt -> VCVT_latency.U,
+       VPUTestFuType.fcvtf2x -> VCVT_latency.U,
+-      VPUTestFuType.fcvti2f -> VCVT_latency.U
++      VPUTestFuType.fcvti2f -> VCVT_latency.U,
++      VPUTestFuType.vdot -> VDOT_latency.U
+     )) // fuType --> latency, spec case for div
+     assert(!VPUTestFuType.unknown(io.in.bits.fuType))
+   }
+@@ -144,6 +149,7 @@ class SimTop() extends VPUTestModule {
+   val vcvt_result = Wire(new VSTOutputIO)
+   val i2f_result = Wire(new VSTOutputIO)
+   val fpcvt_result = Wire(new VSTOutputIO)
++  val vdot_result = Wire(new VSTOutputIO)
+   when (io.in.fire || io.out.fire) {
+     vfd_result_valid.map(_ := false.B)
+   }
+@@ -380,6 +386,37 @@ class SimTop() extends VPUTestModule {
+   vid_result.fflags(1) := ZeroExt(vid_fflags_1, 20)
+   vid_result.vxsat := 0.U
+ 
++  // ---------------------------------------------------------------------------
++  // vdot 指令族（fuType = 10）
++  //   仿真顶层的 fuOpType 端口只有 8 位，装不下 9 位的 VimacType 编码，
++  //   因此 C++ 侧用紧凑编号 0/1/2 选择指令，在这里翻译成真正的 VimacType 常量。
++  //   对应 src/test/csrc/include/vpu_constant.h 的 VDOT_VV / VDOTACC_VV / VDOT4A_VV。
++  // ---------------------------------------------------------------------------
++  val vdot = Module(new VDotTop)
++  vdot.io.fire := busy
++  vdot.io.fuOpType := LookupTreeDefault(opcode, VimacType.vdot, List(
++    0.U -> VimacType.vdot,
++    1.U -> VimacType.vdotacc,
++    2.U -> VimacType.vdot4a
++  ))
++  vdot.io.info.vm     := vm
++  vdot.io.info.ma     := ma
++  vdot.io.info.ta     := ta
++  vdot.io.info.vlmul  := vlmul
++  vdot.io.info.vl     := vl
++  vdot.io.info.vstart := vstart
++  vdot.io.info.uopIdx := uop_idx
++  vdot.io.info.vxrm   := rm_s
++  vdot.io.vs2   := Cat(in.src(0)(1), in.src(0)(0))   // C++ 侧 input.src1
++  vdot.io.vs1   := Cat(in.src(1)(1), in.src(1)(0))   // C++ 侧 input.src2
++  vdot.io.oldVd := Cat(in.src(2)(1), in.src(2)(0))   // C++ 侧 input.src3
++  vdot.io.mask  := Cat(in.src(3)(1), in.src(3)(0))   // C++ 侧 input.src4（v0）
++  vdot_result.result(0) := vdot.io.vd(XLEN - 1, 0)
++  vdot_result.result(1) := vdot.io.vd(VLEN - 1, XLEN)
++  vdot_result.fflags(0) := 0.U
++  vdot_result.fflags(1) := 0.U
++  vdot_result.vxsat := 0.U
++
+   // arbiter
+   io.out.valid := Mux(is_uncertain, finish_uncertain, finish_fixLatency)
+   io.out.bits := LookupTreeDefault(in.fuType, 0.U.asTypeOf(new VSTOutputIO), List(
+@@ -392,7 +429,8 @@ class SimTop() extends VPUTestModule {
+     VPUTestFuType.vid -> vid_result,
+     VPUTestFuType.vcvt -> vcvt_result,
+     VPUTestFuType.fcvtf2x -> fpcvt_result,
+-    VPUTestFuType.fcvti2f -> i2f_result
++    VPUTestFuType.fcvti2f -> i2f_result,
++    VPUTestFuType.vdot -> vdot_result
+   ))
+ }
+ 

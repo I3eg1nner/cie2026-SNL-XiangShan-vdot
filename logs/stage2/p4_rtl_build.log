@@ -1,0 +1,62 @@
+==========================================================
+P4 RTL 构建日志  2026-10-24 19:40:58 CST
+主机      : Darwin 24.5.0 arm64
+JDK       : openjdk version "17.0.21.0.2" 2026-10-22
+Verilator : Verilator 5.052 2026-09-05 rev vUNKNOWN-built20260905
+工作树    : /Users/i3eg1nner/code/cie/work/XiangShan-vdot
+基线      : XiangShan kunminghu-v2 @ a4eeaab / yunsuan @ 9559211
+说明      : 先 mill clean 掉对应编译任务的缓存，保证日志是真实的完整编译输出
+==========================================================
+
+### 1. YunSuan 子工程编译 (mill 0.11.1) ###
+$ cd work/XiangShan-vdot/yunsuan && mill -i clean YunSuan.compile && mill -i YunSuan.compile
+[info] compiling 82 Scala sources to /Users/i3eg1nner/code/cie/work/XiangShan-vdot/yunsuan/out/YunSuan/compile.dest/classes ...
+[info] done compiling
+exit=0
+
+### 2. XiangShan 全仓 Scala 编译 (mill 0.12.3) ###
+$ cd work/XiangShan-vdot && mill -i clean xiangshan.compile && mill -i xiangshan.compile
+============================== clean xiangshan.compile ==============================
+=====================================================================================
+[1/1] clean
+[0J[1A
+[0J[1A
+[1/1] ============================== clean xiangshan.compile ============================== 1s
+[1] clean
+==============================================================================================
+[1/1] ============================== clean xiangshan.compile ============================== 1s
+==============================================================================================
+============================== xiangshan.compile ==============================
+===============================================================================
+[653/653] xiangshan.compile
+[653] [info] compiling 382 Scala sources to /Users/i3eg1nner/code/cie/work/XiangShan-vdot/out/xiangshan/compile.dest/classes ...
+[653/653] ============================== xiangshan.compile ============================== 60s
+[653] xiangshan.compile 58s
+=============================================================================================
+[653] [info] done compiling
+[653/653] ============================== xiangshan.compile ============================== 77s
+=============================================================================================
+exit=0
+
+### 3. XiangShan 测试源编译（含 VIMacUMain 精化入口）###
+$ mill -i -D jvm-xmx=8G clean xiangshan.test.compile && mill -i -D jvm-xmx=8G xiangshan.test.compile
+============================== clean xiangshan.test.compile ==============================
+==========================================================================================
+[1/1] clean
+[0J[1A
+[0J[1A
+[1/1] ============================== clean xiangshan.test.compile ============================= 1s
+[1] clean
+==================================================================================================
+[1/1] ============================== clean xiangshan.test.compile ============================= 1s
+==================================================================================================
+============================== xiangshan.test.compile ==============================
+====================================================================================
+[731/731] xiangshan.test.compile
+[731] [info] compiling 21 Scala sources to /Users/i3eg1nner/code/cie/work/XiangShan-vdot/out/xiangshan/test/compile.dest/classes ...
+[731] [info] done compiling
+[731/731] ============================== xiangshan.test.compile ============================== 7s
+=================================================================================================
+exit=0
+
+=== 构建结束 2026-10-24 19:42:58 CST ===

@@ -1,0 +1,54 @@
+==========================================================
+P4 Verilog 生成日志  2026-10-24 19:43:31 CST
+==========================================================
+
+### A. YunSuan 侧（mill 0.11.1）###
+$ mill -i YunSuan.runMain yunsuan.vector.mac.VerilogVDotTree
+Generating the VDotTree hardware
+exit=0
+$ mill -i YunSuan.runMain yunsuan.vector.mac.VerilogVDotTop
+Generating the VDotTop hardware
+exit=0
+$ mill -i YunSuan.runMain yunsuan.vector.mac.VerilogVIMac
+Generating the VIMac hardware
+exit=0
+$ ls -l build/vdot build/vimac
+build/vdot:
+total 336
+-rw-r--r--@ 1 i3eg1nner  staff  134630 10 24 19:43 VDotTop.sv
+-rw-r--r--@ 1 i3eg1nner  staff   33591 10 24 19:43 VDotTree.sv
+
+build/vimac:
+total 568
+-rw-r--r--@ 1 i3eg1nner  staff  286957 10 24 19:43 VIMac.sv
+
+### B. XiangShan 侧（mill 0.12.3，按功能单元粒度精化）###
+$ mill -i -D jvm-xmx=8G xiangshan.test.runMain xiangshan.backend.fu.VIMacUMain --target-dir build/vdot --target verilog
+=============== xiangshan.test.runMain xiangshan...dir build/vdot --target verilog ===============
+==================================================================================================
+[860/860] xiangshan.test.runMain
+[860] numBytes: 16, byteWidth: 4
+[860] elemIdxWidth: 8
+[860] numBytes: 16, byteWidth: 4
+[860] elemIdxWidth: 8
+[860/860] =============== xiangshan.test.runMain xi...ld/vdot --target verilog =============== 10s
+==================================================================================================
+exit=0
+$ mill -i -D jvm-xmx=8G xiangshan.test.runMain xiangshan.DecodeMain --target-dir build/vdot --target verilog
+=============== xiangshan.test.runMain xiangshan...dir build/vdot --target verilog ===============
+==================================================================================================
+[860/860] xiangshan.test.runMain
+[860] ImmUnion max len: 22
+[860/860] =============== xiangshan.test.runMain xi...ild/vdot --target verilog =============== 6s
+==================================================================================================
+exit=0
+$ ls -l build/vdot
+total 2928
+-rw-r--r--@ 1 i3eg1nner  staff  943247 10 24 19:43 DecodeUnit.v
+-rw-r--r--@ 1 i3eg1nner  staff  550506 10 24 19:43 VIMacU.v
+
+### C. L1 仿真顶层 SimTop.v（含 VDotTop）###
+$ ls -l yunsuan/build/SimTop.v
+-rw-r--r--@ 1 i3eg1nner  staff  4291767 10 24 19:36 yunsuan/build/SimTop.v
+
+=== Verilog 生成结束 2026-10-24 19:43:58 CST ===

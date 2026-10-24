@@ -1,0 +1,759 @@
+================================================================================
+ vadd / vadd.vv 波形信号抽取结果
+ 生成时间 : 2026-10-24 19:52:42 CST
+ 生成工具 : scripts/tools/vcd_extract.py（纯 Python 标准库 VCD 解析器）
+ 波形来源 : logs/stage1/waveform/*.vcd（YunSuan L1 平台 Verilator 真实运行）
+ 配套文档 : docs/stage1/02_向量加法指令执行过程分析.md
+================================================================================
+
+########################################################################
+# 1. fuType=3（VectorIntAdder）事务表 + 明细
+#    python3 scripts/tools/vcd_extract.py --vcd logs/stage1/waveform/vadd_vintadder_fuType3_seed1.vcd --transactions
+########################################################################
+# VCD: logs/stage1/waveform/vadd_vintadder_fuType3_seed1.vcd
+# timescale: $timescale 1ps $end
+# 时钟上升沿共 25 个；检出 in.fire 事务 8 笔
+
+   #  t_fire   t_out  cyc fuT  fuOp  sew  vl vlmul vm ta ma ui
+--------------------------------------------------------------
+   0      21      21    0   3     0  e64   1     2  0  1  1  0
+   1      25      25    0   3     0  e64   1     2  0  1  1  0
+   2      29      29    0   3     0  e16  17     2  1  0  1  0
+   3      33      33    0   3     0  e16  10     1  1  1  0  0
+   4      37      37    0   3     0  e64   5     2  1  0  0  0
+   5      41      41    0   3     0  e32   2     7  1  1  1  0
+   6      45      45    0   3     0  e16   1     7  1  1  1  0
+   7      49      49    0   3     0  e32   2     0  0  1  0  0
+
+==== 事务 #0  in.fire @ #21   out.valid @ #21   延迟 0 个时钟周期 ====
+  fuType=3 fuOpType=0 sew=3(e64) uop_idx=0 widen=0
+  vstart=0 vl=1 vlmul=2 vm=0 ta=1 ma=1
+  src_0 (vs1) = 60b7acd93ab50c2a_000041a710d63af1
+  src_1 (vs2) = 06058ed856e509fe_4431b7821c06dac8
+  src_2 (old_vd)=31169898427c3c55_56f32f4377a4044d
+  src_3 (mask) = 06d7d4b343cd3747_6a5d128c046cdbe2
+  result (vd) = 66bd3bb1919a1628_4431f9292cdd15b9   vxsat=0
+
+==== 事务 #1  in.fire @ #25   out.valid @ #25   延迟 0 个时钟周期 ====
+  fuType=3 fuOpType=0 sew=3(e64) uop_idx=0 widen=0
+  vstart=0 vl=1 vlmul=2 vm=0 ta=1 ma=1
+  src_0 (vs1) = 60b7acd93ab50c2a_000041a710d63af1
+  src_1 (vs2) = 06058ed856e509fe_4431b7821c06dac8
+  src_2 (old_vd)=31169898427c3c55_56f32f4377a4044d
+  src_3 (mask) = 06d7d4b343cd3747_6a5d128c046cdbe2
+  result (vd) = 66bd3bb1919a1628_4431f9292cdd15b9   vxsat=0
+
+==== 事务 #2  in.fire @ #29   out.valid @ #29   延迟 0 个时钟周期 ====
+  fuType=3 fuOpType=0 sew=1(e16) uop_idx=0 widen=0
+  vstart=0 vl=17 vlmul=2 vm=1 ta=0 ma=1
+  src_0 (vs1) = 437266f50bc5816b_77188b056c4f3258
+  src_1 (vs2) = 59c09d0774856499_53b39dd6353f7788
+  src_2 (old_vd)=061351335e37ee62_618fb49221980f48
+  src_3 (mask) = 60d20f0d7eda5023_2a03944150fa4cf3
+  result (vd) = 9d3203fc804ae604_cacb28dba18ea9e0   vxsat=0
+
+==== 事务 #3  in.fire @ #33   out.valid @ #33   延迟 0 个时钟周期 ====
+  fuType=3 fuOpType=0 sew=1(e16) uop_idx=0 widen=0
+  vstart=0 vl=10 vlmul=1 vm=1 ta=1 ma=0
+  src_0 (vs1) = 22e8290237dc5435_50d9680c713e154b
+  src_1 (vs2) = 1e6f6484233025b8_621c80393d265081
+  src_2 (old_vd)=3e46339c72e666b4_2dfc651415501ba2
+  src_3 (mask) = 73cbac2a409434ca_7460ee5a07c09267
+  result (vd) = 41578d865b0c79ed_b2f5e845ae6465cc   vxsat=0
+
+==== 事务 #4  in.fire @ #37   out.valid @ #37   延迟 0 个时钟周期 ====
+  fuType=3 fuOpType=0 sew=3(e64) uop_idx=0 widen=0
+  vstart=0 vl=5 vlmul=2 vm=1 ta=0 ma=0
+  src_0 (vs1) = 312b91e523776a9b_09709c1540172b8a
+  src_1 (vs2) = 3b72f5f6787207f7_74f7f84d43cec339
+  src_2 (old_vd)=6296100569f5ead3_066926e861794ca1
+  src_3 (mask) = 581f4da56f22b8d5_100bf8fe0207f3ed
+  result (vd) = 6c9e87db9be97292_7e68946283e5eec3   vxsat=0
+
+==== 事务 #5  in.fire @ #41   out.valid @ #41   延迟 0 个时钟周期 ====
+  fuType=3 fuOpType=0 sew=2(e32) uop_idx=0 widen=0
+  vstart=0 vl=2 vlmul=7 vm=1 ta=1 ma=1
+  src_0 (vs1) = 4ba99c206c491fae_2cee115141b2f3e2
+  src_1 (vs2) = 2278fd06352ba698_34bf100c6bb69ee1
+  src_2 (old_vd)=24c35fff16d37134_44c6606d3be4b761
+  src_3 (mask) = 66b53b19043b1afd_13ad18a1492bfc1e
+  result (vd) = 6e229926a174c646_61ad215dad6992c3   vxsat=0
+
+==== 事务 #6  in.fire @ #45   out.valid @ #45   延迟 0 个时钟周期 ====
+  fuType=3 fuOpType=0 sew=1(e16) uop_idx=0 widen=0
+  vstart=0 vl=1 vlmul=7 vm=1 ta=1 ma=1
+  src_0 (vs1) = 1b3b710f5b7b9dc0_6bc7f43a1473431e
+  src_1 (vs2) = 2325b45500624a7a_10b1d72c0ba59244
+  src_2 (old_vd)=5adb5e50780d04c9_35078fc80370aeab
+  src_3 (mask) = 28a522b27188e8f6_1eb565b2172798de
+  result (vd) = 3e6025645bdde83a_7c78cb662018d562   vxsat=0
+
+==== 事务 #7  in.fire @ #49   out.valid @ #49   延迟 0 个时钟周期 ====
+  fuType=3 fuOpType=0 sew=2(e32) uop_idx=0 widen=0
+  vstart=0 vl=2 vlmul=0 vm=0 ta=1 ma=0
+  src_0 (vs1) = 4b88adce7a4ad61f_4b28ee676c3bd2bd
+  src_1 (vs2) = 7ddcf1003452778e_472fcbf212f6a161
+  src_2 (old_vd)=2045ad973e87a50e_12272678484e9997
+  src_3 (mask) = 1021c7071991a4d7_3b655a347b052a62
+  result (vd) = c9659eceae9d4dad_9258ba597f32741e   vxsat=0
+
+
+########################################################################
+# 2. fuType=3 逐元素加法核验（raw 模型：VectorIntAdder 不做 mask/tail）
+#    python3 scripts/tools/vcd_extract.py --vcd logs/stage1/waveform/vadd_vintadder_fuType3_seed1.vcd --verify
+########################################################################
+# VCD: logs/stage1/waveform/vadd_vintadder_fuType3_seed1.vcd
+# timescale: $timescale 1ps $end
+# 时钟上升沿共 25 个；检出 in.fire 事务 8 笔
+
+==== 事务 #0 @ in.fire #21 / out.valid #21  fuType=3 sew=e64 vl=1 vm=0 ta=1 ma=1  判定模型=raw ====
+  idx               vs1               vs2   (vs1+vs2)%2^sew           vd(DUT)  mbit       类别 判定
+    0  000041a710d63af1  4431b7821c06dac8  4431f9292cdd15b9  4431f9292cdd15b9     0     elem OK
+    1  60b7acd93ab50c2a  06058ed856e509fe  66bd3bb1919a1628  66bd3bb1919a1628     1     elem OK
+
+==== 事务 #1 @ in.fire #25 / out.valid #25  fuType=3 sew=e64 vl=1 vm=0 ta=1 ma=1  判定模型=raw ====
+  idx               vs1               vs2   (vs1+vs2)%2^sew           vd(DUT)  mbit       类别 判定
+    0  000041a710d63af1  4431b7821c06dac8  4431f9292cdd15b9  4431f9292cdd15b9     0     elem OK
+    1  60b7acd93ab50c2a  06058ed856e509fe  66bd3bb1919a1628  66bd3bb1919a1628     1     elem OK
+
+==== 事务 #2 @ in.fire #29 / out.valid #29  fuType=3 sew=e16 vl=17 vm=1 ta=0 ma=1  判定模型=raw ====
+  idx               vs1               vs2   (vs1+vs2)%2^sew           vd(DUT)  mbit       类别 判定
+    0              3258              7788              a9e0              a9e0     1     elem OK
+    1              6c4f              353f              a18e              a18e     1     elem OK
+    2              8b05              9dd6              28db              28db     0     elem OK
+    3              7718              53b3              cacb              cacb     0     elem OK
+    4              816b              6499              e604              e604     1     elem OK
+    5              0bc5              7485              804a              804a     1     elem OK
+    6              66f5              9d07              03fc              03fc     1     elem OK
+    7              4372              59c0              9d32              9d32     1     elem OK
+
+==== 事务 #3 @ in.fire #33 / out.valid #33  fuType=3 sew=e16 vl=10 vm=1 ta=1 ma=0  判定模型=raw ====
+  idx               vs1               vs2   (vs1+vs2)%2^sew           vd(DUT)  mbit       类别 判定
+    0              154b              5081              65cc              65cc     1     elem OK
+    1              713e              3d26              ae64              ae64     1     elem OK
+    2              680c              8039              e845              e845     1     elem OK
+    3              50d9              621c              b2f5              b2f5     0     elem OK
+    4              5435              25b8              79ed              79ed     0     elem OK
+    5              37dc              2330              5b0c              5b0c     1     elem OK
+    6              2902              6484              8d86              8d86     1     elem OK
+    7              22e8              1e6f              4157              4157     0     elem OK
+
+==== 事务 #4 @ in.fire #37 / out.valid #37  fuType=3 sew=e64 vl=5 vm=1 ta=0 ma=0  判定模型=raw ====
+  idx               vs1               vs2   (vs1+vs2)%2^sew           vd(DUT)  mbit       类别 判定
+    0  09709c1540172b8a  74f7f84d43cec339  7e68946283e5eec3  7e68946283e5eec3     1     elem OK
+    1  312b91e523776a9b  3b72f5f6787207f7  6c9e87db9be97292  6c9e87db9be97292     0     elem OK
+
+==== 事务 #5 @ in.fire #41 / out.valid #41  fuType=3 sew=e32 vl=2 vm=1 ta=1 ma=1  判定模型=raw ====
+  idx               vs1               vs2   (vs1+vs2)%2^sew           vd(DUT)  mbit       类别 判定
+    0          41b2f3e2          6bb69ee1          ad6992c3          ad6992c3     0     elem OK
+    1          2cee1151          34bf100c          61ad215d          61ad215d     1     elem OK
+    2          6c491fae          352ba698          a174c646          a174c646     1     elem OK
+    3          4ba99c20          2278fd06          6e229926          6e229926     1     elem OK
+
+==== 事务 #6 @ in.fire #45 / out.valid #45  fuType=3 sew=e16 vl=1 vm=1 ta=1 ma=1  判定模型=raw ====
+  idx               vs1               vs2   (vs1+vs2)%2^sew           vd(DUT)  mbit       类别 判定
+    0              431e              9244              d562              d562     0     elem OK
+    1              1473              0ba5              2018              2018     1     elem OK
+    2              f43a              d72c              cb66              cb66     1     elem OK
+    3              6bc7              10b1              7c78              7c78     1     elem OK
+    4              9dc0              4a7a              e83a              e83a     1     elem OK
+    5              5b7b              0062              5bdd              5bdd     0     elem OK
+    6              710f              b455              2564              2564     1     elem OK
+    7              1b3b              2325              3e60              3e60     1     elem OK
+
+==== 事务 #7 @ in.fire #49 / out.valid #49  fuType=3 sew=e32 vl=2 vm=0 ta=1 ma=0  判定模型=raw ====
+  idx               vs1               vs2   (vs1+vs2)%2^sew           vd(DUT)  mbit       类别 判定
+    0          6c3bd2bd          12f6a161          7f32741e          7f32741e     0     elem OK
+    1          4b28ee67          472fcbf2          9258ba59          9258ba59     1     elem OK
+    2          7a4ad61f          3452778e          ae9d4dad          ae9d4dad     0     elem OK
+    3          4b88adce          7ddcf100          c9659ece          c9659ece     0     elem OK
+
+
+########################################################################
+# 3. fuType=3 SEW 交叉验证
+#    python3 scripts/tools/vcd_extract.py --vcd logs/stage1/waveform/vadd_vintadder_fuType3_seed1.vcd --sew-crosscheck
+########################################################################
+# VCD: logs/stage1/waveform/vadd_vintadder_fuType3_seed1.vcd
+# timescale: $timescale 1ps $end
+# 时钟上升沿共 25 个；检出 in.fire 事务 8 笔
+
+  事务   真sew   t_out       按e8      按e16      按e32      按e64
+--------------------------------------------------------------
+   0    e64      21      9/16       6/8       4/4       2/2
+   1    e64      25      9/16       6/8       4/4       2/2
+   2    e16      29     13/16       8/8       2/4       0/2
+   3    e16      33     14/16       8/8       4/4       2/2
+   4    e64      37     11/16       6/8       4/4       2/2
+   5    e32      41      9/16       6/8       4/4       2/2
+   6    e16      45     13/16       8/8       2/4       0/2
+   7    e32      49      8/16       4/8       4/4       2/2
+
+说明：x/y = 该切分下成立的元素数 / 参与比较的元素数。
+      fuType=3（VectorIntAdder，无 mask/tail）比较全部 128 位；
+      fuType=5（VIntFixpAlu）只比较 body 元素（idx<vl 且未被掩掉）。
+      只有『真sew』那一列应当全中；其余列的部分命中源于
+      『窄切分恰好没有跨段进位』，属正常现象。
+
+########################################################################
+# 4. fuType=5（VIAluFWrapper -> VIntFixpAlu，真正的 vadd.vv）事务表 + 明细
+#    python3 scripts/tools/vcd_extract.py --vcd logs/stage1/waveform/vaddvv_vialufwrapper_fuType5_seed2.vcd --transactions
+########################################################################
+# VCD: logs/stage1/waveform/vaddvv_vialufwrapper_fuType5_seed2.vcd
+# timescale: $timescale 1ps $end
+# 时钟上升沿共 33 个；检出 in.fire 事务 8 笔
+
+   #  t_fire   t_out  cyc fuT  fuOp  sew  vl vlmul vm ta ma ui
+--------------------------------------------------------------
+   0      21      23    1   5     0  e32   1     7  0  1  1  0
+   1      27      29    1   5     0  e32   1     0  0  0  1  0
+   2      33      35    1   5     0  e16   2     1  1  1  1  0
+   3      39      41    1   5     0  e64   4     3  0  0  0  0
+   4      45      47    1   5     0  e16   2     6  1  1  0  0
+   5      51      53    1   5     0  e64   4     3  1  1  1  0
+   6      57      59    1   5     0  e32   2     7  0  0  0  0
+   7      63      65    1   5     0  e16   3     0  1  1  1  0
+
+==== 事务 #0  in.fire @ #21   out.valid @ #23   延迟 1 个时钟周期 ====
+  fuType=5 fuOpType=0 sew=2(e32) uop_idx=0 widen=0
+  vstart=0 vl=1 vlmul=7 vm=0 ta=1 ma=1
+  src_0 (vs1) = 60b7acd93ab50c2a_000041a710d63af1
+  src_1 (vs2) = 06058ed856e509fe_4431b7821c06dac8
+  src_2 (old_vd)=31169898427c3c55_56f32f4377a4044d
+  src_3 (mask) = 06d7d4b343cd3747_6a5d128c046cdbe2
+  result (vd) = ffffffffffffffff_ffffffffffffffff   vxsat=0
+
+==== 事务 #1  in.fire @ #27   out.valid @ #29   延迟 1 个时钟周期 ====
+  fuType=5 fuOpType=0 sew=2(e32) uop_idx=0 widen=0
+  vstart=0 vl=1 vlmul=0 vm=0 ta=0 ma=1
+  src_0 (vs1) = 416f59b3756a1854_0000834e21ac75e2
+  src_1 (vs2) = 0c0b1db02dca13fd_08636f05380db590
+  src_2 (old_vd)=622d313004f878ab_2de65e876f48089b
+  src_3 (mask) = 0dafa966079a6e8f_54ba251908d9b7c4
+  result (vd) = 622d313004f878ab_2de65e87ffffffff   vxsat=0
+
+==== 事务 #2  in.fire @ #33   out.valid @ #35   延迟 1 个时钟周期 ====
+  fuType=5 fuOpType=0 sew=1(e16) uop_idx=0 widen=0
+  vstart=0 vl=2 vlmul=1 vm=1 ta=1 ma=1
+  src_0 (vs1) = 06e4cdeb178b02d6_6e31160b589e64b1
+  src_1 (vs2) = 33813a0f690ac933_27673bad6a7eef10
+  src_2 (old_vd)=0c26a2663c6fdcc5_431f692543301e90
+  src_3 (mask) = 41a41e1b7db4a047_5407288221f499e7
+  result (vd) = ffffffffffffffff_ffffffffc31c53c1   vxsat=0
+
+==== 事务 #3  in.fire @ #39   out.valid @ #41   延迟 1 个时钟周期 ====
+  fuType=5 fuOpType=0 sew=3(e64) uop_idx=0 widen=0
+  vstart=0 vl=4 vlmul=3 vm=0 ta=0 ma=0
+  src_0 (vs1) = 45d052046fb8a86a_21b2d019627c2a97
+  src_1 (vs2) = 3cdec90846604b70_443900737a4ca102
+  src_2 (old_vd)=7c8c673865cccd69_5bf8ca282aa03744
+  src_3 (mask) = 6797585501286995_68c1dcb50f8124ce
+  result (vd) = 82af1b0cb618f3da_5bf8ca282aa03744   vxsat=0
+
+==== 事务 #4  in.fire @ #45   out.valid @ #47   延迟 1 个时钟周期 ====
+  fuType=5 fuOpType=0 sew=1(e16) uop_idx=0 widen=0
+  vstart=0 vl=2 vlmul=6 vm=1 ta=1 ma=0
+  src_0 (vs1) = 625723ca46eed536_12e1382a002e5715
+  src_1 (vs2) = 76e5ebec70e40fef_69eff09b079d8673
+  src_2 (old_vd)=452c200b53ebd5a7_0cd24dd042f29943
+  src_3 (mask) = 303e9b4b5e4571ab_2017f1fc040fe7da
+  result (vd) = ffffffffffffffff_ffffffff07cbdd88   vxsat=0
+
+==== 事务 #5  in.fire @ #51   out.valid @ #53   延迟 1 个时钟周期 ====
+  fuType=5 fuOpType=0 sew=3(e64) uop_idx=0 widen=0
+  vstart=0 vl=4 vlmul=3 vm=1 ta=1 ma=1
+  src_0 (vs1) = 1753384158923f5d_59dc22a20365e7c5
+  src_1 (vs2) = 44f1fa0c6a574d30_697e2018576d3dc3
+  src_2 (old_vd)=4986bffe2da6e268_098cc0db77c96ec2
+  src_3 (mask) = 4d6a7633087635fa_275a31421257f83d
+  result (vd) = 5c45324dc2e98c8d_c35a42ba5ad32588   vxsat=0
+
+==== 事务 #6  in.fire @ #57   out.valid @ #59   延迟 1 个时钟周期 ====
+  fuType=5 fuOpType=0 sew=2(e32) uop_idx=0 widen=0
+  vstart=0 vl=2 vlmul=7 vm=0 ta=0 ma=0
+  src_0 (vs1) = 3676e21e36f73b81_578fe87528e6863c
+  src_1 (vs2) = 464b68aa00c494f4_2163ae58174b2488
+  src_2 (old_vd)=35b6bca1701a0993_6a0f1f9006e15d56
+  src_3 (mask) = 514a45646311d1ed_3d6acb642e4f31bc
+  result (vd) = 35b6bca1701a0993_6a0f1f9006e15d56   vxsat=0
+
+==== 事务 #7  in.fire @ #63   out.valid @ #65   延迟 1 个时钟周期 ====
+  fuType=5 fuOpType=0 sew=1(e16) uop_idx=0 widen=0
+  vstart=0 vl=3 vlmul=0 vm=1 ta=1 ma=1
+  src_0 (vs1) = 17115b9d7495ac3f_1651dccf5877a57b
+  src_1 (vs2) = 7bb9e20168a4ef1c_0e5f97e525ed42c2
+  src_2 (old_vd)=408b5b2e7d0f4a1c_244e4cf0109d332f
+  src_3 (mask) = 20438e0e332349ae_76cab468760a54c5
+  result (vd) = ffffffffffffffff_ffff74b47e64e83d   vxsat=0
+
+
+########################################################################
+# 5. fuType=5 逐元素 + mask/tail 语义核验（mgu 模型）
+#    python3 scripts/tools/vcd_extract.py --vcd logs/stage1/waveform/vaddvv_vialufwrapper_fuType5_seed2.vcd --verify
+########################################################################
+# VCD: logs/stage1/waveform/vaddvv_vialufwrapper_fuType5_seed2.vcd
+# timescale: $timescale 1ps $end
+# 时钟上升沿共 33 个；检出 in.fire 事务 8 笔
+
+==== 事务 #0 @ in.fire #21 / out.valid #23  fuType=5 sew=e32 vl=1 vm=0 ta=1 ma=1  判定模型=mgu ====
+  idx               vs1               vs2   (vs1+vs2)%2^sew           vd(DUT)  mbit       类别 判定
+    0          10d63af1          1c06dac8          2cdd15b9          ffffffff     0   masked OK
+    1          000041a7          4431b782          4431f929          ffffffff     1     tail OK
+    2          3ab50c2a          56e509fe          919a1628          ffffffff     0     tail OK
+    3          60b7acd9          06058ed8          66bd3bb1          ffffffff     0     tail OK
+
+==== 事务 #1 @ in.fire #27 / out.valid #29  fuType=5 sew=e32 vl=1 vm=0 ta=0 ma=1  判定模型=mgu ====
+  idx               vs1               vs2   (vs1+vs2)%2^sew           vd(DUT)  mbit       类别 判定
+    0          21ac75e2          380db590          59ba2b72          ffffffff     0   masked OK
+    1          0000834e          08636f05          0863f253          2de65e87     0     tail OK
+    2          756a1854          2dca13fd          a3342c51          04f878ab     1     tail OK
+    3          416f59b3          0c0b1db0          4d7a7763          622d3130     0     tail OK
+
+==== 事务 #2 @ in.fire #33 / out.valid #35  fuType=5 sew=e16 vl=2 vm=1 ta=1 ma=1  判定模型=mgu ====
+  idx               vs1               vs2   (vs1+vs2)%2^sew           vd(DUT)  mbit       类别 判定
+    0              64b1              ef10              53c1              53c1     1     body OK
+    1              589e              6a7e              c31c              c31c     1     body OK
+    2              160b              3bad              51b8              ffff     1     tail OK
+    3              6e31              2767              9598              ffff     0     tail OK
+    4              02d6              c933              cc09              ffff     0     tail OK
+    5              178b              690a              8095              ffff     1     tail OK
+    6              cdeb              3a0f              07fa              ffff     1     tail OK
+    7              06e4              3381              3a65              ffff     1     tail OK
+
+==== 事务 #3 @ in.fire #39 / out.valid #41  fuType=5 sew=e64 vl=4 vm=0 ta=0 ma=0  判定模型=mgu ====
+  idx               vs1               vs2   (vs1+vs2)%2^sew           vd(DUT)  mbit       类别 判定
+    0  21b2d019627c2a97  443900737a4ca102  65ebd08cdcc8cb99  5bf8ca282aa03744     0   masked OK
+    1  45d052046fb8a86a  3cdec90846604b70  82af1b0cb618f3da  82af1b0cb618f3da     1     body OK
+
+==== 事务 #4 @ in.fire #45 / out.valid #47  fuType=5 sew=e16 vl=2 vm=1 ta=1 ma=0  判定模型=mgu ====
+  idx               vs1               vs2   (vs1+vs2)%2^sew           vd(DUT)  mbit       类别 判定
+    0              5715              8673              dd88              dd88     0     body OK
+    1              002e              079d              07cb              07cb     1     body OK
+    2              382a              f09b              28c5              ffff     0     tail OK
+    3              12e1              69ef              7cd0              ffff     1     tail OK
+    4              d536              0fef              e525              ffff     1     tail OK
+    5              46ee              70e4              b7d2              ffff     0     tail OK
+    6              23ca              ebec              0fb6              ffff     1     tail OK
+    7              6257              76e5              d93c              ffff     1     tail OK
+
+==== 事务 #5 @ in.fire #51 / out.valid #53  fuType=5 sew=e64 vl=4 vm=1 ta=1 ma=1  判定模型=mgu ====
+  idx               vs1               vs2   (vs1+vs2)%2^sew           vd(DUT)  mbit       类别 判定
+    0  59dc22a20365e7c5  697e2018576d3dc3  c35a42ba5ad32588  c35a42ba5ad32588     1     body OK
+    1  1753384158923f5d  44f1fa0c6a574d30  5c45324dc2e98c8d  5c45324dc2e98c8d     0     body OK
+
+==== 事务 #6 @ in.fire #57 / out.valid #59  fuType=5 sew=e32 vl=2 vm=0 ta=0 ma=0  判定模型=mgu ====
+  idx               vs1               vs2   (vs1+vs2)%2^sew           vd(DUT)  mbit       类别 判定
+    0          28e6863c          174b2488          4031aac4          06e15d56     0   masked OK
+    1          578fe875          2163ae58          78f396cd          6a0f1f90     0   masked OK
+    2          36f73b81          00c494f4          37bbd075          701a0993     1     tail OK
+    3          3676e21e          464b68aa          7cc24ac8          35b6bca1     1     tail OK
+
+==== 事务 #7 @ in.fire #63 / out.valid #65  fuType=5 sew=e16 vl=3 vm=1 ta=1 ma=1  判定模型=mgu ====
+  idx               vs1               vs2   (vs1+vs2)%2^sew           vd(DUT)  mbit       类别 判定
+    0              a57b              42c2              e83d              e83d     1     body OK
+    1              5877              25ed              7e64              7e64     0     body OK
+    2              dccf              97e5              74b4              74b4     1     body OK
+    3              1651              0e5f              24b0              ffff     0     tail OK
+    4              ac3f              ef1c              9b5b              ffff     0     tail OK
+    5              7495              68a4              dd39              ffff     0     tail OK
+    6              5b9d              e201              3d9e              ffff     1     tail OK
+    7              1711              7bb9              92ca              ffff     1     tail OK
+
+
+########################################################################
+# 6. fuType=5 SEW 交叉验证
+#    python3 scripts/tools/vcd_extract.py --vcd logs/stage1/waveform/vaddvv_vialufwrapper_fuType5_seed2.vcd --sew-crosscheck
+########################################################################
+# VCD: logs/stage1/waveform/vaddvv_vialufwrapper_fuType5_seed2.vcd
+# timescale: $timescale 1ps $end
+# 时钟上升沿共 33 个；检出 in.fire 事务 8 笔
+
+  事务   真sew   t_out       按e8      按e16      按e32      按e64
+--------------------------------------------------------------
+   0    e32      23       n/a       n/a       n/a       n/a
+   1    e32      29       n/a       n/a       n/a       n/a
+   2    e16      35       2/2       2/2       0/2       0/2
+   3    e64      41       0/3       0/3       2/3       1/1
+   4    e16      47       2/2       2/2       1/2       0/2
+   5    e64      53       2/4       3/4       4/4       2/2
+   6    e32      59       n/a       n/a       n/a       n/a
+   7    e16      65       2/3       3/3       1/3       0/2
+
+说明：x/y = 该切分下成立的元素数 / 参与比较的元素数。
+      fuType=3（VectorIntAdder，无 mask/tail）比较全部 128 位；
+      fuType=5（VIntFixpAlu）只比较 body 元素（idx<vl 且未被掩掉）。
+      只有『真sew』那一列应当全中；其余列的部分命中源于
+      『窄切分恰好没有跨段进位』，属正常现象。
+
+########################################################################
+# 7. fuType=5 VIntFixpAlu 内部 mask/tail/updateType 信号
+#    python3 scripts/tools/vcd_extract.py --vcd logs/stage1/waveform/vaddvv_vialufwrapper_fuType5_seed2.vcd --internal
+########################################################################
+# VCD: logs/stage1/waveform/vaddvv_vialufwrapper_fuType5_seed2.vcd
+# VIAluFWrapper / VIntFixpAlu 内部信号（层次名见 TOP.SimTop.viaf.*）
+# 源码对应：VIAluFWrapper.scala:39-86 / VIntFixpAlu.scala:112-313
+
+==== 事务 #0  in.fire @ #21  out.valid @ #23 ====
+  --- S0（in.fire 上升沿 #21 之后的组合逻辑，采样于 #21） ---
+    opcode.op              = 000000 (0x00)
+    srcType(0)=vs2         = 0010 (0x2)
+    srcType(1)=vs1         = 0010 (0x2)
+    vdType                 = 0010 (0x2)
+    narrow                 = 0 (0x0)
+    maskIdx                = 000000 (0x00)
+    mask16b                = 0000000000000010 (0x0002)
+    vstart_gte_vl          = 0 (0x0)
+    64b[0].vmask           = 00000010 (0x02)
+    64b[1].vmask           = 00000000 (0x00)
+    64b[0].cin1            = 1 (0x1)
+    64b[0].cin2            = 1 (0x1)
+    64b[0].cin3            = 0 (0x0)
+    64b[0].cin4            = 0 (0x0)
+    64b[0].cin5            = 1 (0x1)
+    64b[0].cin6            = 0 (0x0)
+    64b[0].cin7            = 0 (0x0)
+  --- S1（out.valid #23，寄存器输出） ---
+    uopIdxS1               = 0x00
+    taS1                   = 0x1
+    maS1                   = 0x1
+    mask16bS1              = 0x0002
+    tailS1                 = 0xfffe
+    prestartS1             = 0x0000
+    mask16bReorg           = 0x00f0
+    tailReorg              = 0xfff0
+    prestartReorg          = 0x0000
+    64b[0].vd(raw)         = 0x4431f9292cdd15b9
+    64b[1].vd(raw)         = 0x66bd3bb1919a1628
+    out.vd(final)          = 0xffffffffffffffffffffffffffffffff
+    updateType[15..0]      = 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3
+      （00=保留运算结果 10=写 old_vd 11=写全 1，VIntFixpAlu.scala:268-281）
+
+==== 事务 #1  in.fire @ #27  out.valid @ #29 ====
+  --- S0（in.fire 上升沿 #27 之后的组合逻辑，采样于 #27） ---
+    opcode.op              = 000000 (0x00)
+    srcType(0)=vs2         = 0010 (0x2)
+    srcType(1)=vs1         = 0010 (0x2)
+    vdType                 = 0010 (0x2)
+    narrow                 = 0 (0x0)
+    maskIdx                = 000000 (0x00)
+    mask16b                = 0000000000000100 (0x0004)
+    vstart_gte_vl          = 0 (0x0)
+    64b[0].vmask           = 00000000 (0x00)
+    64b[1].vmask           = 00000001 (0x01)
+    64b[0].cin1            = 1 (0x1)
+    64b[0].cin2            = 1 (0x1)
+    64b[0].cin3            = 0 (0x0)
+    64b[0].cin4            = 0 (0x0)
+    64b[0].cin5            = 0 (0x0)
+    64b[0].cin6            = 0 (0x0)
+    64b[0].cin7            = 0 (0x0)
+  --- S1（out.valid #29，寄存器输出） ---
+    uopIdxS1               = 0x00
+    taS1                   = 0x0
+    maS1                   = 0x1
+    mask16bS1              = 0x0004
+    tailS1                 = 0xfffe
+    prestartS1             = 0x0000
+    mask16bReorg           = 0x0f00
+    tailReorg              = 0xfff0
+    prestartReorg          = 0x0000
+    64b[0].vd(raw)         = 0x0863f25359ba2b72
+    64b[1].vd(raw)         = 0x4d7a7763a3342c51
+    out.vd(final)          = 0x622d313004f878ab2de65e87ffffffff
+    updateType[15..0]      = 2 2 2 2 2 2 2 2 2 2 2 2 3 3 3 3
+      （00=保留运算结果 10=写 old_vd 11=写全 1，VIntFixpAlu.scala:268-281）
+
+==== 事务 #2  in.fire @ #33  out.valid @ #35 ====
+  --- S0（in.fire 上升沿 #33 之后的组合逻辑，采样于 #33） ---
+    opcode.op              = 000000 (0x00)
+    srcType(0)=vs2         = 0001 (0x1)
+    srcType(1)=vs1         = 0001 (0x1)
+    vdType                 = 0001 (0x1)
+    narrow                 = 0 (0x0)
+    maskIdx                = 000000 (0x00)
+    mask16b                = 0000000011100111 (0x00e7)
+    vstart_gte_vl          = 0 (0x0)
+    64b[0].vmask           = 00000111 (0x07)
+    64b[1].vmask           = 00001110 (0x0e)
+    64b[0].cin1            = 0 (0x0)
+    64b[0].cin2            = 0 (0x0)
+    64b[0].cin3            = 1 (0x1)
+    64b[0].cin4            = 0 (0x0)
+    64b[0].cin5            = 0 (0x0)
+    64b[0].cin6            = 0 (0x0)
+    64b[0].cin7            = 0 (0x0)
+  --- S1（out.valid #35，寄存器输出） ---
+    uopIdxS1               = 0x00
+    taS1                   = 0x1
+    maS1                   = 0x1
+    mask16bS1              = 0x00e7
+    tailS1                 = 0xfffc
+    prestartS1             = 0x0000
+    mask16bReorg           = 0xfc3f
+    tailReorg              = 0xfff0
+    prestartReorg          = 0x0000
+    64b[0].vd(raw)         = 0x959851b8c31c53c1
+    64b[1].vd(raw)         = 0x3a6507fa8095cc09
+    out.vd(final)          = 0xffffffffffffffffffffffffc31c53c1
+    updateType[15..0]      = 3 3 3 3 3 3 3 3 3 3 3 3 0 0 0 0
+      （00=保留运算结果 10=写 old_vd 11=写全 1，VIntFixpAlu.scala:268-281）
+
+==== 事务 #3  in.fire @ #39  out.valid @ #41 ====
+  --- S0（in.fire 上升沿 #39 之后的组合逻辑，采样于 #39） ---
+    opcode.op              = 000000 (0x00)
+    srcType(0)=vs2         = 0011 (0x3)
+    srcType(1)=vs1         = 0011 (0x3)
+    vdType                 = 0011 (0x3)
+    narrow                 = 0 (0x0)
+    maskIdx                = 000000 (0x00)
+    mask16b                = 0000000000000010 (0x0002)
+    vstart_gte_vl          = 0 (0x0)
+    64b[0].vmask           = 00000000 (0x00)
+    64b[1].vmask           = 00000001 (0x01)
+    64b[0].cin1            = 0 (0x0)
+    64b[0].cin2            = 0 (0x0)
+    64b[0].cin3            = 0 (0x0)
+    64b[0].cin4            = 0 (0x0)
+    64b[0].cin5            = 0 (0x0)
+    64b[0].cin6            = 0 (0x0)
+    64b[0].cin7            = 0 (0x0)
+  --- S1（out.valid #41，寄存器输出） ---
+    uopIdxS1               = 0x00
+    taS1                   = 0x0
+    maS1                   = 0x0
+    mask16bS1              = 0x0002
+    tailS1                 = 0x0000
+    prestartS1             = 0x0000
+    mask16bReorg           = 0xff00
+    tailReorg              = 0x0000
+    prestartReorg          = 0x0000
+    64b[0].vd(raw)         = 0x65ebd08cdcc8cb99
+    64b[1].vd(raw)         = 0x82af1b0cb618f3da
+    out.vd(final)          = 0x82af1b0cb618f3da5bf8ca282aa03744
+    updateType[15..0]      = 0 0 0 0 0 0 0 0 2 2 2 2 2 2 2 2
+      （00=保留运算结果 10=写 old_vd 11=写全 1，VIntFixpAlu.scala:268-281）
+
+==== 事务 #4  in.fire @ #45  out.valid @ #47 ====
+  --- S0（in.fire 上升沿 #45 之后的组合逻辑，采样于 #45） ---
+    opcode.op              = 000000 (0x00)
+    srcType(0)=vs2         = 0001 (0x1)
+    srcType(1)=vs1         = 0001 (0x1)
+    vdType                 = 0001 (0x1)
+    narrow                 = 0 (0x0)
+    maskIdx                = 000000 (0x00)
+    mask16b                = 0000000011011010 (0x00da)
+    vstart_gte_vl          = 0 (0x0)
+    64b[0].vmask           = 00001010 (0x0a)
+    64b[1].vmask           = 00001101 (0x0d)
+    64b[0].cin1            = 0 (0x0)
+    64b[0].cin2            = 0 (0x0)
+    64b[0].cin3            = 0 (0x0)
+    64b[0].cin4            = 0 (0x0)
+    64b[0].cin5            = 0 (0x0)
+    64b[0].cin6            = 0 (0x0)
+    64b[0].cin7            = 1 (0x1)
+  --- S1（out.valid #47，寄存器输出） ---
+    uopIdxS1               = 0x00
+    taS1                   = 0x1
+    maS1                   = 0x0
+    mask16bS1              = 0x00da
+    tailS1                 = 0xfffc
+    prestartS1             = 0x0000
+    mask16bReorg           = 0xf3cc
+    tailReorg              = 0xfff0
+    prestartReorg          = 0x0000
+    64b[0].vd(raw)         = 0x7cd028c507cbdd88
+    64b[1].vd(raw)         = 0xd93c0fb6b7d2e525
+    out.vd(final)          = 0xffffffffffffffffffffffff07cbdd88
+    updateType[15..0]      = 3 3 3 3 3 3 3 3 3 3 3 3 0 0 0 0
+      （00=保留运算结果 10=写 old_vd 11=写全 1，VIntFixpAlu.scala:268-281）
+
+==== 事务 #5  in.fire @ #51  out.valid @ #53 ====
+  --- S0（in.fire 上升沿 #51 之后的组合逻辑，采样于 #51） ---
+    opcode.op              = 000000 (0x00)
+    srcType(0)=vs2         = 0011 (0x3)
+    srcType(1)=vs1         = 0011 (0x3)
+    vdType                 = 0011 (0x3)
+    narrow                 = 0 (0x0)
+    maskIdx                = 000000 (0x00)
+    mask16b                = 0000000000000001 (0x0001)
+    vstart_gte_vl          = 0 (0x0)
+    64b[0].vmask           = 00000001 (0x01)
+    64b[1].vmask           = 00000000 (0x00)
+    64b[0].cin1            = 1 (0x1)
+    64b[0].cin2            = 1 (0x1)
+    64b[0].cin3            = 0 (0x0)
+    64b[0].cin4            = 0 (0x0)
+    64b[0].cin5            = 0 (0x0)
+    64b[0].cin6            = 0 (0x0)
+    64b[0].cin7            = 1 (0x1)
+  --- S1（out.valid #53，寄存器输出） ---
+    uopIdxS1               = 0x00
+    taS1                   = 0x1
+    maS1                   = 0x1
+    mask16bS1              = 0x0001
+    tailS1                 = 0x0000
+    prestartS1             = 0x0000
+    mask16bReorg           = 0x00ff
+    tailReorg              = 0x0000
+    prestartReorg          = 0x0000
+    64b[0].vd(raw)         = 0xc35a42ba5ad32588
+    64b[1].vd(raw)         = 0x5c45324dc2e98c8d
+    out.vd(final)          = 0x5c45324dc2e98c8dc35a42ba5ad32588
+    updateType[15..0]      = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+      （00=保留运算结果 10=写 old_vd 11=写全 1，VIntFixpAlu.scala:268-281）
+
+==== 事务 #6  in.fire @ #57  out.valid @ #59 ====
+  --- S0（in.fire 上升沿 #57 之后的组合逻辑，采样于 #57） ---
+    opcode.op              = 000000 (0x00)
+    srcType(0)=vs2         = 0010 (0x2)
+    srcType(1)=vs1         = 0010 (0x2)
+    vdType                 = 0010 (0x2)
+    narrow                 = 0 (0x0)
+    maskIdx                = 000000 (0x00)
+    mask16b                = 0000000000001100 (0x000c)
+    vstart_gte_vl          = 0 (0x0)
+    64b[0].vmask           = 00000000 (0x00)
+    64b[1].vmask           = 00000011 (0x03)
+    64b[0].cin1            = 0 (0x0)
+    64b[0].cin2            = 0 (0x0)
+    64b[0].cin3            = 1 (0x1)
+    64b[0].cin4            = 0 (0x0)
+    64b[0].cin5            = 0 (0x0)
+    64b[0].cin6            = 1 (0x1)
+    64b[0].cin7            = 0 (0x0)
+  --- S1（out.valid #59，寄存器输出） ---
+    uopIdxS1               = 0x00
+    taS1                   = 0x0
+    maS1                   = 0x0
+    mask16bS1              = 0x000c
+    tailS1                 = 0xfffc
+    prestartS1             = 0x0000
+    mask16bReorg           = 0xff00
+    tailReorg              = 0xff00
+    prestartReorg          = 0x0000
+    64b[0].vd(raw)         = 0x78f396cd4031aac4
+    64b[1].vd(raw)         = 0x7cc24ac837bbd075
+    out.vd(final)          = 0x35b6bca1701a09936a0f1f9006e15d56
+    updateType[15..0]      = 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
+      （00=保留运算结果 10=写 old_vd 11=写全 1，VIntFixpAlu.scala:268-281）
+
+==== 事务 #7  in.fire @ #63  out.valid @ #65 ====
+  --- S0（in.fire 上升沿 #63 之后的组合逻辑，采样于 #63） ---
+    opcode.op              = 000000 (0x00)
+    srcType(0)=vs2         = 0001 (0x1)
+    srcType(1)=vs1         = 0001 (0x1)
+    vdType                 = 0001 (0x1)
+    narrow                 = 0 (0x0)
+    maskIdx                = 000000 (0x00)
+    mask16b                = 0000000011000101 (0x00c5)
+    vstart_gte_vl          = 0 (0x0)
+    64b[0].vmask           = 00000101 (0x05)
+    64b[1].vmask           = 00001100 (0x0c)
+    64b[0].cin1            = 1 (0x1)
+    64b[0].cin2            = 0 (0x0)
+    64b[0].cin3            = 1 (0x1)
+    64b[0].cin4            = 0 (0x0)
+    64b[0].cin5            = 1 (0x1)
+    64b[0].cin6            = 0 (0x0)
+    64b[0].cin7            = 0 (0x0)
+  --- S1（out.valid #65，寄存器输出） ---
+    uopIdxS1               = 0x00
+    taS1                   = 0x1
+    maS1                   = 0x1
+    mask16bS1              = 0x00c5
+    tailS1                 = 0xfff8
+    prestartS1             = 0x0000
+    mask16bReorg           = 0xf033
+    tailReorg              = 0xffc0
+    prestartReorg          = 0x0000
+    64b[0].vd(raw)         = 0x24b074b47e64e83d
+    64b[1].vd(raw)         = 0x92ca3d9edd399b5b
+    out.vd(final)          = 0xffffffffffffffffffff74b47e64e83d
+    updateType[15..0]      = 3 3 3 3 3 3 3 3 3 3 0 0 0 0 0 0
+      （00=保留运算结果 10=写 old_vd 11=写全 1，VIntFixpAlu.scala:268-281）
+
+
+########################################################################
+# 8. fuType=5 顶层握手逐时刻时间线（#18-#38，延迟计数的依据）
+#    python3 scripts/tools/vcd_extract.py --vcd ...fuType5_seed2.vcd \
+#      --signals TOP.clock TOP.reset TOP.io_in_valid TOP.io_in_ready TOP.io_out_valid \
+#                TOP.SimTop.busy TOP.SimTop.counter TOP.SimTop.has_issued \
+#                TOP.SimTop.in_vinfo_vl TOP.SimTop.in_vinfo_ta TOP.SimTop.in_vinfo_ma \
+#      --at 18 19 20 ... 38
+########################################################################
+     time                busy             counter          has_issued         in_vinfo_ma         in_vinfo_ta         in_vinfo_vl               clock         io_in_ready         io_in_valid        io_out_valid               reset
+      #18                   0    0000000000000000                   0                   0                   0                  00                   0                   1                   0                   0                   1
+      #19                   0    0000000000000000                   0                   0                   0                  00                   1                   1                   0                   0                   1
+      #20                   0    0000000000000000                   0                   0                   0                  00                   0                   1                   1                   0                   0
+      #21                   1    0000000000000000                   0                   1                   1                  01                   1                   0                   1                   0                   0
+      #22                   1    0000000000000000                   0                   1                   1                  01                   0                   0                   0                   0                   0
+      #23                   1    0000000000000001                   1                   1                   1                  01                   1                   0                   0                   1                   0
+      #24                   1    0000000000000001                   1                   1                   1                  01                   0                   0                   1                   1                   0
+      #25                   0    0000000000000002                   1                   1                   1                  01                   1                   1                   1                   0                   0
+      #26                   0    0000000000000002                   1                   1                   1                  01                   0                   1                   1                   0                   0
+      #27                   1    0000000000000000                   0                   1                   0                  01                   1                   0                   1                   0                   0
+      #28                   1    0000000000000000                   0                   1                   0                  01                   0                   0                   0                   0                   0
+      #29                   1    0000000000000001                   1                   1                   0                  01                   1                   0                   0                   1                   0
+      #30                   1    0000000000000001                   1                   1                   0                  01                   0                   0                   1                   1                   0
+      #31                   0    0000000000000002                   1                   1                   0                  01                   1                   1                   1                   0                   0
+      #32                   0    0000000000000002                   1                   1                   0                  01                   0                   1                   1                   0                   0
+      #33                   1    0000000000000000                   0                   1                   1                  02                   1                   0                   1                   0                   0
+      #34                   1    0000000000000000                   0                   1                   1                  02                   0                   0                   0                   0                   0
+      #35                   1    0000000000000001                   1                   1                   1                  02                   1                   0                   0                   1                   0
+      #36                   1    0000000000000001                   1                   1                   1                  02                   0                   0                   1                   1                   0
+      #37                   0    0000000000000002                   1                   1                   1                  02                   1                   1                   1                   0                   0
+      #38                   0    0000000000000002                   1                   1                   1                  02                   0                   1                   1                   0                   0
+
+########################################################################
+# 9. fuType=3 顶层握手逐时刻时间线（#16-#34，证明 0 周期延迟）
+########################################################################
+     time                busy             counter          in_src_0_0         in_vinfo_vl               clock         io_in_ready         io_in_valid        io_out_valid               reset
+      #16                   0    0000000000000000    0000000000000000                  00                   0                   1                   0                   0                   1
+      #17                   0    0000000000000000    0000000000000000                  00                   1                   1                   0                   0                   1
+      #18                   0    0000000000000000    0000000000000000                  00                   0                   1                   0                   0                   1
+      #19                   0    0000000000000000    0000000000000000                  00                   1                   1                   0                   0                   1
+      #20                   0    0000000000000000    0000000000000000                  00                   0                   1                   1                   0                   0
+      #21                   1    0000000000000000    000041a710d63af1                  01                   1                   0                   1                   1                   0
+      #22                   1    0000000000000000    000041a710d63af1                  01                   0                   0                   1                   1                   0
+      #23                   0    0000000000000001    000041a710d63af1                  01                   1                   1                   1                   0                   0
+      #24                   0    0000000000000001    000041a710d63af1                  01                   0                   1                   1                   0                   0
+      #25                   1    0000000000000000    000041a710d63af1                  01                   1                   0                   1                   1                   0
+      #26                   1    0000000000000000    000041a710d63af1                  01                   0                   0                   1                   1                   0
+      #27                   0    0000000000000001    000041a710d63af1                  01                   1                   1                   1                   0                   0
+      #28                   0    0000000000000001    000041a710d63af1                  01                   0                   1                   1                   0                   0
+      #29                   1    0000000000000000    77188b056c4f3258                  11                   1                   0                   1                   1                   0
+      #30                   1    0000000000000000    77188b056c4f3258                  11                   0                   0                   1                   1                   0
+      #31                   0    0000000000000001    77188b056c4f3258                  11                   1                   1                   1                   0                   0
+      #32                   0    0000000000000001    77188b056c4f3258                  11                   0                   1                   1                   0                   0
+      #33                   1    0000000000000000    50d9680c713e154b                  0a                   1                   0                   1                   1                   0
+      #34                   1    0000000000000000    50d9680c713e154b                  0a                   0                   0                   1                   1                   0
+
+########################################################################
+# 10. VIntAdder64b 8 位加法器链的进位 cin_1..cin_7（按 SEW 断链的直接证据）
+#     层次名 TOP.SimTop.viaf.vIntFixpAlu.vIntFixpAlu64bs_0.vIntAdder64b.cin_<i>
+#     源码   yunsuan/src/main/scala/yunsuan/vector/VectorALU/VIntAdder64b.scala:88-96
+########################################################################
+--- in.fire @ #21 ---
+     time              in_sew               cin_1               cin_2               cin_3               cin_4               cin_5               cin_6               cin_7
+      #21                   2                   1                   1                   0                   0                   1                   0                   0
+--- in.fire @ #27 ---
+     time              in_sew               cin_1               cin_2               cin_3               cin_4               cin_5               cin_6               cin_7
+      #27                   2                   1                   1                   0                   0                   0                   0                   0
+--- in.fire @ #33 ---
+     time              in_sew               cin_1               cin_2               cin_3               cin_4               cin_5               cin_6               cin_7
+      #33                   1                   0                   0                   1                   0                   0                   0                   0
+--- in.fire @ #39 ---
+     time              in_sew               cin_1               cin_2               cin_3               cin_4               cin_5               cin_6               cin_7
+      #39                   3                   0                   0                   0                   0                   0                   0                   0
+--- in.fire @ #45 ---
+     time              in_sew               cin_1               cin_2               cin_3               cin_4               cin_5               cin_6               cin_7
+      #45                   1                   0                   0                   0                   0                   0                   0                   1
+--- in.fire @ #51 ---
+     time              in_sew               cin_1               cin_2               cin_3               cin_4               cin_5               cin_6               cin_7
+      #51                   3                   1                   1                   0                   0                   0                   0                   1
+--- in.fire @ #57 ---
+     time              in_sew               cin_1               cin_2               cin_3               cin_4               cin_5               cin_6               cin_7
+      #57                   2                   0                   0                   1                   0                   0                   1                   0
+--- in.fire @ #63 ---
+     time              in_sew               cin_1               cin_2               cin_3               cin_4               cin_5               cin_6               cin_7
+      #63                   1                   1                   0                   1                   0                   1                   0                   0
