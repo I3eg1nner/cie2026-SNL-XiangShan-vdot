@@ -1,5 +1,5 @@
 ==============================================================
- 2026CIE 阶段一 1.1 环境验证   2026-10-24T10:24:50Z UTC
+ 2026CIE 阶段一 1.1 环境验证   2026-10-24T10:42:36Z UTC
  团队标识 cie2026-vdot
 ==============================================================
 
@@ -36,7 +36,7 @@ $ file build/hello.elf
 build/hello.elf: ELF 64-bit LSB executable, UCB RISC-V, RVC, double-float ABI, version 1 (SYSV), dynamically linked, interpreter /lib/ld-linux-riscv64-lp64d.so.1, with debug_info, not stripped
 
 $ ls -l build/hello.bin
--rwxr-xr-x 1 root root 3520 Oct 24 10:24 build/hello.bin
+-rwxr-xr-x 1 root root 3520 Oct 24 10:42 build/hello.bin
 
 $ riscv64-linux-gnu-readelf -h build/hello.elf | grep -E "Machine|Entry"
   Machine:                           RISC-V
@@ -108,18 +108,18 @@ NEMU 进程退出码 = 0
 [1;34m[src/device/sdcard.c:137,init_sdcard] Can not find sdcard image: [0m
 [1;34m[src/monitor/image_loader.c:219,load_img] Loading image (checkpoint/bare metal app/bbl) from cmdline: build/hello.bin
 [0m
-[1;34m[src/monitor/image_loader.c:264,load_img] Read 3520 bytes from file build/hello.bin to 0x0xf8003bc00000[0m
+[1;34m[src/monitor/image_loader.c:264,load_img] Read 3520 bytes from file build/hello.bin to 0x0xf80039000000[0m
 [1;34m[src/monitor/monitor.c:63,welcome] Debug: [1;32mOFF[0m[0m
 [1;34m[src/monitor/monitor.c:68,welcome] Build time: 10:21:58, Oct 24 2026[0m
 [1;34m[/work/work/NEMU/src/isa/riscv64/include/../instr/special.h:38,execute] nemu_trap case 0[0m
 [1;34m[src/cpu/cpu-exec.c:1080,cpu_exec] nemu: [1;32mHIT GOOD TRAP[0m at pc = 0x0000000080000038[0m
 [1;34m[src/cpu/cpu-exec.c:1086,cpu_exec] trap code:0[0m
-[1;34m[src/cpu/cpu-exec.c:178,monitor_statistic] host time spent = 621 us[0m
+[1;34m[src/cpu/cpu-exec.c:178,monitor_statistic] host time spent = 1260 us[0m
 [1;34m[src/cpu/cpu-exec.c:180,monitor_statistic] total guest instructions = 8115[0m
 [1;34m[src/cpu/cpu-exec.c:186,monitor_statistic] vst count = 1, vst unit count = 1, vst unit optimized count = 0[0m
-[1;34m[src/cpu/cpu-exec.c:189,monitor_statistic] simulation frequency = 13067632 instr/s[0m
+[1;34m[src/cpu/cpu-exec.c:189,monitor_statistic] simulation frequency = 6440476 instr/s[0m
 [1;34m[src/utils/state.c:30,is_exit_status_bad] NEMU exit with good state: 2, halt ret: 0[0m
 
 ==============================================================
- 结束 2026-10-24T10:24:51Z UTC
+ 结束 2026-10-24T10:42:37Z UTC
 ==============================================================

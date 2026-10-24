@@ -43,3 +43,153 @@ total 568
 drwxr-xr-x@ 3 i3eg1nner  staff      96 10 24 18:02 .
 drwxr-xr-x@ 4 i3eg1nner  staff     128 10 24 18:02 ..
 -rw-r--r--@ 1 i3eg1nner  staff  286950 10 24 18:02 VIMac.sv
+
+==============================================================
+[18:41:28] 附加尝试：XiangShan 全仓 mill 精化（mill 0.12.3，由根 .mill-version 指定）
+前置：已 git submodule update --init --recursive ChiselAIA ChiselIOPMP coupledL2 fudian huancun openLLC
+==============================================================
+$ mill -i xiangshan.compile
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0 62.4M    0  5467    0     0   5066      0  3:35:20  0:00:01  3:35:19  5062  0 62.4M    0  256k    0     0   121k      0  0:08:45  0:00:02  0:08:43  121k  0 62.4M    0  591k    0     0   191k      0  0:05:33  0:00:03  0:05:30  191k  1 62.4M    1  959k    0     0   232k      0  0:04:34  0:00:04  0:04:30  232k  1 62.4M    1 1263k    0     0   246k      0  0:04:18  0:00:05  0:04:13  290k  2 62.4M    2 1583k    0     0   255k      0  0:04:10  0:00:06  0:04:04  307k  2 62.4M    2 1907k    0     0   255k      0  0:04:10  0:00:07  0:04:03  308k  3 62.4M    3 2131k    0     0   256k      0  0:04:09  0:00:08  0:04:01  294k  3 62.4M    3 2387k    0     0   261k      0  0:04:04  0:00:09  0:03:55  285k  4 62.4M    4 2787k    0     0   276k      0  0:03:51  0:00:10  0:03:41  306k  4 62.4M    4 3155k    0     0   283k      0  0:03:45  0:00:11  0:03:34  318k  5 62.4M    5 3571k    0     0   294k      0  0:03:37  0:00:12  0:03:25  356k  6 62.4M    6 3843k    0     0   289k      0  0:03:40  0:00:13  0:03:27  345k  6 62.4M    6 4131k    0     0   292k      0  0:03:38  0:00:14  0:03:24  347k  7 62.4M    7 4510k    0     0   298k      0  0:03:33  0:00:15  0:03:18  344k  7 62.4M    7 4959k    0     0   307k      0  0:03:27  0:00:16  0:03:11  361k  8 62.4M    8 5439k    0     0   317k      0  0:03:21  0:00:17  0:03:04  375k  9 62.4M    9 5923k    0     0   325k      0  0:03:16  0:00:18  0:02:58  423k  9 62.4M    9 6207k    0     0   325k      0  0:03:16  0:00:19  0:02:57  420k 10 62.4M   10 6707k    0     0   334k      0  0:03:11  0:00:20  0:02:51  440k 11 62.4M   11 7299k    0     0   345k      0  0:03:05  0:00:21  0:02:44  466k 12 62.4M   12 7715k    0     0   344k      0  0:03:05  0:00:22  0:02:43  431k 12 62.4M   12 8115k    0     0   349k      0  0:03:03  0:00:23  0:02:40  432k 13 62.4M   13 8339k    0     0   345k      0  0:03:04  0:00:24  0:02:40  422k 13 62.4M   13 8639k    0     0   344k      0  0:03:05  0:00:25  0:02:40  385k 13 62.4M   13 8943k    0     0   342k      0  0:03:06  0:00:26  0:02:40  333k 14 62.4M   14 9311k    0     0   343k      0  0:03:05  0:00:27  0:02:38  339k 15 62.4M   15 9647k    0     0   342k      0  0:03:06  0:00:28  0:02:38  309k 15 62.4M   15 9855k    0     0   337k      0  0:03:09  0:00:29  0:02:40  298k 15 62.4M   15  9.9M    0     0   338k      0  0:03:08  0:00:30  0:02:38  308k 16 62.4M   16 10.2M    0     0   338k      0  0:03:08  0:00:31  0:02:37  317k 16 62.4M   16 10.5M    0     0   336k      0  0:03:09  0:00:32  0:02:37  299k 17 62.4M   17 10.8M    0     0   336k      0  0:03:10  0:00:33  0:02:37  300k 17 62.4M   17 11.1M    0     0   334k      0  0:03:10  0:00:34  0:02:36  318k 18 62.4M   18 11.4M    0     0   334k      0  0:03:11  0:00:35  0:02:36  309k 18 62.4M   18 11.7M    0     0   330k      0  0:03:13  0:00:36  0:02:37  283k 19 62.4M   19 12.0M    0     0   331k      0  0:03:12  0:00:37  0:02:35  299k 19 62.4M   19 12.3M    0     0   332k      0  0:03:12  0:00:38  0:02:34  306k 20 62.4M   20 12.7M    0     0   331k      0  0:03:12  0:00:39  0:02:33  312k 20 62.4M   20 12.9M    0     0   331k      0  0:03:12  0:00:40  0:02:32  310k 21 62.4M   21 13.3M    0     0   332k      0  0:03:12  0:00:41  0:02:31  346k 21 62.4M   21 13.6M    0     0   331k      0  0:03:12  0:00:42  0:02:30  327k 22 62.4M   22 14.0M    0     0   332k      0  0:03:12  0:00:43  0:02:29  337k 22 62.4M   22 14.2M    0     0   331k      0  0:03:12  0:00:44  0:02:28  329k 23 62.4M   23 14.5M    0     0   331k      0  0:03:13  0:00:45  0:02:28  330k 23 62.4M   23 14.7M    0     0   328k      0  0:03:14  0:00:46  0:02:28  289k 24 62.4M   24 15.0M    0     0   326k      0  0:03:15  0:00:47  0:02:28  286k 24 62.4M   24 15.3M    0     0   324k      0  0:03:16  0:00:48  0:02:28  258k 24 62.4M   24 15.5M    0     0   324k      0  0:03:17  0:00:49  0:02:28  256k 25 62.4M   25 15.8M    0     0   323k      0  0:03:17  0:00:50  0:02:27  255k 25 62.4M   25 16.0M    0     0   322k      0  0:03:18  0:00:51  0:02:27  269k 26 62.4M   26 16.3M    0     0   320k      0  0:03:19  0:00:52  0:02:27  266k 26 62.4M   26 16.5M    0     0   319k      0  0:03:19  0:00:53  0:02:26  268k 27 62.4M   27 16.8M    0     0   318k      0  0:03:20  0:00:54  0:02:26  270k 27 62.4M   27 17.1M    0     0   319k      0  0:03:20  0:00:55  0:02:25  276k 27 62.4M   27 17.4M    0     0   318k      0  0:03:20  0:00:56  0:02:24  275k 28 62.4M   28 17.7M    0     0   317k      0  0:03:21  0:00:57  0:02:24  279k 28 62.4M   28 17.9M    0     0   316k      0  0:03:21  0:00:58  0:02:23  286k 29 62.4M   29 18.2M    0     0   316k      0  0:03:21  0:00:59  0:02:22  291k 29 62.4M   29 18.5M    0     0   315k      0  0:03:22  0:01:00  0:02:22  274k 30 62.4M   30 18.9M    0     0   316k      0  0:03:21  0:01:01  0:02:20  300k 30 62.4M   30 19.2M    0     0   317k      0  0:03:21  0:01:02  0:02:19  319k 31 62.4M   31 19.6M    0     0   318k      0  0:03:20  0:01:03  0:02:17  332k 32 62.4M   32 20.0M    0     0   320k      0  0:03:19  0:01:04  0:02:15  371k 32 62.4M   32 20.5M    0     0   321k      0  0:03:18  0:01:05  0:02:13  391k 33 62.4M   33 20.8M    0     0   323k      0  0:03:17  0:01:06  0:02:11  404k 34 62.4M   34 21.2M    0     0   324k      0  0:03:17  0:01:07  0:02:10  413k 34 62.4M   34 21.6M    0     0   325k      0  0:03:16  0:01:08  0:02:08  407k 35 62.4M   35 21.9M    0     0   325k      0  0:03:16  0:01:09  0:02:07  379k 35 62.4M   35 22.3M    0     0   326k      0  0:03:15  0:01:10  0:02:05  401k 36 62.4M   36 22.7M    0     0   327k      0  0:03:15  0:01:11  0:02:04  385k 37 62.4M   37 23.1M    0     0   329k      0  0:03:14  0:01:12  0:02:02  390k 37 62.4M   37 23.4M    0     0   327k      0  0:03:15  0:01:13  0:02:02  365k 38 62.4M   38 23.8M    0     0   328k      0  0:03:14  0:01:14  0:02:00  375k 38 62.4M   38 24.1M    0     0   329k      0  0:03:14  0:01:15  0:01:59  365k 39 62.4M   39 24.5M    0     0   330k      0  0:03:13  0:01:16  0:01:57  375k 40 62.4M   40 25.0M    0     0   332k      0  0:03:12  0:01:17  0:01:55  375k 40 62.4M   40 25.4M    0     0   333k      0  0:03:11  0:01:18  0:01:53  412k 41 62.4M   41 25.8M    0     0   334k      0  0:03:11  0:01:19  0:01:52  418k 42 62.4M   42 26.2M    0     0   335k      0  0:03:10  0:01:20  0:01:50  417k 42 62.4M   42 26.4M    0     0   334k      0  0:03:11  0:01:21  0:01:50  389k 43 62.4M   43 26.9M    0     0   335k      0  0:03:10  0:01:22  0:01:48  394k 43 62.4M   43 27.3M    0     0   337k      0  0:03:09  0:01:23  0:01:46  399k 44 62.4M   44 27.8M    0     0   339k      0  0:03:08  0:01:24  0:01:44  416k 45 62.4M   45 28.1M    0     0   338k      0  0:03:08  0:01:25  0:01:43  392k 45 62.4M   45 28.6M    0     0   339k      0  0:03:08  0:01:26  0:01:42  411k 46 62.4M   46 28.8M    0     0   339k      0  0:03:08  0:01:27  0:01:41  400k 47 62.4M   47 29.4M    0     0   341k      0  0:03:06  0:01:28  0:01:38  421k 48 62.4M   48 30.0M    0     0   344k      0  0:03:05  0:01:29  0:01:36  430k 48 62.4M   48 30.4M    0     0   345k      0  0:03:04  0:01:30  0:01:34  464k 49 62.4M   49 30.8M    0     0   346k      0  0:03:04  0:01:31  0:01:33  486k 50 62.4M   50 31.2M    0     0   347k      0  0:03:04  0:01:32  0:01:32  479k 50 62.4M   50 31.6M    0     0   348k      0  0:03:03  0:01:33  0:01:30  457k 51 62.4M   51 32.0M    0     0   348k      0  0:03:03  0:01:34  0:01:29  423k 51 62.4M   51 32.4M    0     0   349k      0  0:03:03  0:01:35  0:01:28  417k 52 62.4M   52 32.9M    0     0   351k      0  0:03:01  0:01:36  0:01:25  435k 53 62.4M   53 33.4M    0     0   352k      0  0:03:01  0:01:37  0:01:24  445k 54 62.4M   54 33.9M    0     0   354k      0  0:03:00  0:01:38  0:01:22  470k 55 62.4M   55 34.4M    0     0   355k      0  0:02:59  0:01:39  0:01:20  479k 55 62.4M   55 34.8M    0     0   356k      0  0:02:59  0:01:40  0:01:19  489k 56 62.4M   56 35.2M    0     0   357k      0  0:02:58  0:01:41  0:01:17  479k 57 62.4M   57 35.8M    0     0   359k      0  0:02:57  0:01:42  0:01:15  495k 58 62.4M   58 36.2M    0     0   359k      0  0:02:57  0:01:43  0:01:14  459k 58 62.4M   58 36.7M    0     0   360k      0  0:02:57  0:01:44  0:01:13  477k 59 62.4M   59 37.2M    0     0   362k      0  0:02:56  0:01:45  0:01:11  484k 60 62.4M   60 37.8M    0     0   364k      0  0:02:55  0:01:46  0:01:09  506k 61 62.4M   61 38.3M    0     0   366k      0  0:02:54  0:01:47  0:01:07  514k 62 62.4M   62 38.8M    0     0   367k      0  0:02:53  0:01:48  0:01:05  533k 62 62.4M   62 38.8M    0     0   364k      0  0:02:55  0:01:49  0:01:06  428k 62 62.4M   62 39.0M    0     0   363k      0  0:02:55  0:01:50  0:01:05  386k 63 62.4M   63 39.4M    0     0   363k      0  0:02:55  0:01:51  0:01:04  347k 63 62.4M   63 39.9M    0     0   364k      0  0:02:55  0:01:52  0:01:03  330k 64 62.4M   64 40.4M    0     0   366k      0  0:02:54  0:01:53  0:01:01  335k 65 62.4M   65 41.0M    0     0   367k      0  0:02:53  0:01:54  0:00:59  444k 66 62.4M   66 41.4M    0     0   368k      0  0:02:53  0:01:55  0:00:58  487k 67 62.4M   67 42.1M    0     0   371k      0  0:02:52  0:01:56  0:00:56  542k 68 62.4M   68 42.7M    0     0   373k      0  0:02:51  0:01:57  0:00:54  572k 69 62.4M   69 43.3M    0     0   376k      0  0:02:49  0:01:58  0:00:51  604k 70 62.4M   70 44.0M    0     0   378k      0  0:02:48  0:01:59  0:00:49  632k 71 62.4M   71 44.5M    0     0   379k      0  0:02:48  0:02:00  0:00:48  618k 72 62.4M   72 45.2M    0     0   382k      0  0:02:47  0:02:01  0:00:46  620k 73 62.4M   73 45.7M    0     0   383k      0  0:02:46  0:02:02  0:00:44  620k 74 62.4M   74 46.4M    0     0   386k      0  0:02:45  0:02:03  0:00:42  620k 75 62.4M   75 46.9M    0     0   387k      0  0:02:44  0:02:04  0:00:40  605k 76 62.4M   76 47.4M    0     0   388k      0  0:02:44  0:02:05  0:00:39  614k 77 62.4M   77 48.0M    0     0   390k      0  0:02:43  0:02:06  0:00:37  586k 77 62.4M   77 48.6M    0     0   391k      0  0:02:43  0:02:07  0:00:36  586k 78 62.4M   78 49.1M    0     0   392k      0  0:02:42  0:02:08  0:00:34  555k 79 62.4M   79 49.6M    0     0   393k      0  0:02:42  0:02:09  0:00:33  539k 80 62.4M   80 50.2M    0     0   395k      0  0:02:41  0:02:10  0:00:31  561k 81 62.4M   81 50.7M    0     0   396k      0  0:02:41  0:02:11  0:00:30  551k 82 62.4M   82 51.1M    0     0   396k      0  0:02:41  0:02:12  0:00:29  521k 82 62.4M   82 51.7M    0     0   398k      0  0:02:40  0:02:13  0:00:27  544k 84 62.4M   84 52.4M    0     0   400k      0  0:02:39  0:02:14  0:00:25  564k 85 62.4M   85 53.0M    0     0   402k      0  0:02:38  0:02:15  0:00:23  583k 85 62.4M   85 53.6M    0     0   403k      0  0:02:38  0:02:16  0:00:22  595k 87 62.4M   87 54.3M    0     0   405k      0  0:02:37  0:02:17  0:00:20  640k 87 62.4M   87 54.9M    0     0   407k      0  0:02:36  0:02:18  0:00:18  641k 89 62.4M   89 55.5M    0     0   408k      0  0:02:36  0:02:19  0:00:17  654k 90 62.4M   90 56.2M    0     0   410k      0  0:02:35  0:02:20  0:00:15  637k 91 62.4M   91 56.8M    0     0   412k      0  0:02:34  0:02:21  0:00:13  656k 91 62.4M   91 57.4M    0     0   413k      0  0:02:34  0:02:22  0:00:12  642k 92 62.4M   92 57.9M    0     0   414k      0  0:02:34  0:02:23  0:00:11  619k 93 62.4M   93 58.6M    0     0   416k      0  0:02:33  0:02:24  0:00:09  629k 94 62.4M   94 59.2M    0     0   417k      0  0:02:32  0:02:25  0:00:07  615k 95 62.4M   95 59.6M    0     0   418k      0  0:02:32  0:02:26  0:00:06  579k 96 62.4M   96 60.3M    0     0   420k      0  0:02:32  0:02:27  0:00:05  608k 97 62.4M   97 61.0M    0     0   421k      0  0:02:31  0:02:28  0:00:03  631k 98 62.4M   98 61.7M    0     0   424k      0  0:02:30  0:02:29  0:00:01  646k100 62.4M  100 62.4M    0     0   426k      0  0:02:29  0:02:29 --:--:--  687k
+============================== xiangshan.compile ==============================
+===============================================================================
+[60/66] ============================== xiangshan.compile ============================== 60s
+[build.sc-15] mill.scalalib.ZincWorkerModule.classpath 59s
+===========================================================================================
+[66/66] ============================== xiangshan.compile ============================== 61s
+===========================================================================================
+1 tasks failed
+generateScriptSources java.nio.file.NoSuchFileException /Users/i3eg1nner/code/cie/work/XiangShan-kmhv2/rocket-chip/cde/common.sc
+java.nio.file.NoSuchFileException /Users/i3eg1nner/code/cie/work/XiangShan-kmhv2/rocket-chip/hardfloat/common.sc
+java.nio.file.NoSuchFileException /Users/i3eg1nner/code/cie/work/XiangShan-kmhv2/rocket-chip/cde/common.sc
+java.nio.file.NoSuchFileException /Users/i3eg1nner/code/cie/work/XiangShan-kmhv2/rocket-chip/hardfloat/common.sc
+exit=1
+
+[18:46:27] 补齐 rocket-chip 的嵌套 submodule（cde / hardfloat / torture）后重试
+$ mill -i xiangshan.compile
+============================== xiangshan.compile ==============================
+===============================================================================
+[build.sc-62/66] compile
+[build.sc-62] [info] compiling 7 Scala sources to /Users/i3eg1nner/code/cie/work/XiangShan-kmhv2/out/mill-build/compile.dest/classes ...
+[build.sc-62] [info] done compiling
+[610/653] macros.compile
+[610] [info] compiling 1 Scala source to /Users/i3eg1nner/code/cie/work/XiangShan-kmhv2/out/macros/compile.dest/classes ...
+[611/653] rocketchip.macros.compile
+[611] [info] compiling 1 Scala source to /Users/i3eg1nner/code/cie/work/XiangShan-kmhv2/out/rocketchip/macros/compile.dest/classes ...
+[610] [info] done compiling
+[611] [info] done compiling
+[612/653] rocketchip.cde.compile
+[612] [info] compiling 1 Scala source to /Users/i3eg1nner/code/cie/work/XiangShan-kmhv2/out/rocketchip/cde/compile.dest/classes ...
+[612] [info] done compiling
+[613/653] fudian.compile
+[613] [info] compiling 15 Scala sources to /Users/i3eg1nner/code/cie/work/XiangShan-kmhv2/out/fudian/compile.dest/classes ...
+[613] [warn] /Users/i3eg1nner/code/cie/work/XiangShan-kmhv2/fudian/src/main/scala/fudian/FPToInt.scala:55:12: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+[613] [warn]   io.to_s2.sel_lpath
+[613] [warn]            ^
+[613] [warn] 5 deprecations (since 2.13.0); re-run with -deprecation for details
+[613] [warn] two warnings found
+[613] [info] done compiling
+[615/653] yunsuan.compile
+[615] [info] compiling 80 Scala sources to /Users/i3eg1nner/code/cie/work/XiangShan-kmhv2/out/yunsuan/compile.dest/classes ...
+[615/653] ============================== xiangshan.compile ============================== 60s
+[590] rocketchip.resolvedIvyDeps 36s Downloading [9/9] artifacts (~2291057/3497046 bytes)
+[591] openNCB.resolvedIvyDeps 36s Downloading [8/8] artifacts (~26346/58693 bytes)
+[595] utility.resolvedIvyDeps 36s Downloading [6/6] artifacts (~963127/2598136 bytes)
+[597] chiselIOPMP.resolvedIvyDeps 36s Downloading [1/1] artifacts (~278528/1517276 bytes)
+[598] chiselAIA.resolvedIvyDeps 36s Downloading [6/6] artifacts (~4697/32695 bytes)
+[600] huancun.resolvedIvyDeps 36s Downloading [1/1] artifacts (~245760/1517276 bytes)
+... and 4 more threads
+=============================================================================================
+[615] [info] done compiling
+[616/653] difftest.compile
+[616] [info] compiling 36 Scala sources to /Users/i3eg1nner/code/cie/work/XiangShan-kmhv2/out/difftest/compile.dest/classes ...
+[616] [warn] 1 deprecation (since 2.13.0)
+[616] [warn] 2 deprecations (since Chisel 6.0)
+[616] [warn] 3 deprecations in total; re-run with -deprecation for details
+[616] [warn] three warnings found
+[616] [info] done compiling
+[617/653] rocketchip.hardfloat.compile
+[617] [info] compiling 20 Scala sources to /Users/i3eg1nner/code/cie/work/XiangShan-kmhv2/out/rocketchip/hardfloat/compile.dest/classes ...
+[617] [info] done compiling
+[621/653] rocketchip.compile
+[621] [info] compiling 315 Scala sources to /Users/i3eg1nner/code/cie/work/XiangShan-kmhv2/out/rocketchip/compile.dest/classes ...
+[621] [warn] 3 deprecations
+[621] [warn] 66 deprecations (since 2.13.0)
+[621] [warn] 1 deprecation (since 2.13.7)
+[621] [warn] 1 deprecation (since 6.6.0)
+[621] [warn] 1 deprecation (since 9)
+[621] [warn] 52 deprecations (since CDE 0.1)
+[621] [warn] 1 deprecation (since Chisel 6.7.0)
+[621] [warn] 1 deprecation (since rocket-chip 1.2)
+[621] [warn] 126 deprecations in total; re-run with -deprecation for details
+[621] [warn] 19 feature warnings; re-run with -feature for details
+[621] [warn] 10 warnings found
+[621] [info] done compiling
+[627/653] openNCB.compile
+[627] [info] compiling 89 Scala sources to /Users/i3eg1nner/code/cie/work/XiangShan-kmhv2/out/openNCB/compile.dest/classes ...
+[627/653] ============================== xiangshan.compile ============================== 120s
+[595] utility.resolvedIvyDeps 96s Downloading [6/6] artifacts (~1261815/2598136 bytes)
+[597] chiselIOPMP.resolvedIvyDeps 96s Downloading [1/1] artifacts (~1134254/1517276 bytes)
+[600] huancun.resolvedIvyDeps 96s Downloading [1/1] artifacts (~1347255/1517276 bytes)
+[602] coupledL2.resolvedIvyDeps 94s Downloading [1/1] artifacts (~1490944/1517276 bytes)
+[606] openLLC.resolvedIvyDeps 94s Downloading [3/3] artifacts (~1207206/2238086 bytes)
+[614] xiangshan.resolvedIvyDeps 92s Downloading [4/4] artifacts (~3954582/5453973 bytes)
+[627] openNCB.compile 1s
+==============================================================================================
+[627] [info] done compiling
+[629/653] utility.compile
+[629] [info] compiling 61 Scala sources to /Users/i3eg1nner/code/cie/work/XiangShan-kmhv2/out/utility/compile.dest/classes ...
+[629] [warn] /Users/i3eg1nner/code/cie/work/XiangShan-kmhv2/utility/src/main/scala/utility/TLUtils/TLLogger.scala:91:5: match may not be exhaustive.
+[629] [warn] It would fail on the following input: TLBundleE()
+[629] [warn]     chn match {
+[629] [warn]     ^
+[629] [warn] 21 deprecations (since 2.13.0)
+[629] [warn] 1 deprecation (since 2.13.3)
+[629] [warn] 22 deprecations in total; re-run with -deprecation for details
+[629] [warn] 2 feature warnings; re-run with -feature for details
+[629] [warn] 5 warnings found
+[629] [info] done compiling
+[640/653] chiselAIA.compile
+[640] [info] compiling 6 Scala sources to /Users/i3eg1nner/code/cie/work/XiangShan-kmhv2/out/chiselAIA/compile.dest/classes ...
+[641/653] huancun.compile
+[641] [info] compiling 43 Scala sources to /Users/i3eg1nner/code/cie/work/XiangShan-kmhv2/out/huancun/compile.dest/classes ...
+[639/653] chiselIOPMP.compile
+[639] [info] compiling 3 Scala sources to /Users/i3eg1nner/code/cie/work/XiangShan-kmhv2/out/chiselIOPMP/compile.dest/classes ...
+[641] [warn] /Users/i3eg1nner/code/cie/work/XiangShan-kmhv2/huancun/src/main/scala/huancun/Slice.scala:444:44: non-variable type argument huancun.noninclusive.MSHR in type pattern Seq[huancun.noninclusive.MSHR] (the underlying of Seq[huancun.noninclusive.MSHR]) is unchecked since it is eliminated by erasure
+[641] [warn]     case (dir: noninclusive.Directory, ms: Seq[noninclusive.MSHR]) =>
+[641] [warn]                                            ^
+[641] [warn] /Users/i3eg1nner/code/cie/work/XiangShan-kmhv2/huancun/src/main/scala/huancun/Slice.scala:459:38: non-variable type argument huancun.inclusive.MSHR in type pattern Seq[huancun.inclusive.MSHR] (the underlying of Seq[huancun.inclusive.MSHR]) is unchecked since it is eliminated by erasure
+[641] [warn]     case (_: inclusive.Directory, _: Seq[inclusive.MSHR]) =>
+[641] [warn]                                      ^
+[639] [info] done compiling
+[640] [info] done compiling
+[641] [warn] two warnings found
+[641] [info] done compiling
+[645/653] coupledL2.compile
+[645] [info] compiling 60 Scala sources to /Users/i3eg1nner/code/cie/work/XiangShan-kmhv2/out/coupledL2/compile.dest/classes ...
+[645] [warn] /Users/i3eg1nner/code/cie/work/XiangShan-kmhv2/coupledL2/src/main/scala/coupledL2/tl2chi/TL2CHICoupledL2.scala:133:20: non-variable type argument coupledL2.tl2chi.Slice in type pattern Seq[coupledL2.tl2chi.Slice] (the underlying of Seq[coupledL2.tl2chi.Slice]) is unchecked since it is eliminated by erasure
+[645] [warn]       case slices: Seq[Slice] =>
+[645] [warn]                    ^
+[645] [info] /Users/i3eg1nner/code/cie/work/XiangShan-kmhv2/coupledL2/src/main/scala/coupledL2/tl2tl/Bundle.scala:1:1: 
+[645] [info] Found names but no class, trait or object is defined in the compilation unit.
+[645] [info] The incremental compiler cannot record the dependency information in such case.
+[645] [info] Some errors like unused import referring to a non-existent class might not be reported.
+[645] [info]     
+[645] [info] /** *************************************************************************************
+[645] [info] ^
+[645] [warn] 1 deprecation (since 2.13.0); re-run with -deprecation for details
+[645] [warn] two warnings found
+[645] [info] done compiling
+[649/653] openLLC.compile
+[649] [info] compiling 27 Scala sources to /Users/i3eg1nner/code/cie/work/XiangShan-kmhv2/out/openLLC/compile.dest/classes ...
+[649] [info] done compiling
+[653/653] xiangshan.compile
+[653] [info] compiling 382 Scala sources to /Users/i3eg1nner/code/cie/work/XiangShan-kmhv2/out/xiangshan/compile.dest/classes ...
+[653/653] ============================== xiangshan.compile ============================== 180s
+[653] xiangshan.compile 29s
+==============================================================================================
+[653] [info] done compiling
+[653/653] ============================== xiangshan.compile ============================== 198s
+==============================================================================================
+exit=0

@@ -1,0 +1,25 @@
+=== 运行时间 2026-10-24 18:39:06 CST ===
+
+--- (a) 上游 CI 的随机混合测试： ./build/emu -O 10000 ---
+Emu compiled at Oct 24 2026, 18:38:16
+Set Test Type Res: fuType:7 fuOpType:225 (pick_fuType=0 pick_fuOpType=0)
+EMU EXCEEDED LIMIT
+HAS Executed Cycles:57063 Operations:10000
+EMU has executed 572 ms.
+exit=0
+
+--- (b) 定向 vadd：fuType=3 (VIntegerALU -> VectorIntAdder), fuOpType=0 (VADD) ---
+Emu compiled at Oct 24 2026, 18:38:16
+Set Test Type Res: fuType:3 fuOpType:0 (pick_fuType=1 pick_fuOpType=1)
+EMU EXCEEDED LIMIT
+HAS Executed Cycles:20019 Operations:10000
+EMU has executed 188 ms.
+exit=0
+
+--- (c) 定向 vadd.vv：fuType=5 (VIntegerALUV2 -> VIAluFWrapper -> VIntFixpAlu), fuOpType=0 (VADD_VV) ---
+Emu compiled at Oct 24 2026, 18:38:16
+Set Test Type Res: fuType:5 fuOpType:0 (pick_fuType=1 pick_fuOpType=1)
+EMU EXCEEDED LIMIT
+HAS Executed Cycles:30019 Operations:10000
+EMU has executed 282 ms.
+exit=0
