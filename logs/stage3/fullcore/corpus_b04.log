@@ -1,0 +1,55 @@
+$ /data/my/cie2026-vdot-xiangshan/work/XiangShan-fullcore/build/emu -i /data/my/cie2026-vdot-xiangshan/work/build/fullcore/b04/vdot_test.bin --diff /data/my/cie2026-vdot-xiangshan/work/NEMU-fullcore/ref/riscv64-nemu-interpreter-so 
+start: 2026-10-25T07:27:04Z
+（下面先是 emu 的 stdout，再是 stderr；stderr 中 emu 退出时打印的 [PERF ] 性能计数器行已滤掉）
+======================================================================
+ cie2026-vdot / P5  NEMU vdot instruction-family conformance test
+----------------------------------------------------------------------
+   NEMU defconfig   : XiangShan MinimalConfig emu (DUT) / riscv64-xs-kmhv2-ref_defconfig (REF)
+   NEMU commit      : 90908390002f
+   NEMU VLEN macro  : 128 bit
+   csrr vlenb       : 16 byte -> VLEN = 128 bit (MATCH)
+   corpus           : 14 suites, 5127 cases, 451648 bytes
+   instr encodings  : vd=v3 vs2=v2 vs1=v1 (OPIVV, funct3=000)
+       vdot.vv    vm=1 0xe62081d7   vm=0 0xe42081d7
+       vdotacc.vv vm=1 0xea2081d7   vm=0 0xe82081d7
+       vdot4a.vv  vm=1 0xee2081d7   vm=0 0xec2081d7
+======================================================================
+
+
+---------------------------------------------------------------------
+suite                      cases    pass    fail   must-trap
+---------------------------------------------------------------------
+positive                        0       0       0           0
+negative                        0       0       0           0
+boundary                        0       0       0           0
+vdotacc_positive                0       0       0           0
+vdotacc_negative                0       0       0           0
+vdotacc_boundary                0       0       0           0
+vdot4a_positive                 0       0       0           0
+vdot4a_negative                 0       0       0           0
+vdot4a_boundary                 0       0       0           0
+vstart_relaxed(strict)          0       0       0           0
+random                          0       0       0           0
+vdotacc_random                195     195       0          27
+vdot4a_random                4932    4932       0         747
+vstart_range(extra)             0       0       0           0
+---------------------------------------------------------------------
+TOTAL cases=5127 pass=5127 fail=0
+  must-trap cases (status != OK) = 774 , trapped with mcause=2 = 774
+  missing-trap=0  unexpected-trap=0  wrong-mcause=0  value-mismatch=0  vl-readback-mismatch=0
+RESULT: PASS
+---------------------------------------------------------------------
+emu compiled at Oct 25 2026, 06:55:56
+%Warning: System has stack size 8192 kb which may be too small; suggest 'ulimit -s 35430' or larger
+Using simulated 1048576B flash
+Core  0's Commit SHA is: a4eeaabb4c, dirty: 1
+Using simulated 8386560MB RAM
+The image is /data/my/cie2026-vdot-xiangshan/work/build/fullcore/b04/vdot_test.bin
+The reference model is /data/my/cie2026-vdot-xiangshan/work/NEMU-fullcore/ref/riscv64-nemu-interpreter-so
+The first instruction of core 0 has commited. Difftest enabled. 
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000042
+[0m[35mCore-0 instrCnt = 1028057, cycleCnt = 1497450, IPC = 0.686538
+[0m[34mSeed=0 Guest cycle spent: 1497456 (this will be different from cycleCnt if emu loads a snapshot)
+[0m[34mHost time spent: 591330ms
+[0m------------------------------ emu stderr ------------------------------
+end: 2026-10-25T07:36:55Z  wall=591s  emu-exit=0

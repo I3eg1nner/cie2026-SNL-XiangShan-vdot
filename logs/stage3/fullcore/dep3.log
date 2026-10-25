@@ -1,0 +1,36 @@
+$ /data/my/cie2026-vdot-xiangshan/work/XiangShan-fullcore/build/emu -i /data/my/cie2026-vdot-xiangshan/work/build/fullcore/dep3/vdot_dep.bin --diff /data/my/cie2026-vdot-xiangshan/work/NEMU-fullcore/ref/riscv64-nemu-interpreter-so 
+start: 2026-10-25T07:51:43Z
+（下面先是 emu 的 stdout，再是 stderr；stderr 中 emu 退出时打印的 [PERF ] 性能计数器行已滤掉）
+======================================================================
+ cie2026-vdot / T1  full-core back-to-back dependency test
+   kernels=10 iters/kernel=200 seed=0x0123456789abcdef
+======================================================================
+----------------------------------------------------------------------
+kernel                                   runs(fast+slow)   fail
+K1  alu->vdot(vs1,vs2)->vmv.x.s   200x2   0
+K2  vdot->vdotacc chain on vd   200x2   0
+K3  vdot->vadd/vdot4a/vredsum e32   200x2   0
+K4  vmul->vdot4a->vmslt->vdot4a.m   200x2   0
+K5  vmslt->vdot.m->vmsne->vdotacc.m   200x2   0
+K6  vle->vdot->vse->vle->vdotacc   200x2   0
+K7  WAR/WAW rename around vdot   200x2   0
+K8  illegal vdot in pipeline (trap)   200x2   0
+K9  8 indep vdot + 2 merge chains   200x2   0
+K10 vdotacc loop + branch flush   200x2   0
+----------------------------------------------------------------------
+DEP TOTAL runs=2000x2 fail=0 k8-trap-count-bad=0
+RESULT: PASS
+emu compiled at Oct 25 2026, 06:55:56
+%Warning: System has stack size 8192 kb which may be too small; suggest 'ulimit -s 35430' or larger
+Using simulated 1048576B flash
+Core  0's Commit SHA is: a4eeaabb4c, dirty: 1
+Using simulated 8386560MB RAM
+The image is /data/my/cie2026-vdot-xiangshan/work/build/fullcore/dep3/vdot_dep.bin
+The reference model is /data/my/cie2026-vdot-xiangshan/work/NEMU-fullcore/ref/riscv64-nemu-interpreter-so
+The first instruction of core 0 has commited. Difftest enabled. 
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000042
+[0m[35mCore-0 instrCnt = 4580097, cycleCnt = 4536448, IPC = 1.009622
+[0m[34mSeed=0 Guest cycle spent: 4536454 (this will be different from cycleCnt if emu loads a snapshot)
+[0m[34mHost time spent: 1166597ms
+[0m------------------------------ emu stderr ------------------------------
+end: 2026-10-25T08:11:10Z  wall=1167s  emu-exit=0

@@ -1,0 +1,4 @@
+181c181
+<   private val dotVd = vdotTree.io.dotVd
+---
+>   private val dotVd = vdotTree.io.dotVd ^ 1.U  // FAULT-INJECTION T1-F1: flip bit0 of the vdot result

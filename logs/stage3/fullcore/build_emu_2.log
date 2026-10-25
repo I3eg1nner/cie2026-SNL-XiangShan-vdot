@@ -1,0 +1,61 @@
+Sun, 25 Oct 2026 05:29:47 +0000
+第二次：上一轮 g++ 不认识 clang 专有选项 -fno-slp-vectorize（difftest/verilator.mk:76），改用 GCC 等价选项
+cmd: make emu CONFIG=MinimalConfig EMU_THREADS=16 EMU_TRACE=1 JVM_XMX=200G WITH_CHISELDB=0 WITH_CONSTANTIN=0 OPT_FAST='-O3 -fno-tree-slp-vectorize' -j128
+make -C ./difftest emu-mk NUM_CORES=1 RTL_SUFFIX=sv RTL_INCLUDE=""
+make[1]: Entering directory '/data/my/cie2026-vdot-xiangshan/work/XiangShan-fullcore/difftest'
+readlink: missing operand
+Try 'readlink --help' for more information.
+make[1]: Nothing to be done for 'emu-mk'.
+make[1]: Leaving directory '/data/my/cie2026-vdot-xiangshan/work/XiangShan-fullcore/difftest'
+make -C ./difftest emu NUM_CORES=1 RTL_SUFFIX=sv
+make[1]: Entering directory '/data/my/cie2026-vdot-xiangshan/work/XiangShan-fullcore/difftest'
+readlink: missing operand
+Try 'readlink --help' for more information.
+make[2]: Entering directory '/data/my/cie2026-vdot-xiangshan/work/XiangShan-fullcore/difftest'
+readlink: missing operand
+Try 'readlink --help' for more information.
+Sun, 25 Oct 2026 05:29:48 +0000
+make[3]: Entering directory '/data/my/cie2026-vdot-xiangshan/work/XiangShan-fullcore/difftest'
+readlink: missing operand
+Try 'readlink --help' for more information.
+/usr/bin/time -av -o /data/my/cie2026-vdot-xiangshan/work/XiangShan-fullcore/build/time.log make -s VM_PARALLEL_BUILDS=1 OPT_SLOW="-O0" \
+					OPT_FAST="-O3 -fno-tree-slp-vectorize" \
+					PGO_CFLAGS="" \
+					PGO_LDFLAGS="" \
+					OBJCACHE="" \
+					-C /data/my/cie2026-vdot-xiangshan/work/XiangShan-fullcore/build/verilator-compile -f /data/my/cie2026-vdot-xiangshan/work/XiangShan-fullcore/build/verilator-compile/VSimTop.mk 
+make[4]: Entering directory '/data/my/cie2026-vdot-xiangshan/work/XiangShan-fullcore/build/verilator-compile'
+/data/my/cie2026-vdot-xiangshan/work/XiangShan-fullcore/difftest/src/test/csrc/common/common.cpp: In function 'void sig_handler(int)':
+/data/my/cie2026-vdot-xiangshan/work/XiangShan-fullcore/difftest/src/test/csrc/common/common.cpp:49:8: warning: ignoring return value of 'ssize_t write(int, const void*, size_t)' declared with attribute 'warn_unused_result' [-Wunused-result]
+   49 |   write(STDERR_FILENO, msg, sizeof(msg) - 1);
+      |   ~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from /data/my/cie2026-vdot-xiangshan/work/XiangShan-fullcore/difftest/src/test/csrc/emu/emu.h:24,
+                 from /data/my/cie2026-vdot-xiangshan/work/XiangShan-fullcore/difftest/src/test/csrc/emu/emu.cpp:17:
+/data/my/cie2026-vdot-xiangshan/work/XiangShan-fullcore/difftest/src/test/csrc/emu/simulator.h: In member function 'void Simulator::step_uart()':
+/data/my/cie2026-vdot-xiangshan/work/XiangShan-fullcore/difftest/src/test/csrc/emu/simulator.h:117:12: warning: ignoring return value of 'ssize_t write(int, const void*, size_t)' declared with attribute 'warn_unused_result' [-Wunused-result]
+  117 |       write(fd, &ch, 1);
+      |       ~~~~~^~~~~~~~~~~~
+make[4]: *** [/usr/local/share/verilator/include/verilated.mk:269: VSimTop___024root__DepSet_hd5918264__2.o] Terminated
+make[4]: *** [/usr/local/share/verilator/include/verilated.mk:272: VSimTop___024root__DepSet_hd5918264__180__Slow.o] Terminated
+make[4]: *** [/usr/local/share/verilator/include/verilated.mk:272: VSimTop___024root__DepSet_hd5918264__181__Slow.o] Terminated
+make[3]: *** wait: No child processes.  Stop.
+make[3]: *** Waiting for unfinished jobs....
+make[3]: *** wait: No child processes.  Stop.
+make[4]: *** [/usr/local/share/verilator/include/verilated.mk:272: VSimTop__Trace__44__Slow.o] Terminated
+make[4]: *** [/usr/local/share/verilator/include/verilated.mk:272: VSimTop__Trace__70__Slow.o] Terminated
+make[1]: *** [emu.mk:77: emu] Terminated
+Terminated
+exit=143
+make[4]: *** [/usr/local/share/verilator/include/verilated.mk:272: VSimTop___024root__DepSet_hd5918264__184__Slow.o] Terminated
+make[4]: *** [/usr/local/share/verilator/include/verilated.mk:272: VSimTop___024root__DepSet_hd5918264__185__Slow.o] Terminated
+make[4]: *** [/usr/local/share/verilator/include/verilated.mk:272: VSimTop___024root__DepSet_hd5918264__186__Slow.o] Terminated
+make[4]: *** [/usr/local/share/verilator/include/verilated.mk:272: VSimTop___024root__DepSet_hd5918264__187__Slow.o] Terminated
+make[4]: *** [/usr/local/share/verilator/include/verilated.mk:272: VSimTop___024root__DepSet_hd5918264__188__Slow.o] Terminated
+make[4]: *** [/usr/local/share/verilator/include/verilated.mk:272: VSimTop___024root__DepSet_hd5918264__189__Slow.o] Terminated
+make[4]: *** [/usr/local/share/verilator/include/verilated.mk:272: VSimTop___024root__DepSet_hd5918264__190__Slow.o] Terminated
+make[4]: *** [/usr/local/share/verilator/include/verilated.mk:272: VSimTop__Trace__42__Slow.o] Terminated
+make[4]: *** Deleting intermediate file 'VSimTop__ALL.verilator_deplist.tmp'
+make: *** [Makefile:355: emu] Terminated
+make[2]: *** [verilator.mk:151: /data/my/cie2026-vdot-xiangshan/work/XiangShan-fullcore/build/verilator-compile/emu] Error 2
+Sun, 25 Oct 2026 06:55:18 +0000
+[Sun, 25 Oct 2026 06:55:45 +0000] 人工终止：VSimTop___024root__DepSet_hd5918264__2.cpp（15.9 MB，单个函数 nba_sequent__TOP__22）在 g++ 11.4 -O3 下编译超过 85 分钟仍未结束；同一文件用 clang++ 14 -O3 -fno-slp-vectorize 单独编译耗时 1m48s。改用 clang++ 重新编译（见 build_emu_3.log）。

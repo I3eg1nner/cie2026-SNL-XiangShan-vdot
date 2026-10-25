@@ -1,0 +1,19 @@
+$ /data/my/cie2026-vdot-xiangshan/work/XiangShan-fullcore/build/emu -i /data/my/cie2026-vdot-xiangshan/work/build/fullcore/wave/vdot_wave.bin --diff /data/my/cie2026-vdot-xiangshan/work/NEMU-fullcore/ref/riscv64-nemu-interpreter-so --dump-wave -b 0 -e 2000 --wave-path /data/my/cie2026-vdot-xiangshan/work/build/fullcore/wave/vdot_wave.vcd
+start: 2026-10-25T07:26:44Z
+（下面先是 emu 的 stdout，再是 stderr；stderr 中 emu 退出时打印的 [PERF ] 性能计数器行已滤掉）
+emu compiled at Oct 25 2026, 06:55:56
+%Warning: System has stack size 8192 kb which may be too small; suggest 'ulimit -s 35430' or larger
+Using simulated 1048576B flash
+dump wave to /data/my/cie2026-vdot-xiangshan/work/build/fullcore/wave/vdot_wave.vcd...
+Core  0's Commit SHA is: a4eeaabb4c, dirty: 1
+Using simulated 8386560MB RAM
+The image is /data/my/cie2026-vdot-xiangshan/work/build/fullcore/wave/vdot_wave.bin
+The reference model is /data/my/cie2026-vdot-xiangshan/work/NEMU-fullcore/ref/riscv64-nemu-interpreter-so
+The first instruction of core 0 has commited. Difftest enabled. 
+Core 0: [32mHIT GOOD TRAP at pc = 0x8000006e
+[0m[35mCore-0 instrCnt = 35, cycleCnt = 1588, IPC = 0.022040
+[0m[34mSeed=0 Guest cycle spent: 1594 (this will be different from cycleCnt if emu loads a snapshot)
+[0m[34mHost time spent: 1170ms
+[0m------------------------------ emu stderr ------------------------------
+end: 2026-10-25T07:26:45Z  wall=1s  emu-exit=0
+-rw-rw-r-- 1 user user 382184891 Oct 25 07:26 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/wave/vdot_wave.vcd

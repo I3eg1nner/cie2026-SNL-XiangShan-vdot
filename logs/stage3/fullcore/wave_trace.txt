@@ -1,0 +1,192 @@
+# VCD: /data/my/cie2026-vdot-xiangshan/work/build/fullcore/wave/vdot_wave.vcd
+# signals found 162 / 162
+# emu 默认每个时钟周期只记录一个时间点（未加 --dump-wave-full），
+# 因此 VCD 时间戳 = emu 周期号（-b 起点为 0 时）；每行是该周期的稳定值
+cycle  stage              instr / uop                      detail
+1404   DECODE-IN  slot1   vadd.vv v1, v8, v9               
+1404   DECODE-IN  slot2   vdot.vv v3, v10, v1              
+1404   DECODE-IN  slot3   vdotacc.vv v3, v11, v8           
+1404   DECODE-IN  slot5   vdot4a.vv v4, v3, v9             
+1423   DECODE-IN  slot1   vadd.vv v1, v8, v9               
+1423   DECODE-IN  slot2   vdot.vv v3, v10, v1              
+1423   DECODE-IN  slot3   vdotacc.vv v3, v11, v8           
+1423   DECODE-IN  slot5   vdot4a.vv v4, v3, v9             
+1424   DECODE-IN  slot0   vdot.vv v3, v10, v1              
+1424   DECODE-OUT slot0   vadd.vv v1, v8, v9               fuType=0x80000 fuOpType=0x40 illegalInstr=0
+1424   DECODE-IN  slot1   vdotacc.vv v3, v11, v8           
+1424   DECODE-IN  slot3   vdot4a.vv v4, v3, v9             
+1425   DECODE-IN  slot0   vdotacc.vv v3, v11, v8           
+1425   RENAME-IN  slot0   vadd.vv v1, v8, v9               
+1425   DECODE-IN  slot2   vdot4a.vv v4, v3, v9             
+1426   DECODE-IN  slot0   vdotacc.vv v3, v11, v8           
+1426   RENAME-IN  slot0   vadd.vv v1, v8, v9               
+1426   DECODE-IN  slot2   vdot4a.vv v4, v3, v9             
+1427   DECODE-IN  slot0   vdotacc.vv v3, v11, v8           
+1427   RENAME-IN  slot0   vadd.vv v1, v8, v9               
+1427   DECODE-IN  slot2   vdot4a.vv v4, v3, v9             
+1428   DECODE-IN  slot0   vdotacc.vv v3, v11, v8           
+1428   RENAME-IN  slot0   vadd.vv v1, v8, v9               
+1428   DECODE-IN  slot2   vdot4a.vv v4, v3, v9             
+1429   DECODE-IN  slot0   vdotacc.vv v3, v11, v8           
+1429   RENAME-IN  slot0   vadd.vv v1, v8, v9               
+1429   DECODE-IN  slot2   vdot4a.vv v4, v3, v9             
+1430   DECODE-IN  slot0   vdotacc.vv v3, v11, v8           
+1430   RENAME-IN  slot0   vadd.vv v1, v8, v9               
+1430   DECODE-IN  slot2   vdot4a.vv v4, v3, v9             
+1431   DECODE-IN  slot0   vdotacc.vv v3, v11, v8           
+1431   RENAME-IN  slot0   vadd.vv v1, v8, v9               
+1431   DECODE-IN  slot2   vdot4a.vv v4, v3, v9             
+1432   DECODE-IN  slot0   vdotacc.vv v3, v11, v8           
+1432   RENAME-IN  slot0   vadd.vv v1, v8, v9               
+1432   DECODE-IN  slot2   vdot4a.vv v4, v3, v9             
+1433   DECODE-IN  slot0   vdotacc.vv v3, v11, v8           
+1433   RENAME-IN  slot0   vadd.vv v1, v8, v9               
+1433   DECODE-IN  slot2   vdot4a.vv v4, v3, v9             
+1433   IQ1-ISSUE port0    robIdx=18 pdest=56               fuType=0x80000 fuOpType=0x1a psrc(rf0,rf1,rf2)=(55,0,3)
+1434   DECODE-IN  slot0   vdotacc.vv v3, v11, v8           
+1434   RENAME-IN  slot0   vadd.vv v1, v8, v9               
+1434   DECODE-IN  slot2   vdot4a.vv v4, v3, v9             
+1434   IQ1-ISSUE port0    robIdx=19 pdest=58               fuType=0x80000 fuOpType=0x1a psrc(rf0,rf1,rf2)=(57,0,4)
+1435   DECODE-IN  slot0   vdotacc.vv v3, v11, v8           
+1435   RENAME-IN  slot0   vadd.vv v1, v8, v9               
+1435   DECODE-IN  slot2   vdot4a.vv v4, v3, v9             
+1436   DECODE-IN  slot0   vdotacc.vv v3, v11, v8           
+1436   RENAME-IN  slot0   vadd.vv v1, v8, v9               
+1436   DECODE-IN  slot2   vdot4a.vv v4, v3, v9             
+1436   VIALUFIX#2-IN      fuOpType=0x1a                    
+1437   DECODE-IN  slot0   vdotacc.vv v3, v11, v8           
+1437   RENAME-IN  slot0   vadd.vv v1, v8, v9               
+1437   DECODE-IN  slot2   vdot4a.vv v4, v3, v9             
+1437   VIALUFIX#2-IN      fuOpType=0x1a                    
+1437   VIALUFIX#2-OUT     robIdx=18 pdest=56               res=00000000000000000000000000000000
+1438   DECODE-IN  slot0   vdotacc.vv v3, v11, v8           
+1438   RENAME-IN  slot0   vadd.vv v1, v8, v9               
+1438   DECODE-IN  slot2   vdot4a.vv v4, v3, v9             
+1438   VIALUFIX#2-OUT     robIdx=19 pdest=58               res=00000000000000000000000000000000
+1439   DECODE-IN  slot0   vdotacc.vv v3, v11, v8           
+1439   RENAME-IN  slot0   vadd.vv v1, v8, v9               
+1439   DECODE-IN  slot2   vdot4a.vv v4, v3, v9             
+1440   DECODE-IN  slot0   vdotacc.vv v3, v11, v8           
+1440   RENAME-IN  slot0   vadd.vv v1, v8, v9               
+1440   DECODE-IN  slot2   vdot4a.vv v4, v3, v9             
+1441   DECODE-IN  slot0   vdotacc.vv v3, v11, v8           
+1441   RENAME-IN  slot0   vadd.vv v1, v8, v9               
+1441   DECODE-IN  slot2   vdot4a.vv v4, v3, v9             
+1442   DECODE-IN  slot0   vdotacc.vv v3, v11, v8           
+1442   RENAME-IN  slot0   vadd.vv v1, v8, v9               
+1442   DECODE-IN  slot2   vdot4a.vv v4, v3, v9             
+1443   DECODE-IN  slot0   vdotacc.vv v3, v11, v8           
+1443   RENAME-IN  slot0   vadd.vv v1, v8, v9               
+1443   DECODE-IN  slot2   vdot4a.vv v4, v3, v9             
+1444   DECODE-IN  slot0   vdotacc.vv v3, v11, v8           
+1444   RENAME-IN  slot0   vadd.vv v1, v8, v9               
+1444   DECODE-IN  slot2   vdot4a.vv v4, v3, v9             
+1445   DECODE-IN  slot0   vdotacc.vv v3, v11, v8           
+1445   RENAME-IN  slot0   vadd.vv v1, v8, v9               
+1445   DECODE-IN  slot2   vdot4a.vv v4, v3, v9             
+1446   DECODE-IN  slot0   vdotacc.vv v3, v11, v8           
+1446   RENAME-IN  slot0   vadd.vv v1, v8, v9               
+1446   DECODE-IN  slot2   vdot4a.vv v4, v3, v9             
+1447   DECODE-IN  slot0   vdotacc.vv v3, v11, v8           
+1447   RENAME-IN  slot0   vadd.vv v1, v8, v9               
+1447   DECODE-IN  slot2   vdot4a.vv v4, v3, v9             
+1448   DECODE-IN  slot0   vdotacc.vv v3, v11, v8           
+1448   RENAME-IN  slot0   vadd.vv v1, v8, v9               
+1448   DECODE-IN  slot2   vdot4a.vv v4, v3, v9             
+1449   DECODE-IN  slot0   vdotacc.vv v3, v11, v8           
+1449   RENAME-IN  slot0   vadd.vv v1, v8, v9               
+1449   DECODE-IN  slot2   vdot4a.vv v4, v3, v9             
+1450   DECODE-IN  slot0   vdotacc.vv v3, v11, v8           
+1450   RENAME-IN  slot0   vadd.vv v1, v8, v9               
+1450   DECODE-IN  slot2   vdot4a.vv v4, v3, v9             
+1451   DECODE-IN  slot0   vdotacc.vv v3, v11, v8           
+1451   RENAME-IN  slot0   vadd.vv v1, v8, v9               
+1451   DECODE-IN  slot2   vdot4a.vv v4, v3, v9             
+1452   DECODE-IN  slot0   vdotacc.vv v3, v11, v8           
+1452   RENAME-IN  slot0   vadd.vv v1, v8, v9               
+1452   DECODE-IN  slot2   vdot4a.vv v4, v3, v9             
+1453   DECODE-IN  slot0   vdotacc.vv v3, v11, v8           
+1453   RENAME-IN  slot0   vadd.vv v1, v8, v9               
+1453   DECODE-IN  slot2   vdot4a.vv v4, v3, v9             
+1454   DECODE-IN  slot0   vdotacc.vv v3, v11, v8           
+1454   RENAME-IN  slot0   vadd.vv v1, v8, v9               
+1454   DECODE-IN  slot2   vdot4a.vv v4, v3, v9             
+1455   DECODE-IN  slot0   vdotacc.vv v3, v11, v8           
+1455   RENAME-IN  slot0   vadd.vv v1, v8, v9               
+1455   DECODE-IN  slot2   vdot4a.vv v4, v3, v9             
+1456   DECODE-IN  slot0   vdotacc.vv v3, v11, v8           
+1456   RENAME-IN  slot0   vadd.vv v1, v8, v9               
+1456   DECODE-IN  slot2   vdot4a.vv v4, v3, v9             
+1457   DECODE-IN  slot0   vdotacc.vv v3, v11, v8           
+1457   RENAME-IN  slot0   vadd.vv v1, v8, v9               
+1457   DECODE-IN  slot2   vdot4a.vv v4, v3, v9             
+1458   DECODE-IN  slot0   vdotacc.vv v3, v11, v8           
+1458   RENAME-IN  slot0   vadd.vv v1, v8, v9               
+1458   DECODE-IN  slot2   vdot4a.vv v4, v3, v9             
+1459   DECODE-IN  slot0   vdotacc.vv v3, v11, v8           
+1459   DECODE-OUT slot0   vdot.vv v3, v10, v1              fuType=0x200000 fuOpType=0xe7 illegalInstr=0
+1459   RENAME-IN  slot0   vadd.vv v1, v8, v9               
+1459   DECODE-IN  slot2   vdot4a.vv v4, v3, v9             
+1460   RENAME-IN  slot0   vdot.vv v3, v10, v1              
+1460   DECODE-IN  slot1   vdot4a.vv v4, v3, v9             
+1461   RENAME-IN  slot0   vdot.vv v3, v10, v1              
+1461   DECODE-IN  slot1   vdot4a.vv v4, v3, v9             
+1462   RENAME-IN  slot0   vdot.vv v3, v10, v1              
+1462   DECODE-IN  slot1   vdot4a.vv v4, v3, v9             
+1463   RENAME-IN  slot0   vdot.vv v3, v10, v1              
+1463   DECODE-IN  slot1   vdot4a.vv v4, v3, v9             
+1464   RENAME-IN  slot0   vdot.vv v3, v10, v1              
+1464   DECODE-IN  slot1   vdot4a.vv v4, v3, v9             
+1465   RENAME-IN  slot0   vdot.vv v3, v10, v1              
+1465   DECODE-IN  slot1   vdot4a.vv v4, v3, v9             
+1466   RENAME-IN  slot0   vdot.vv v3, v10, v1              
+1466   DECODE-IN  slot1   vdot4a.vv v4, v3, v9             
+1467   RENAME-IN  slot0   vdot.vv v3, v10, v1              
+1467   DECODE-IN  slot1   vdot4a.vv v4, v3, v9             
+1468   RENAME-IN  slot0   vdot.vv v3, v10, v1              
+1468   DECODE-IN  slot1   vdot4a.vv v4, v3, v9             
+1469   RENAME-IN  slot0   vdot.vv v3, v10, v1              
+1469   DECODE-IN  slot1   vdot4a.vv v4, v3, v9             
+1483   DECODE-IN  slot0   vadd.vv v1, v8, v9               
+1483   DECODE-IN  slot1   vdot.vv v3, v10, v1              
+1483   DECODE-IN  slot2   vdotacc.vv v3, v11, v8           
+1483   DECODE-IN  slot4   vdot4a.vv v4, v3, v9             
+1484   DECODE-IN  slot0   vdot.vv v3, v10, v1              
+1484   DECODE-OUT slot0   vadd.vv v1, v8, v9               fuType=0x80000 fuOpType=0x40 illegalInstr=0
+1484   DECODE-IN  slot1   vdotacc.vv v3, v11, v8           
+1484   DECODE-IN  slot3   vdot4a.vv v4, v3, v9             
+1485   DECODE-IN  slot0   vdotacc.vv v3, v11, v8           
+1485   DECODE-OUT slot0   vdot.vv v3, v10, v1              fuType=0x200000 fuOpType=0xe7 illegalInstr=0
+1485   RENAME-IN  slot0   vadd.vv v1, v8, v9               
+1485   DECODE-IN  slot2   vdot4a.vv v4, v3, v9             
+1486   DECODE-OUT slot0   vdotacc.vv v3, v11, v8           fuType=0x200000 fuOpType=0x177 illegalInstr=0
+1486   RENAME-IN  slot0   vdot.vv v3, v10, v1              
+1486   DECODE-IN  slot1   vdot4a.vv v4, v3, v9             
+1486   IQ1-ENQ  port0     vadd.vv v1, v8, v9               
+1487   DECODE-IN  slot0   vdot4a.vv v4, v3, v9             
+1487   RENAME-IN  slot0   vdotacc.vv v3, v11, v8           
+1487   ROB-ENQ    slot0   vadd.vv v1, v8, v9               pc=0x8000003e
+1487   IQ0-ENQ  port0     vdot.vv v3, v10, v1              
+1488   DECODE-OUT slot0   vdot4a.vv v4, v3, v9             fuType=0x200000 fuOpType=0x1f7 illegalInstr=0
+1488   ROB-ENQ    slot0   vdot.vv v3, v10, v1              pc=0x80000042
+1488   IQ0-ENQ  port0     vdotacc.vv v3, v11, v8           
+1488   IQ1-ISSUE port0    robIdx=21 pdest=59               fuType=0x80000 fuOpType=0x40 psrc(rf0,rf1,rf2)=(50,48,1)
+1489   RENAME-IN  slot0   vdot4a.vv v4, v3, v9             
+1489   ROB-ENQ    slot0   vdotacc.vv v3, v11, v8           pc=0x80000046
+1490   IQ0-ENQ  port0     vdot4a.vv v4, v3, v9             
+1491   ROB-ENQ    slot0   vdot4a.vv v4, v3, v9             pc=0x8000004e
+1491   VIALUFIX#2-IN      fuOpType=0x40                    
+1492   VIALUFIX#2-OUT     robIdx=21 pdest=59               res=1211100f0e0d0c0b0a09080706050403
+1494   IQ0-ISSUE port0    robIdx=22 pdest=60               fuType=0x200000 fuOpType=0xe7 psrc(rf0,rf1,rf2)=(59,52,56)
+1494   ROB-COMMIT slot0   vadd.vv v1, v8, v9               pc=0x8000003e
+1497   VIMACU-IN          fuOpType=0xe7                    vsew=0 vta=1 vm=1 src0(vs1)=1211100f0e0d0c0b0a09080706050403 src1(vs2)=ffffffffffffffffffffffffffffffff src2(oldVd)=00000000000000000000000000000000
+1499   VIMACU-OUT         robIdx=22 pdest=60               res=ffffffffffffffffffffffffffffff58
+1501   IQ0-ISSUE port0    robIdx=23 pdest=61               fuType=0x200000 fuOpType=0x177 psrc(rf0,rf1,rf2)=(48,54,60)
+1501   ROB-COMMIT slot0   vdot.vv v3, v10, v1              pc=0x80000042
+1504   VIMACU-IN          fuOpType=0x177                   vsew=0 vta=1 vm=1 src0(vs1)=100f0e0d0c0b0a090807060504030201 src1(vs2)=7f807f807f807f807f807f807f807f80 src2(oldVd)=ffffffffffffffffffffffffffffff58
+1506   VIMACU-OUT         robIdx=23 pdest=61               res=ffffffffffffffffffffffff00000310
+1508   IQ0-ISSUE port0    robIdx=25 pdest=62               fuType=0x200000 fuOpType=0x1f7 psrc(rf0,rf1,rf2)=(50,61,58)
+1508   ROB-COMMIT slot0   vdotacc.vv v3, v11, v8           pc=0x80000046
+1511   VIMACU-IN          fuOpType=0x1f7                   vsew=2 vta=1 vm=1 src0(vs1)=02020202020202020202020202020202 src1(vs2)=ffffffffffffffffffffffff00000310 src2(oldVd)=00000000000000000000000000000000
+1513   VIMACU-OUT         robIdx=25 pdest=62               res=fffffff8fffffff8fffffff800000026
+1515   ROB-COMMIT slot0   vdot4a.vv v4, v3, v9             pc=0x8000004e

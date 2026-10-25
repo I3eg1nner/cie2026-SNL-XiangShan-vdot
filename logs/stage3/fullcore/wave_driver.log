@@ -1,0 +1,26 @@
+==============================================================
+ [3] 交叉编译测试镜像（CROSS=/opt/riscv/bin/riscv64-unknown-elf-）   2026-10-25T07:26:40Z UTC
+==============================================================
+n_cases=5127 begin=0 end=5127 total=30758
+n_cases=5127 begin=5127 end=10254 total=30758
+n_cases=5127 begin=10254 end=15381 total=30758
+n_cases=5127 begin=15381 end=20508 total=30758
+n_cases=5127 begin=20508 end=25635 total=30758
+n_cases=5123 begin=25635 end=30758 total=30758
+-rwxrwxr-x 1 user user 458664 Oct 25 07:26 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/b00/vdot_test.bin
+-rwxrwxr-x 1 user user 458664 Oct 25 07:26 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/b01/vdot_test.bin
+-rwxrwxr-x 1 user user 458664 Oct 25 07:26 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/b02/vdot_test.bin
+-rwxrwxr-x 1 user user 458664 Oct 25 07:26 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/b03/vdot_test.bin
+-rwxrwxr-x 1 user user 458664 Oct 25 07:26 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/b04/vdot_test.bin
+-rwxrwxr-x 1 user user 458312 Oct 25 07:26 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/b05/vdot_test.bin
+-rwxrwxr-x 1 user user  14280 Oct 25 05:12 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/dep/vdot_dep.bin
+-rwxrwxr-x 1 user user  14280 Oct 25 07:26 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/dep0/vdot_dep.bin
+-rwxrwxr-x 1 user user  14280 Oct 25 07:26 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/dep1/vdot_dep.bin
+-rwxrwxr-x 1 user user  14280 Oct 25 07:26 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/dep2/vdot_dep.bin
+-rwxrwxr-x 1 user user  14296 Oct 25 07:26 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/dep3/vdot_dep.bin
+-rwxrwxr-x 1 user user    224 Oct 25 07:26 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/wave/vdot_wave.bin
+==============================================================
+ [6] 全核波形（vdot 从译码到 ROB 提交）   2026-10-25T07:26:43Z UTC
+==============================================================
+-rw-rw-r-- 1 user user 382184891 Oct 25 07:26 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/wave/vdot_wave.vcd
+    文本轨迹：logs/stage3/fullcore/wave_trace.txt（VCD 体积大，不入库：/data/my/cie2026-vdot-xiangshan/work/build/fullcore/wave/vdot_wave.vcd）
