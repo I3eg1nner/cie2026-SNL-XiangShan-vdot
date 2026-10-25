@@ -17,9 +17,9 @@
 | 2.2 vdot.vv RTL 实现 | ✅ | `rtl/patch/*.patch`、`rtl/chisel/`、`rtl/verilog/` |
 | 2.3.1/2.3.2/2.3.3 三项功能测试 | ✅ | `docs/stage2/12_*.md`，29 万+ 条执行 0 失败 |
 | 3.1.1 NEMU 指令扩展 | ✅ | `nemu/patch/0001-*.patch`、`docs/stage3/20_*.md` |
-| 3.1.2 协同仿真验证 | ⚠️ Level 1（FU+译码级） | `docs/stage3/21_*.md`；**全核 difftest 未做，见 T1** |
+| 3.1.2 协同仿真验证 | ✅ Level 1（FU+译码级）+ Level 2（MinimalConfig 全核 difftest） | `docs/stage3/21_*.md`；全核 difftest 已完成（T1），见 `docs/stage3/23_全核difftest验证报告.md`、`logs/stage3/fullcore/` |
 | 3.2 基线功能实现 | ✅ | `bench/baseline/`，NEMU 实测三方比对 0 失配 |
-| 3.3 延迟加速分析 | ⚠️ 部分建模 | `docs/stage3/22_*.md` + 4 张图表；**吞吐 1.50× 为建模值，见 T1/T3** |
+| 3.3 延迟加速分析 | ⚠️ 部分建模 | `docs/stage3/22_*.md` + 4 张图表；**吞吐 1.50× 为建模值，见 T3** |
 | 提交要求：三段录屏 | ❌ **未做** | 见 T6，必须由人完成；分镜、命令与口播已写好（`docs/ppt/录屏脚本.md`） |
 | 提交要求：PPT | ❌ **未做** | 见 T6；逐页讲解大纲已写好（`docs/ppt/讲解大纲.md`），提交流程核对见 `docs/ppt/提交清单.md` |
 
@@ -29,15 +29,16 @@
 |---|---|---:|---:|---|
 | 完整性 | 阶段一 | 15 | 13–14 | `ACCEPTANCE_P1.md`（整改后） |
 | 完整性 | 阶段二 | 20 | 17–19 | `ACCEPTANCE_P2.md`（整改后） |
-| 完整性 | 阶段三 | 25 | 20–22 | `ACCEPTANCE_P3.md` 预测 20；I-1~I-4、M-1~M-9 已全部整改（整改记录见该文件 §8）。全核缺位与吞吐只有建模值是主要扣分点 |
+| 完整性 | 阶段三 | 25 | 20–22 | `ACCEPTANCE_P3.md` 预测 20；I-1~I-4、M-1~M-9 已全部整改（整改记录见该文件 §8）。审计时的主要扣分点是全核缺位与吞吐只有建模值；全核缺位已由 T1 补上（`23`，只跑了 MinimalConfig），分数是否回收未经复审，吞吐仍为建模值 |
 | 可行性 | 技术路径合理性 | 10 | 9 | 复用极强；扣分因 latency=2 仅静态估算 → **T2 可补到 10** |
-| 可行性 | 功能验证有效性 | 10 | 9 | 扣分因异常语义仅到译码级 → **T1 可补到 10** |
-| 探索性 | 微架构优化分析 | 5 | 4（自评） | 三份审计均未单独评分；**T1/T3 可显著提升** |
-| 探索性 | 软硬件协同理解 | 5 | 4–5（自评） | 三份审计均未单独评分；Level 1 协同 + 机制剖析已完备 |
+| 可行性 | 功能验证有效性 | 10 | 9 | 审计扣分因异常语义仅到译码级；T1 已在全核上验证异常经 ROB 投递、`mcause=2`（`23` §5.3），分数未经复审 |
+| 探索性 | 微架构优化分析 | 5 | 4（自评） | 三份审计均未单独评分；T1 已完成（全核波形给出一条依赖链的发射间隔观测，`23` §7.2），**T3 可显著提升** |
+| 探索性 | 软硬件协同理解 | 5 | 4–5（自评） | 三份审计均未单独评分；Level 1 协同 + 机制剖析 + Level 2 全核 difftest（`23`） |
 | 创新性 | 设计优化独特性 | 5 | — | XOR 蝶形折叠树、三指令共享阵列 |
 | 创新性 | 扩展应用潜力 | 5 | — | 现固定 LMUL=1 → **T4 可提升** |
 
-> **结论：后续工作的投入产出比，T1（全核 difftest）远高于其他所有项。**
+> **结论（更新）**：原先投入产出比最高的 T1（全核 difftest）已完成（`docs/stage3/23_全核difftest验证报告.md`，提交 `057ef76`）。
+> 全核 emu 现已能在本机构建，T3 的「在全核上测真实周期数」因此有了现成平台；其余各项按第三节顺序。
 
 ---
 
@@ -55,6 +56,8 @@
 ### 工具链
 
 JDK **17**（JDK 21/25 会失败）、mill **0.12.3**（XiangShan）与 **0.11.1**（yunsuan，两个版本并存且不可混用）、Scala 2.13.15、Chisel 6.7.0、firtool 1.62.1（mill 自动下载）、Verilator、RISC-V 交叉工具链（需支持 `-march=rv64gcv_zve64x`，gcc ≥13）。
+
+**全核 difftest（T1，`scripts/50_run_fullcore_difftest.sh`）额外需要**：**clang++**（difftest 子模块 `difftest/verilator.mk:76` 把 clang 专有选项 `-fno-slp-vectorize` 写死在 `OPT_FAST` 里，g++ 直接报错；改用 GCC 等价选项后 g++ 11.4 编译 Verilator 生成的超大函数 85 分钟仍未结束，见 `23` §3.3），以及 **≥64 GB 内存**（MinimalConfig 下 Verilator 前端实测峰值 RSS 59.2 GB，mill 精化 JVM 峰值 20.4 GB，`logs/stage3/fullcore/build_time_breakdown.log:13,39`）。
 
 ### 已有脚本与其适用性
 
@@ -74,6 +77,7 @@ JDK **17**（JDK 21/25 会失败）、mill **0.12.3**（XiangShan）与 **0.11.1
 | `scripts/21_build_nemu_vdot.sh`（含 `verify-patch`、`fault`） | ✅ 21 s / 10 s / 21 s | 30758 / 0，must-trap 4834/4834，`.so` HIT GOOD TRAP；故障注入 5/5（21103 / 12079 / 10173 / 3202 / 1584，与存档相同） |
 | `scripts/30_run_cosim.sh`（含 `fault`） | ✅ 251 s / 96 s | 72758 条，值比对 0 失配、判定分歧 0；分 suite 汇总与存档 `p6_cosim_run.log:22-52` 逐行相同。故障注入 6/6：5116 / **6378（新增 T3-RTL-1b）** / 586 / 4944 / 分歧 162 / 分歧 74 |
 | `scripts/40_run_bench.sh` | ✅ 126 s | [A] 25924/0、[B] 24 个长度 0 失配；9 个 CSV 中 6 个与仓库逐字节相同，`instr_count_loop` / `instr_count_single` / `speedup` 因 GCC 15 的 `minstret` 绝对值 +2 而不同（斜率不变，见 `logs/stage3/p7_baseline_gcc15_supplement.log`）。绘图需 matplotlib + CJK 字体，缺失时跳过并告警 |
+| `scripts/50_run_fullcore_difftest.sh`（T1 新增，`build`/`run`/`wave`/`fault`） | ✅ `build` 从零 23:31（独立 `WORK_DIR`，`build_scripted_driver.log:35`）；`run` 约 45 分钟 | MinimalConfig 全核 emu + NEMU 私有副本 `.so`；语料 30758/30758、依赖测试 4 个种子 0 失败、24,517,314 条提交 0 失配；故障注入 3/3（`logs/stage3/fullcore/summary.log`、`fault_summary.log`）。默认用 clang++，缺失时退回 g++ 并告警 |
 | `scripts/tools/*` | ✅（随 20 / 30 / 40 间接实测） | `run_vimacu_tb` / `run_decode_tb` / `verify_patches` / `capture_vdot_waves` / `sync_rtl_sources` 已改为支持 `WORK_DIR`、GNU `mktemp`、`md5sum`。`fault_inject_vdot.sh`（改为 `md5sum`/`md5` 自动选择、支持 `WORK_DIR`/`YS_DIR`）与 `run_vecfu_latency.sh`（支持 `WORK_DIR`/`XS_DIR`）也已改完，`40` 不再要求 `WORK_DIR` 等于 `<仓库根>/work`；在独立 `WORK_DIR` 上复测：`40` 通过，`WITH_FAULT=1 bash scripts/20_run_func_tests.sh` 357 s，故障注入 5/5，各故障检出项数 10/9/5/9/5（/13）与存档 `p5_fault_injection.log` 相同 |
 
 公共约定见 `scripts/lib/common.sh` 文件头：`WORK_DIR`、`LOG_ROOT`、`RESULTS_DIR`、`FIG_DIR`、`BUILD_ROOT`、`XS_RUNNER`（`auto`：Linux 在宿主机执行，macOS 进容器）、`CROSS`、`JOBS`、`PYTHON`。
@@ -88,7 +92,18 @@ JDK **17**（JDK 21/25 会失败）、mill **0.12.3**（XiangShan）与 **0.11.1
 
 ## 三、TODO（按投入产出比排序）
 
-### T1 — 全核 difftest 【最高优先级】
+### T1 — 全核 difftest 【已完成】
+
+> **状态：已完成**（提交 `057ef76`），报告 `docs/stage3/23_全核difftest验证报告.md`，日志 `logs/stage3/fullcore/`，一键脚本 `scripts/50_run_fullcore_difftest.sh`。
+> 下面的验收标准逐条对应：
+> * 全部语料 0 mismatch：MinimalConfig 全核上 30758/30758，4834 条必须 trap 的用例全部 `mcause=2`，6/6 批 HIT GOOD TRAP（`summary.log:1-9`）；另加 10 个背靠背依赖内核 × 4 个种子 0 失败（`summary.log:10-37`）；合计 24,517,314 条提交 0 失配（`23` §5.4）。
+> * 故障注入：`VIMacU` 中 vdot 结果 bit0 翻转，3/3 个程序被 difftest 中止（`fault_summary.log:1-5`）。
+> * 全核波形：vdot 译码 1485 → 入 ROB 1488 → 发射 1494 → 进 VIMacU 1497 → 写回 1499 → 提交 1501，VIMacU 2 拍在真实流水线中确认（`wave_trace.txt:159-185`，`wave_fullcore_vdot.png`）；已据此更新 `docs/stage1/02_*.md`（§8.4.1、§10）与 `docs/stage3/21_*.md`（§0、§10.3、§11.2、§11.3、§12）。
+> * Level 1 等价性论证：成立，G1–G4 在全核上闭合（`23` §8）。
+> * 实际开销：构建约 23 分钟（不是预估的 1–3 小时），运行约 45 分钟；需要 clang++ 与 ≥64 GB 内存（见第二节工具链）。
+> * **仍未覆盖**：只构建了 MinimalConfig（默认配置、`KunminghuV2Config` 未运行，`23` §3.1 论证功能结论可推广，但周期数只对 MinimalConfig 有效）；LMUL≠1 未在全核复测；依赖测试为 10 个固定模板，不是随机指令流（`23` §9）。
+> 以下为立项时的原文，保留作记录。
+
 
 **为什么**：当前唯一的得分天花板。现有协同仿真是 Level 1——把全核 difftest 的 **REF 侧原样搬了过来**（`dlopen` 真实 `riscv64-nemu-interpreter-so`，走 difftest 原生 C API），只把 DUT 从整个乱序核换成「vdot 功能单元 + 译码单元」。因此它能证明「一条 vdot 该算出什么、该不该报非法」，**不能**证明「它在乱序流水线里被正确发射、旁路、提交，异常被正确投递」。直接影响：3.1.2、功能验证有效性、微架构优化分析。
 
@@ -127,6 +142,8 @@ JDK **17**（JDK 21/25 会失败）、mill **0.12.3**（XiangShan）与 **0.11.1
 
 **遗留威胁（必须解决）**：`vdotacc` 的循环携带依赖是 **2 拍**，比基线 `vwadd.wv` 的 1 拍更长。若循环是延迟受限且软件不做多累加器展开，长向量吞吐**可能不升反降**。现有 1.50× 吞吐是建模值，依赖「基线端口下界 3 拍压过其依赖下界」这一假设，FU 级平台无法验证。
 
+**全核观测（T1 附带，不是吞吐测量）**：全核 MinimalConfig 波形中，两条相互依赖的 VIMacU 指令发射间隔 **7 拍**（1494→1501→1508：发射→进 FU 3 拍 + FU 2 拍 + 写回→依赖者发射 2 拍），同一波形里 VIAluFix 上的 `vadd.vv` 从发射到依赖者发射 **6 拍**（1488→1494）（`docs/stage3/23_全核difftest验证报告.md` §7.2 第 4 条、§9 第 3 条；`logs/stage3/fullcore/wave_trace.txt:173-188`）。据此「2 拍 vs 1 拍」在全核中更接近「7 拍 vs 6 拍」，劣势会被稀释；但这只是一条依赖链、一次执行的观测，6 拍取自 `vadd`（单 uop）而非 `vwadd.wv`（LMUL=2 下 4 uop）的循环，**T3 仍需实测循环级周期数**。全核 emu 与一键脚本现已具备（`scripts/50_run_fullcore_difftest.sh`），可直接在其上跑 kernel。
+
 **步骤**：在全核上跑 int8 矩阵乘 / 注意力打分 kernel，vdot 版 vs 基线版，测真实周期数；做 2/4 路累加器展开的对比；给出随 N 变化的曲线。
 
 **验收标准**：真实周期数（非指令数）对比；明确回答上述威胁成立与否；更新 `docs/stage3/22_*.md`，把建模值替换为实测值或保留并标注差异。
@@ -159,7 +176,7 @@ JDK **17**（JDK 21/25 会失败）、mill **0.12.3**（XiangShan）与 **0.11.1
 |---|---|---|
 | ① 阶段一操作过程 | 环境部署、构建、hello 验证 | `scripts/00~03`、`logs/stage1/*.log` |
 | ② 阶段二解题思路讲解 | vdot 语义、微架构、数据通路、RTL、三项测试 | `docs/stage2/10~13`、`docs/stage1/figures/` |
-| ③ 阶段三波形仿真与性能分析 | 协同仿真机制、波形、加速比 | `docs/stage3/20~22`、`docs/stage3/figures/` |
+| ③ 阶段三波形仿真与性能分析 | 协同仿真机制（Level 1 + 全核 difftest）、波形、加速比 | `docs/stage3/20~23`、`docs/stage3/figures/`、`logs/stage3/fullcore/`（`summary.log`、`fault_summary.log`、`wave_fullcore_vdot.png`；全核运行耗时长，录屏用预先跑好的日志） |
 
 **PPT**：需覆盖三阶段解题思路、微架构亮点（XOR 蝶形折叠树、三指令共享 16 路乘法阵列、零回退证据）、数据结论。
 
@@ -184,6 +201,8 @@ JDK **17**（JDK 21/25 会失败）、mill **0.12.3**（XiangShan）与 **0.11.1
 8. **`gen_random_sew()`**：上游默认取不到 e8，不改就永远测不到 `vdot.vv`。
 9. **裸机镜像需 `-no-pie`**：Ubuntu gcc 默认 `-pie`，`switch` 指针表靠动态重定位，objcopy 扁平镜像不会重定位。
 10. **复位后 `mstatus.FS/VS=Off`**（`init.c:72-73`），不置位则 `vsetvli` 触发非法指令。
+11. **全核 emu 必须用 clang++ 构建**：difftest 子模块 `OPT_FAST` 写死 clang 专有的 `-fno-slp-vectorize`（`difftest/verilator.mk:76`），g++ 直接报错；换 GCC 等价选项后 g++ 编译 Verilator 生成的超大单函数极慢（`docs/stage3/23_全核difftest验证报告.md` §3.3）。
+12. **emu 的结果行在 stdout、`[PERF ]` 计数器在 stderr**：`2>&1 | grep` 合并过滤时两路交错可能吞掉 `HIT GOOD TRAP` 行，需分开收集（`23` §9 第 7 条）。
 
 ---
 

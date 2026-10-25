@@ -535,6 +535,8 @@ NEMU 不建模流水线、发射队列与 cache 时序，L2 层能回答"算得�
 本文只证明 `.so` 本身能正确执行 vdot（§4.4），DUT↔REF 的逐周期比对属 P6；
 全核香山 Verilator 仿真在本机不可行的论证见 `docs/stage1/01_环境部署报告.md` §6.2。
 
+> **后续更新**：全核 difftest 已在阶段三补做（`docs/stage3/23_全核difftest验证报告.md`）：本补丁构建的 `riscv64-xs-kmhv2-ref_defconfig` `.so` 作为 REF，与 MinimalConfig 全核逐条比对 24,517,314 条提交 0 失配，`nemu/patch/` 未因此改动。
+
 ### 8.6 测试程序的两处隐式假设
 
 * trap handler 固定 `mepc += 4`（`tests/riscv/vdot/start.S`）。对本测试成立
@@ -542,6 +544,7 @@ NEMU 不建模流水线、发射队列与 cache 时序，L2 层能回答"算得�
 * 测试只用固定的寄存器组合 `vd=v3, vs2=v2, vs1=v1`，**没有遍历寄存器编号**，
   也没有覆盖 `vd == vs1` / `vd == vs2` 这类重叠情形（归约与逐元素指令在 LMUL=1
   下读写同一元素位置，重叠是安全的，但未实测）。
+  **后续更新**：阶段三全核 difftest 的依赖测试 K2 的 `vdotacc v4, v4, v3`（vd = vs2）与 K4 的 `vdot4a v5, v12, v5`（vd = vs1）覆盖了重叠情形（`tests/riscv/fullcore/vdot_dep_kernels.S:124,151`），NEMU 作为 REF 与全核 0 失配（`docs/stage3/23_全核difftest验证报告.md` §4.2 内核表）。
 
 ### 8.7 宿主平台单一
 

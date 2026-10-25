@@ -85,6 +85,8 @@ VLEN=128。基础指令 `vdot.vv` 对应赛题要求；另两条为本方案的�
 
 **诚实性要求**：任何未能实际运行的层级，必须在报告中明确标注「未执行」及原因，**严禁伪造日志或数据**。
 
+> **后续记录**：L3 的延伸目标「全核 difftest」之后已在 Linux x86_64 服务器（约 1 TB 内存）上完成，记为 L5 / Level 2：MinimalConfig 全核 emu 与 NEMU `.so` 逐条比对，见 `docs/stage3/23_全核difftest验证报告.md`、`scripts/50_run_fullcore_difftest.sh`（需 clang++、≥64 GB 内存）。上面的资源约束描述保留为立项时的记录。
+
 ### D4 交付仓库结构
 ```
 docs/   stage1/ stage2/ stage3/ ppt/ _plan/ _recon/   设计与报告文档

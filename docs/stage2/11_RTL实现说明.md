@@ -598,12 +598,13 @@ LMUL>1 的方案（新增 `UopSplitType.VEC_VDOT`）见设计文档 §8.3，**�
 1. ~~**掩码/尾部成形在两处分别实现**~~ —— **已在 P4 阶段关闭**。
    原问题：`VIMacU`（XiangShan 侧）用 `ByteMaskTailGen` + `Mgu` + `RedTailGen`；`VDotTop`（YunSuan 侧，L1 用）用手写的等价逻辑，L1 验证的只是 `VDotTop` 这一侧，「被验证的东西不等于被集成的东西」。
    P4 的做法：新增 `VIMacUHarness`（只做连线的窄 IO 包装，`VIMacU.scala` 一行未改）+ `tests/unit/vimacu_tb.cpp`，把同一批共享语料**直接灌进 `VIMacU` 本体**，实测 **26024 条执行、0 失配**（裁定 S-7' 传播后重跑；修订前为 27529 条：1545 条 `vdot4a` + `vstart != 0` 用例转为非法、不再投放，另有 `vstart_relaxed.txt` 补入的 40 条 vdot4a 用例，27529 − 1545 + 40 = 26024，见第 3 条）；并核对两条路径共享的 `VDotTree` / `CSA4to2` / `CSA3to2` / `ByteMaskTailGen` 网表**逐字节相同**。详见 `docs/stage2/12_基础功能测试报告.md` §8 与 `logs/stage2/p5_vimacu_equiv.log`。
-   **剩余**：全核 difftest 仍未执行（见第 2 条）。
+   **剩余**：全核 difftest 仍未执行（见第 2 条）。**后续更新**：阶段三已补做（`docs/stage3/23_全核difftest验证报告.md`）。
 
 2. **全核层面未验证**。`mill xiangshan.runMain top.TopMain`（全 SoC 精化）与 `make emu`（全核 Verilator）在本机 16 GB 内存下不可行（官方要求 `-Xmx40G`，见 `docs/stage1/03_仿真平台搭建报告.md` §7.1、`MASTER_PLAN.md` D3）。因此：
    - 译码 → uop 拆分 → 发射 → `VIMacU` → 写回的**全链路未在真实流水线上跑过**；
    - 已验证到的最强层级是：`DecodeUnit` 与 `VIMacU` 各自**单独精化成 Verilog 成功**（证明译码表无冲突、FU 可综合），加上 L1 对算术通路的逐位差分。
    - 全链路验证留给 P6（NEMU↔RTL 协同仿真）与可能的全核 difftest。
+   - **后续更新**：全核 difftest 已在阶段三补做（`docs/stage3/23_全核difftest验证报告.md`，MinimalConfig）：本补丁下的全核 emu 构建成功，译码 → 发射 → `VIMacU` → 写回 → 提交的全链路在真实流水线上跑通，24,517,314 条提交与 NEMU 0 失配；`rtl/patch/` 未因此改动。默认配置未运行，LMUL≠1 未在全核复测。
 
 3. ~~**`vdot4a.vv` 的 `vstart != 0` 在全核上不可达**~~ —— **已由裁定 S-7' 消解，现为规范行为**（`MASTER_PLAN.md` D2.3）。
    原文：「`VecExceptionGen.scala:305` 的 `vstartIllegal` 对所有 `isVArith` 指令在 `vstart!=0` 时报非法，而裁定 S-7 要求 `vdot4a` 的 `vstart` 正常生效 …… 该路径只能在 L1 验证」。

@@ -283,3 +283,4 @@ I-1 至 I-3 合计约 1 小时即可整改；I-4 需要半天，但它直接决�
 
 - 协同仿真故障注入的现行口径统一为 **6/6**（RTL 侧 3、NEMU 侧 3，T3-RTL-1b 为补充项）：按现行脚本在独立工作目录重跑 `30_run_cosim.sh fault`，日志存为 `logs/stage3/cosim/p6_fault_injection_v2.log`（`:350` 为 `FAULT-INJECTION: 6/6 被检出`），存档的 `p6_fault_injection.log`（5/5）保留未覆盖；`21` §8、README、`docs/00` 已同步。
 - `tests/unit/vecfu_latency_tb.cpp` 的打印文案把 `out.valid` 标为 harness 构造值（与 I-2 同类），`p7_latency_measure.log` [4] 段按新 tb 重跑替换并注明原因（`:293-300`），CSV 重新生成后 9 个文件逐字节不变。
+- 审计 §7 列为扣分点的「全核 difftest 缺位」：之后已补做 MinimalConfig 全核 difftest（提交 `057ef76`，`docs/stage3/23_全核difftest验证报告.md`，日志 `logs/stage3/fullcore/`）；`21`、`22`、`02`、README、`docs/00`、`HANDOFF_TODO.md` 与 `docs/ppt/` 已同步口径。是否据此回收分数未经复审；默认配置未运行、吞吐仍为建模值。
