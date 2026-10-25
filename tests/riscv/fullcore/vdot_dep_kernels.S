@@ -108,7 +108,7 @@
     .endm
 
 /* ---- K2：vdot -> vdotacc -> vdotacc ... 对同一 vd 的累加链（vd 既是源也是目的），
- *          末条 vs2 = vs1 = vd = 上一条结果 ---- */
+ *          倒数第二条 vs2 = vs1 = v3（累加链结果）、vd = v4；末条 vs2 = vd = v4（上一条结果）、vs1 = v3 ---- */
     .macro KERNEL_2
     E8
     VDOT    3, 9, 8

@@ -38,7 +38,7 @@
 | 创新性 | 扩展应用潜力 | 5 | — | 现固定 LMUL=1 → **T4 可提升** |
 
 > **结论（更新）**：原先投入产出比最高的 T1（全核 difftest）已完成（`docs/stage3/23_全核difftest验证报告.md`，提交 `057ef76`）。
-> 全核 emu 现已能在本机构建，T3 的「在全核上测真实周期数」因此有了现成平台；其余各项按第三节顺序。
+> 全核 emu 现已能在本机构建，T3 的微基准周期（单次点积、依赖链、长向量循环）已在 MinimalConfig 全核上实测（`docs/stage3/22_*.md` §5.5），真实 LLM 内核仍未做；其余各项按第三节顺序。
 
 ---
 
@@ -57,7 +57,7 @@
 
 JDK **17**（JDK 21/25 会失败）、mill **0.12.3**（XiangShan）与 **0.11.1**（yunsuan，两个版本并存且不可混用）、Scala 2.13.15、Chisel 6.7.0、firtool 1.62.1（mill 自动下载）、Verilator、RISC-V 交叉工具链（需支持 `-march=rv64gcv_zve64x`，gcc ≥13）。
 
-**全核 difftest（T1，`scripts/50_run_fullcore_difftest.sh`）额外需要**：**clang++**（difftest 子模块 `difftest/verilator.mk:76` 把 clang 专有选项 `-fno-slp-vectorize` 写死在 `OPT_FAST` 里，g++ 直接报错；改用 GCC 等价选项后 g++ 11.4 编译 Verilator 生成的超大函数 85 分钟仍未结束，见 `23` §3.3），以及 **≥64 GB 内存**（MinimalConfig 下 Verilator 前端实测峰值 RSS 59.2 GB，mill 精化 JVM 峰值 20.4 GB，`logs/stage3/fullcore/build_time_breakdown.log:13,39`）。
+**全核 difftest（T1，`scripts/50_run_fullcore_difftest.sh`）额外需要**：**clang++**（difftest 子模块 `difftest/verilator.mk:76` 把 clang 专有选项 `-fno-slp-vectorize` 写死在 `OPT_FAST` 里，g++ 直接报错；改用 GCC 等价选项后 g++ 11.4 编译 Verilator 生成的超大函数 85 分钟仍未结束，见 `23` §3.3），以及 **≥64 GB 内存**（MinimalConfig 下 Verilator 前端实测峰值 RSS 56.4 GiB（约 60.6 GB），mill 精化 JVM 峰值 19.5 GiB（约 20.9 GB），`logs/stage3/fullcore/build_time_breakdown.log:13,39`）。
 
 ### 已有脚本与其适用性
 
@@ -230,4 +230,4 @@ JDK **17**（JDK 21/25 会失败）、mill **0.12.3**（XiangShan）与 **0.11.1
 | ~~`bench/results/latency_fu.csv` 措辞~~ **已处理** | 提交 `87de89b` 已改生成脚本：`vwredsum`/`vredsum` 行为「数值未建模（未做数值比对）」，`vmul`/`vmacc` 行在 `VIMacU` 直驱补了数值比对后为「数值比对 64 笔一致」（`bench/results/latency_fu.csv:6,7,9,10`） | — |
 | 指令计数口径 | 设计文档按 6→1（不含 vsetvli），P7 按 6→2（含 vsetvli），已在设计文档加注 | PPT 与录屏统一使用 6→2（3.00×，实测口径） |
 | 守卫命名 | 方案文档称 `dotLmulIllegal`，代码为 `dotEmulIllegal`，已加注 | 无需改代码 |
-| ~~阶段三独立审计~~ **已处理** | 已完成独立验收审计（`docs/_plan/ACCEPTANCE_P3.md`，预测 20/25，阻塞 0、重要 4、次要 9），全部问题已整改（提交 `8b28fcb`、`87de89b`、`73722be`、`b7a5e81`；逐条位置见该文件 §8「整改记录」） | 如需确认整改效果，可另派复审 |
+| ~~阶段三独立审计~~ **已处理** | 已完成独立验收审计（`docs/_plan/ACCEPTANCE_P3.md`，预测 20/25，阻塞 0、重要 4、次要 9），全部问题已整改（提交 `8b28fcb`、`87de89b`、`73722be`、`b7a5e81`；逐条位置见该文件 §8「整改记录」） | 如需确认整改效果，可另行安排复审 |

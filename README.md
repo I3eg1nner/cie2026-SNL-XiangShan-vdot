@@ -98,7 +98,7 @@ NEMU↔RTL 协同仿真（FU 级 Level 1 + MinimalConfig 全核 difftest Level 2
 | `docs/_recon/` | 动手前的源码侦察笔记（昆明湖 V2 向量集成点、NEMU/difftest、vdot 语义调研） |
 | `docs/stage1/` | 环境版本锁定、部署报告、`vadd.vv` 执行过程分析、仿真平台搭建报告；`figures/` 6 张波形图 |
 | `docs/stage2/` | `10` 设计文档、`11` RTL 实现说明、`12` 基础功能测试报告、`13` 参考模型与测试向量说明；`figures/` 3 张 vdot 功能波形图 |
-| `docs/stage3/` | `20` NEMU 指令扩展说明、`21` 协同仿真验证报告（Level 1）、`22` 基线实现与延迟加速分析、`23` 全核 difftest 验证报告（Level 2）；`figures/` 4 张数据图 + 3 张延迟实测波形图 |
+| `docs/stage3/` | `20` NEMU 指令扩展说明、`21` 协同仿真验证报告（Level 1）、`22` 基线实现与延迟加速分析、`23` 全核 difftest 验证报告（Level 2）；`figures/` 9 张图：5 张数据图（fig1–4、fig9 全核周期实测）+ 4 张波形图（fig5–7 FU 延迟实测、fig8 全核 vdot 波形） |
 | `docs/ppt/` | 答辩与提交的准备材料：`讲解大纲.md`（逐页要点与证据出处）、`录屏脚本.md`（三段录屏分镜）、`提交清单.md`（加密提交流程与自检项）；PPT 文件与录屏本身尚未制作（见局限性） |
 | `rtl/patch/` | 对上游的正式交付：`0001-xiangshan-vdot.patch`、`0002-yunsuan-vdot.patch` |
 | `rtl/chisel/` | 打完补丁后全部新增/修改 Chisel 源码的只读副本（`MANIFEST.md`），由 `scripts/tools/sync_rtl_sources.sh` 重建与校验 |
@@ -138,7 +138,7 @@ sudo apt-get install -y clang                                       # 仅 50 号
   22.04 自带的是 11.4，需从 [riscv-collab/riscv-gnu-toolchain](https://github.com/riscv-collab/riscv-gnu-toolchain/releases)
   下载预编译包解压到 `/opt/riscv`（脚本自动探测），或用 `CROSS=<前缀>` 指定。
 * **全核 difftest（`50` 号脚本）另需 clang++ 与 ≥64 GB 内存**：difftest 子模块把 clang 专有选项 `-fno-slp-vectorize` 写死在
-  `difftest/verilator.mk:76`，g++ 直接报错；Verilator 前端实测峰值 59.2 GB（`logs/stage3/fullcore/build_time_breakdown.log:39`）。
+  `difftest/verilator.mk:76`，g++ 直接报错；Verilator 前端实测峰值 56.4 GiB（约 60.6 GB；`logs/stage3/fullcore/build_time_breakdown.log:39`）。
 * **没有 root**：`LOCAL_SYSROOT=1 bash scripts/00_setup_env_host.sh`，把 readline / SDL2 开发包解包到 `${WORK_DIR}/sysroot`。
 * macOS：`brew install verilator openjdk@17 gnu-sed cmake` + Docker Desktop，并先执行 `./scripts/01_setup_env_docker.sh build`；
   NEMU 与交叉编译在容器内执行（`XS_RUNNER=auto` 自动选择）。
@@ -197,7 +197,7 @@ bash scripts/50_run_fullcore_difftest.sh hello   # 1.1：hello 程序在全核 e
    但只构建了 `MinimalConfig`：`23` §3.1 论证了 vdot 经过的译码、向量调度、`VIMacU`、写回、提交逻辑在默认配置下是同一份参数化 RTL，
    功能结论可以推广，**但默认配置与 `KunminghuV2Config` 未实际运行，波形中的周期数只对 MinimalConfig 有效**。
    LMUL≠1 的非法判定未在全核上复测（只有 Level 1 的 6000/6000）；依赖测试是 10 个固定模板，不是随机指令流。
-   全核构建需要 clang++ 与 ≥64 GB 内存（Verilator 前端峰值 59.2 GB），原 16 GB 开发机做不了。
+   全核构建需要 clang++ 与 ≥64 GB 内存（Verilator 前端峰值 56.4 GiB，约 60.6 GB），原 16 GB 开发机做不了。
    阶段二三项功能测试（2.3）的存档结果来自 FU 级平台（同一语料之后也在全核上 0 失配，见上）；阶段一的 hello 程序原先只运行在 NEMU 上，之后同一程序也在 MinimalConfig 全核 emu 上带 difftest 运行通过（`logs/stage1/p1_hello_xiangshan_fullcore.log`）。
 2. **`latency = 2` 由静态逻辑级估算 + FU 级实测支撑，没有综合。** FU 级实测证明 RTL 在第 2 拍给出正确结果；
    能否在目标频率下时序收敛未经综合与静态时序分析验证。面积 13.7% 是结构计数上界，功耗未量化。
@@ -209,5 +209,5 @@ bash scripts/50_run_fullcore_difftest.sh hello   # 1.1：hello 程序在全核 e
 6. 阶段二波形以 VCD + 文本轨迹交付，未另附截图；`tests/unit/VectorSimTop.scala` 等上游派生文件中保留了上游原有的
    `TODO`/`FIXME` 注释（本项目补丁未新增任何此类注释）。
 
-后续工作（综合、全核循环级吞吐实测、真实 LLM 负载、LMUL>1、提交物）按投入产出比排序见
+后续工作（综合、默认配置上的周期实测、真实 LLM 负载、LMUL>1、提交物）按投入产出比排序见
 [`docs/_plan/HANDOFF_TODO.md`](docs/_plan/HANDOFF_TODO.md)。

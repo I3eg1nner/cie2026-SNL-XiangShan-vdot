@@ -284,7 +284,7 @@ emu 在 `--dump-wave`（不加 `--dump-wave-full`）下每个周期只写一个�
 
 1. **未发现 RTL 或 NEMU 补丁缺陷**。`rtl/patch/`、`nemu/patch/` 未改动。
 2. **环境问题两处**（§3.3）：上游 difftest 的 `OPT_FAST` 写死 clang 专有选项；g++ 11.4 编译 Verilator 生成的超大函数不可接受地慢。已在脚本中固化为 clang++。
-3. **对 `docs/stage3/22` 遗留威胁的一条实测证据**：`22` 中 vdotacc 循环携带依赖按 FU 延迟记为 2 拍。全核波形显示，在 MinimalConfig 下相互依赖的 VIMacU 指令发射间隔是 **7 拍**（FU 2 拍 + 读寄存器堆 3 拍 + 写回唤醒到发射 2 拍，§7.2 第 4 条）。同样的唤醒 / 读寄存器开销也作用于基线里依赖 VIAluFix 的 `vwadd.wv` 链（本波形中 vadd 从发射到结果为 1488→1492，再到消费者发射 1494，共 6 拍）。所以「2 拍 vs 1 拍」在全核中会被稀释成约「7 拍 vs 6 拍」。这只是一条依赖链上的观测，**不是吞吐测量**；T3 要的循环级周期数仍需在全核上跑 kernel 实测。
+3. **对 `docs/stage3/22` 遗留威胁的一条实测证据**：`22` 中 vdotacc 循环携带依赖按 FU 延迟记为 2 拍。全核波形显示，在 MinimalConfig 下相互依赖的 VIMacU 指令发射间隔是 **7 拍**（FU 2 拍 + 读寄存器堆 3 拍 + 写回唤醒到发射 2 拍，§7.2 第 4 条）。同样的唤醒 / 读寄存器开销也作用于基线里依赖 VIAluFix 的 `vwadd.wv` 链（本波形中 vadd 从发射到结果为 1488→1492，再到消费者发射 1494，共 6 拍）。所以「2 拍 vs 1 拍」在全核中会被稀释成约「7 拍 vs 6 拍」。这条波形本身只是一条依赖链上的观测，**不是吞吐测量**；之后的全核周期实测（`22` §5.5.3）证实了每跳 = FU 延迟 + 5 拍（`vdotacc` 7.000 拍、`vwadd.wv` 6.000 拍），长向量循环的稳态周期与加速比见 `22` §5.5.4（单累加器 1.81×、2 累加器 2.25×，均只对 MinimalConfig 成立）。仍未做的是真实 LLM 内核（int8 GEMM / attention）与默认配置上的周期测量。
 4. **配置**：只构建了 MinimalConfig（理由与影响见 §3.1）。默认配置、`KunminghuV2Config` 未运行。
 5. **随机性**：依赖测试的随机性在数据、vl、vta/vma 上；指令序列是 10 个固定模板，不是随机指令流生成器。乱序调度的交错由真实流水线自然产生，但没有刻意制造发射队列满、ROB 满等压力场景（K9 的 8 条独立 vdot 只部分覆盖）。
 6. **语料程序的标题**：复用的 `vdot_test.c` 打印「NEMU vdot instruction-family conformance test」，在全核上运行时这行标题字面不准确；`nemu_config.h` 的 `NEMU_DEFCONFIG` 字段已改写为「XiangShan MinimalConfig emu (DUT) / riscv64-xs-kmhv2-ref_defconfig (REF)」以免误读（`corpus_b00.log:7`）。

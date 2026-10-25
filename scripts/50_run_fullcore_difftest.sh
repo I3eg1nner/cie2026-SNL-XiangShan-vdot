@@ -43,6 +43,12 @@
 #     PERF_REPS=5（perf 模式每个测量点的重复次数）  HOST_IP（hello 模式；缺省自动探测本机 IP）
 #     PLOT_PYTHON（装有 matplotlib 的 Python，用于渲染时序图；缺省时跳过绘图）
 #     FC_LOG_DIR（默认 ${LOG_ROOT}/stage3/fullcore；已存在的同名日志不会被覆盖，改写到带时间戳的子目录）
+#     NEMU_SYSROOT（readline / SDL2 开发包的本地解包目录，默认 ${WORK_DIR}/sysroot，存在时自动启用）
+#
+#   NEMU 构建依赖：[1] 先调用 scripts/lib/common.sh 的 setup_nemu_host_deps，检查 readline / SDL2 / zlib / zstd
+#         头文件；缺失时报错并给出 apt-get 命令。没有 root 权限时先执行
+#         LOCAL_SYSROOT=1 bash scripts/00_setup_env_host.sh（解包到 ${WORK_DIR}/sysroot，本脚本自动引用），
+#         或用 NEMU_SYSROOT=<目录> 指向已有的解包目录。与 scripts/02、21、30、40 的处理相同。
 #
 #   C++ 编译器：默认 clang++（CXX/LINK 覆盖 verilated.mk 中的 g++）。上游 difftest 的
 #         OPT_FAST 默认带 clang 专有选项 -fno-slp-vectorize（difftest/verilator.mk:76），
@@ -103,6 +109,8 @@ need_cmd verilator
 need_cmd python3
 load_host_env
 detect_cross
+# NEMU 开发包检查提前到最前面：缺依赖时在耗时的 [0] 复制工作树之前就报错（wave 模式不构建 NEMU）
+case "${MODE}" in wave) ;; *) setup_nemu_host_deps ;; esac
 
 # -----------------------------------------------------------------------------
 # [0] 全核工作树
@@ -216,7 +224,7 @@ build_emu() {
     info "已存在：${XS}/build/emu（FORCE_EMU=1 可强制重建）"
   else
     local log; log="$(newlog build_emu.log)"
-    info "构建日志：$(relpath "${log}")（MinimalConfig 在 128 核机器上实测约 23 分钟，峰值内存约 59 GB）"
+    info "构建日志：$(relpath "${log}")（MinimalConfig 在 128 核机器上实测约 23.5 分钟，峰值内存约 56.4 GiB）"
     build_emu_in "${XS}" "${log}"
   fi
   ls -l "${XS}/build/emu"
