@@ -19,7 +19,7 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-XS_DIR="${REPO_ROOT}/work/XiangShan-vdot"
+XS_DIR="${WORK_DIR:-${REPO_ROOT}/work}/XiangShan-vdot"
 VEC_DIR="${REPO_ROOT}/tests/vectors"
 GOLDEN="${REPO_ROOT}/tests/golden"
 OBJ_DIR="${XS_DIR}/build/vimacu-tb"
@@ -90,8 +90,8 @@ python3 "${REPO_ROOT}/scripts/tools/verilog_module_diff.py" \
 echo ""
 echo "--- (5) VDotTree / ByteMaskTailGen 单独校验 ---"
 for M in VDotTree CSA4to2 CSA3to2 ByteMaskTailGen MaskExtractor UIntToContLow1s UIntToContLow0s VecDataSplitModule VIMacSrcTypeModule; do
-  A=$(awk -v m="$M" 'BEGIN{p=0} $0 ~ "^module "m"\\(" {p=1} p{print} p && /^endmodule/{exit}' "${XS_DIR}/build/vdot2/VIMacU.v" | sed -E 's@//.*@@' | md5)
-  B=$(awk -v m="$M" 'BEGIN{p=0} $0 ~ "^module "m"\\(" {p=1} p{print} p && /^endmodule/{exit}' "${XS_DIR}/build/vdot/VIMacUHarness.v" | sed -E 's@//.*@@' | md5)
+  A=$(awk -v m="$M" 'BEGIN{p=0} $0 ~ "^module "m"\\(" {p=1} p{print} p && /^endmodule/{exit}' "${XS_DIR}/build/vdot2/VIMacU.v" | sed -E 's@//.*@@' | { md5sum 2>/dev/null || md5; } | cut -d' ' -f1)
+  B=$(awk -v m="$M" 'BEGIN{p=0} $0 ~ "^module "m"\\(" {p=1} p{print} p && /^endmodule/{exit}' "${XS_DIR}/build/vdot/VIMacUHarness.v" | sed -E 's@//.*@@' | { md5sum 2>/dev/null || md5; } | cut -d' ' -f1)
   [ "$A" = "$B" ] && R="IDENTICAL" || R="DIFFERENT"
   printf '    %-22s %s  (%s)\n' "${M}" "${R}" "${A}"
 done

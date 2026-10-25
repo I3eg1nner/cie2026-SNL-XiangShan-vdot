@@ -21,11 +21,12 @@
 # =============================================================================
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-YS_DIR="${REPO_ROOT}/work/XiangShan-vdot/yunsuan"
-GOLDEN_SRC="${REPO_ROOT}/tests/golden"
-LOG_DIR="${REPO_ROOT}/logs/stage2"
+# shellcheck disable=SC1091
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/common.sh"
+YS_DIR="${XS_VDOT}/yunsuan"
+LOG_DIR="${LOG_ROOT}/stage2"
 WAVE_DIR="${LOG_DIR}/waveform"
+GOLDEN_SRC="${REPO_ROOT}/tests/golden"
 
 WAVE="${WAVE:-0}"
 OPS="${OPS:-2000}"
@@ -34,19 +35,22 @@ WAVE_END="${WAVE_END:-120}"
 CLEAN="${CLEAN:-0}"
 BUILD_ONLY="${BUILD_ONLY:-0}"
 
-step() { printf '\n\033[1;34m==> [%s] %s\033[0m\n' "$(date '+%H:%M:%S')" "$*"; }
-info() { printf '    %s\n' "$*"; }
-die()  { printf '\033[1;31mERROR: %s\033[0m\n' "$*" >&2; exit 1; }
 
-[ -d "${YS_DIR}" ] || die "找不到 ${YS_DIR}"
+if [ ! -d "${YS_DIR}" ]; then
+  info "找不到 ${YS_DIR}，调用 scripts/04_make_vdot_trees.sh vdot 生成"
+  bash "${REPO_ROOT}/scripts/04_make_vdot_trees.sh" vdot
+fi
 mkdir -p "${LOG_DIR}" "${WAVE_DIR}"
 
 step "0/5 载入工具链环境"
-# shellcheck disable=SC1091
-source "${REPO_ROOT}/scripts/env_host.sh"
+load_host_env
+need_cmd verilator
+need_cmd java "JDK 17"
 info "java      : $(java -version 2>&1 | head -1)"
 info "verilator : $(verilator --version)"
-command -v espresso >/dev/null || die "PATH 中没有可执行的 espresso，精化会失败"
+command -v espresso >/dev/null || die "PATH 中没有可执行的 espresso，精化会失败（请先执行 scripts/00_setup_env_host.sh）"
+printf '.i 2\n.o 1\n.p 2\n01 1\n10 1\n.e\n' | espresso >/dev/null 2>&1 \
+  || die "espresso 无法在本机执行（架构不符？返回 126 时请重跑 00_setup_env_host.sh）"
 
 step "1/5 同步参考模型（tests/golden/vdot_ref.{c,h} -> golden_model/）"
 # 关键一步：C++ 参考模型 vector_dot.cpp 直接 #include 这份 .c，不重写任何语义。
@@ -89,6 +93,7 @@ if [ "${BUILD_ONLY}" = "1" ]; then step "完成（仅构建）"; exit 0; fi
 
 if [ "${WAVE}" = "1" ]; then
   step "4/5 抓取 vdot.vv 波形"
+  require_short_emu_cwd "${YS_DIR}"
   SEED="${SEED:-1}"
   rm -f "${YS_DIR}"/build/*.vcd
   ( cd "${YS_DIR}" && \

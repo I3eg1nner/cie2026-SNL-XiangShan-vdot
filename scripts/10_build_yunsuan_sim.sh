@@ -22,9 +22,10 @@
 # =============================================================================
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-YS_DIR="${REPO_ROOT}/work/XiangShan-kmhv2/yunsuan"
-LOG_DIR="${REPO_ROOT}/logs/stage1"
+# shellcheck disable=SC1091
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/common.sh"
+YS_DIR="${XS_PRISTINE}/yunsuan"
+LOG_DIR="${LOG_ROOT}/stage1"
 WAVE_DIR="${LOG_DIR}/waveform"
 PATCH="${REPO_ROOT}/tests/unit/yunsuan_testdriver_env_select.patch"
 
@@ -34,27 +35,21 @@ WAVE_OPS="${WAVE_OPS:-8}"
 WAVE_END="${WAVE_END:-120}"
 CLEAN="${CLEAN:-0}"
 
-step() { printf '\n\033[1;34m==> [%s] %s\033[0m\n' "$(date '+%H:%M:%S')" "$*"; }
-info() { printf '    %s\n' "$*"; }
-die()  { printf '\033[1;31mERROR: %s\033[0m\n' "$*" >&2; exit 1; }
 
 [ -d "${YS_DIR}" ] || die "找不到 ${YS_DIR}，请先执行 scripts/00_setup_env_host.sh 并检出 yunsuan 子模块"
 mkdir -p "${LOG_DIR}" "${WAVE_DIR}"
 
 # -----------------------------------------------------------------------------
 step "0/5 载入工具链环境"
-if [ -f "${REPO_ROOT}/scripts/env_host.sh" ]; then
-  # shellcheck disable=SC1091
-  source "${REPO_ROOT}/scripts/env_host.sh"
-else
-  info "未找到 scripts/env_host.sh，使用当前 PATH（可能失败，请先跑 00_setup_env_host.sh）"
-fi
+load_host_env
+need_cmd verilator
+need_cmd java "JDK 17"
 info "java      : $(java -version 2>&1 | head -1)"
 info "verilator : $(verilator --version)"
 info "espresso  : $(command -v espresso || echo '未找到')"
-command -v espresso >/dev/null || die "PATH 中没有可执行的 espresso，精化会失败"
-file -b "$(command -v espresso)" | grep -qi "mach-o\|arm64\|ELF 64-bit.*aarch64" \
-  || info "警告：espresso 可能不是本机架构，若精化报 'Result of espresso: 126' 请重跑 00_setup_env_host.sh"
+command -v espresso >/dev/null || die "PATH 中没有可执行的 espresso，精化会失败（请先执行 scripts/00_setup_env_host.sh）"
+printf '.i 2\n.o 1\n.p 2\n01 1\n10 1\n.e\n' | espresso >/dev/null 2>&1 \
+  || die "espresso 无法在本机执行（架构不符？返回 126 时请重跑 00_setup_env_host.sh）"
 
 # -----------------------------------------------------------------------------
 step "1/5 应用 test_driver 运行时选择补丁（幂等）"
@@ -115,6 +110,7 @@ info "SimTop.v : $(wc -l < "${YS_DIR}/build/SimTop.v") 行"
 # -----------------------------------------------------------------------------
 if [ "${WAVE}" = "1" ]; then
   step "4/5 抓取 vadd 波形"
+  require_short_emu_cwd "${YS_DIR}"
   # 注意：emu.cpp 的 reset_ncycles() 在 VM_TRACE==1 时【无条件】调 tfp->dump()，
   #       所以带 trace 编译的 emu 必须始终带 --dump-wave 运行，否则会用未初始化指针崩溃。
   SEED="${SEED:-1}"

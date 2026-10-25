@@ -24,7 +24,7 @@
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-PRISTINE="${REPO_ROOT}/work/XiangShan-kmhv2"
+PRISTINE="${WORK_DIR:-${REPO_ROOT}/work}/XiangShan-kmhv2"
 DEST="${REPO_ROOT}/rtl/chisel"
 MANIFEST_NAME="MANIFEST.md"
 
@@ -36,7 +36,7 @@ case "${1:-}" in
   *) echo "未知参数：$1（只接受 --check）" >&2; exit 2 ;;
 esac
 
-TMP="$(mktemp -d -t rtlsync)"
+TMP="$(mktemp -d "${TMPDIR:-/tmp}/rtlsync.XXXXXX")"
 cleanup() { rm -rf "${TMP}"; }
 trap cleanup EXIT
 

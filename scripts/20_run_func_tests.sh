@@ -12,7 +12,7 @@
 #   RANDOM_OPS=N   每条指令的随机激励条数（默认 20000，验收要求 >= 10000）
 #   RANDOM_SEEDS="a b c"   随机种子列表（默认 "11 12 13"）
 #
-# 输出日志（logs/stage2/）：
+# 输出日志（${LOG_ROOT}/stage2/，LOG_ROOT 默认 logs/；工作树在 ${WORK_DIR}/XiangShan-vdot）：
 #   p5_func_positive.log   2.3.1 正数测试
 #   p5_func_negative.log   2.3.2 负数测试
 #   p5_func_boundary.log   2.3.3 边界值测试
@@ -29,14 +29,15 @@
 # =============================================================================
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-YS_DIR="${REPO_ROOT}/work/XiangShan-vdot/yunsuan"
-XS_DIR="${REPO_ROOT}/work/XiangShan-vdot"
+# shellcheck disable=SC1091
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/common.sh"
+XS_DIR="${XS_VDOT}"
+YS_DIR="${XS_DIR}/yunsuan"
 VEC_DIR="${REPO_ROOT}/tests/vectors"
-LOG_DIR="${REPO_ROOT}/logs/stage2"
+LOG_DIR="${LOG_ROOT}/stage2"
 WAVE_DIR="${LOG_DIR}/waveform"
 EMU="${YS_DIR}/build/emu"
-PRISTINE_EMU="${REPO_ROOT}/work/XiangShan-kmhv2/yunsuan/build/emu"
+PRISTINE_EMU="${XS_PRISTINE}/yunsuan/build/emu"
 
 WITH_WAVE="${WITH_WAVE:-0}"
 WITH_FAULT="${WITH_FAULT:-0}"
@@ -45,17 +46,12 @@ RANDOM_SEEDS="${RANDOM_SEEDS:-11 12 13}"
 CORPUS_SEED="${CORPUS_SEED:-7}"
 
 SUMMARY="${LOG_DIR}/p5_summary.log"
-ROWS="$(mktemp -t vdotrows)"
+ROWS="$(mktemp_f vdotrows)"
 trap 'rm -f "${ROWS}"' EXIT
 
 mkdir -p "${LOG_DIR}" "${WAVE_DIR}"
 
-step() { printf '\n\033[1;34m==> [%s] %s\033[0m\n' "$(date '+%H:%M:%S')" "$*"; }
-info() { printf '    %s\n' "$*"; }
-die()  { printf '\033[1;31mERROR: %s\033[0m\n' "$*" >&2; exit 1; }
-
-# shellcheck disable=SC1091
-source "${REPO_ROOT}/scripts/env_host.sh"
+load_host_env
 
 # ---------------------------------------------------------------------------
 # 0. 准备 emu
@@ -146,7 +142,7 @@ run_random() {
 # 用法： worked_example <语料文件> <awk 过滤表达式> <说明>
 worked_example() {
   local f="$1" filter="$2" desc="$3"
-  local tmp; tmp="$(mktemp -t vdotcase)"
+  local tmp; tmp="$(mktemp_f vdotcase)"
   head -1 "$f" > "${tmp}"
   awk "!/^#/ && NF>0 && ${filter}" "$f" | head -1 >> "${tmp}"
   echo ""
@@ -323,16 +319,18 @@ step "5/7 既有指令回归"
     echo "    注：fuType=0（VFloatAdder）在 pristine 基线上同样 BADTRAP（同一条用例、同一拍），"
     echo "        属于上游既有缺陷（它本来就不在上游 ALL_FUTYPES 随机集合里），与 vdot 无关。"
     echo "    下面给出两棵树在 fuType=0 上的完整输出 diff（应当只差 wall-clock 行）："
+    FT0_P="$(mktemp_f ft0_pristine)"; FT0_V="$(mktemp_f ft0_vdot)"
     ( cd /tmp && YS_FUTYPE=0 "${PRISTINE_EMU}" -O 20 -s 0 2>&1 || true ) \
-      | grep -v "compiled at" | grep -v "executed" > /tmp/ft0_pristine.txt
+      | grep -v "compiled at" | grep -v "executed" > "${FT0_P}"
     ( cd "${YS_DIR}" && YS_FUTYPE=0 ./build/emu -O 20 -s 0 2>&1 || true ) \
-      | grep -v "compiled at" | grep -v "executed" > /tmp/ft0_vdot.txt
-    if diff /tmp/ft0_pristine.txt /tmp/ft0_vdot.txt; then
+      | grep -v "compiled at" | grep -v "executed" > "${FT0_V}"
+    if diff "${FT0_P}" "${FT0_V}"; then
       echo "    => 两棵树在 fuType=0 上的输出逐字节相同（含失配的 REF/DUT 数值），"
       echo "       说明该失配是上游既有缺陷，与 vdot 改动无关"
     else
       echo "    => 两棵树输出不同（见上面的 diff），需要进一步排查"
     fi
+    rm -f "${FT0_P}" "${FT0_V}"
   else
     echo "    [跳过] 未找到 pristine 基线 emu：${PRISTINE_EMU}"
   fi
@@ -432,6 +430,7 @@ fi
 # 7. 可选：波形 / 故障注入
 # ---------------------------------------------------------------------------
 if [ "${WITH_WAVE}" = "1" ]; then
+  require_short_emu_cwd "${YS_DIR}"
   step "7a/7 波形抓取（重建带 trace 的 emu）"
   ( bash "${REPO_ROOT}/scripts/tools/capture_vdot_waves.sh" || true ) 2>&1 | tee "${LOG_DIR}/p5_waveform.log"
 else
@@ -439,6 +438,7 @@ else
 fi
 
 if [ "${WITH_FAULT}" = "1" ]; then
+  require_tool_workdir "${REPO_ROOT}/scripts/tools/fault_inject_vdot.sh"
   step "7b/7 故障注入（5 个故障，每个重建一次 emu）"
   ( bash "${REPO_ROOT}/scripts/tools/fault_inject_vdot.sh" || true ) 2>&1 | tee "${LOG_DIR}/p5_fault_injection.log"
 else
@@ -463,7 +463,9 @@ step "汇总"
   echo ""
   echo "日志："
   for l in p5_func_positive p5_func_negative p5_func_boundary p5_func_random p5_regression p5_decode_illegal p5_decode_prove_fail p5_vimacu_equiv p5_fault_injection p5_waveform; do
-    [ -f "${LOG_DIR}/${l}.log" ] && printf "  %-26s %s\n" "${l}.log" "$(wc -l < "${LOG_DIR}/${l}.log" | tr -d ' ') 行"
+    if [ -f "${LOG_DIR}/${l}.log" ]; then
+      printf "  %-26s %s\n" "${l}.log" "$(wc -l < "${LOG_DIR}/${l}.log" | tr -d ' ') 行"
+    fi
   done
 } 2>&1 | tee "${SUMMARY}"
 

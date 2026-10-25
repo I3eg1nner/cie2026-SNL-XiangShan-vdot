@@ -15,9 +15,9 @@
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-PRISTINE="${REPO_ROOT}/work/XiangShan-kmhv2"
-VDOT="${REPO_ROOT}/work/XiangShan-vdot"
-TMP="$(mktemp -d -t vdotpatch)"
+PRISTINE="${WORK_DIR:-${REPO_ROOT}/work}/XiangShan-kmhv2"
+VDOT="${WORK_DIR:-${REPO_ROOT}/work}/XiangShan-vdot"
+TMP="$(mktemp -d "${TMPDIR:-/tmp}/vdotpatch.XXXXXX")"
 RC=0
 
 cleanup() { rm -rf "${TMP}"; }

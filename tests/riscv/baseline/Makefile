@@ -11,11 +11,12 @@
 #   2. 语料打包直接复用 ../vdot/pack_corpus.py，保证两套测试跑的是同一批用例。
 #
 # 用法：
-#   make NEMU_HOME=/work/work/NEMU
-#   make run NEMU_HOME=/work/work/NEMU
+#   make NEMU_HOME=<work>/NEMU [CROSS=<前缀>] [BUILD=<构建目录>]
+#   make run NEMU_HOME=<work>/NEMU
+# （scripts/40_run_bench.sh 会自动传入这些变量）
 # =============================================================================
 
-NEMU_HOME   ?= /work/work/NEMU
+NEMU_HOME   ?= ../../../work/NEMU
 CROSS       ?= riscv64-linux-gnu-
 BUILD       ?= build
 VECTORS_DIR ?= ../../vectors
@@ -35,7 +36,8 @@ NEMU_XVDOT         := $(shell grep -cE '^\#define CONFIG_CUSTOM_XVDOT[ \t]' $(AU
 
 CFLAGS  := -march=rv64gcv_zve64x -mabi=lp64d -mcmodel=medany \
            -ffreestanding -nostdlib -nostartfiles -fno-builtin -fno-pic \
-           -fno-tree-vectorize -O2 -g -Wall -Wextra -I$(BUILD)
+           -fno-tree-vectorize -O2 -g -Wall -Wextra -I$(BUILD) \
+           -DCORPUS_BIN='"$(abspath $(BUILD))/corpus.bin"'
 LDFLAGS := -nostdlib -nostartfiles -no-pie -Wl,--build-id=none \
            -Wl,-Map,$(BUILD)/baseline_test.map
 

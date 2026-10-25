@@ -58,14 +58,26 @@ JDK **17**（JDK 21/25 会失败）、mill **0.12.3**（XiangShan）与 **0.11.1
 
 ### 已有脚本与其适用性
 
-| 脚本 | Linux 可用性 |
-|---|---|
-| `scripts/00_setup_env_host.sh` | ❌ **macOS/brew 专用，需改写**。其中按 commit pin 克隆上游的 step 5 逻辑可直接复用 |
-| `scripts/01_setup_env_docker.sh` + `scripts/docker/Dockerfile.xsdev` | ✅ 改 `FROM --platform=linux/amd64` 即可 |
-| `scripts/02_build_nemu.sh` / `03_run_hello.sh` | ✅ |
-| `scripts/10_build_yunsuan_sim.sh` / `11_build_vdot_sim.sh` | ✅ |
-| `scripts/20_run_func_tests.sh` / `21_build_nemu_vdot.sh` / `30_run_cosim.sh` / `40_run_bench.sh` | ✅ |
-| `scripts/tools/*` | ✅ 纯 Python/Shell |
+实测环境：Ubuntu 22.04.5 x86_64（128 核）、GCC 11.4（宿主）、`/opt/riscv` 下的 riscv64-unknown-elf GCC 15.2（交叉）、Verilator 5.024、OpenJDK 17.0.20；无 Docker；无 `libreadline-dev` / `libsdl2-dev`（由 `LOCAL_SYSROOT=1` 解包到 `${WORK_DIR}/sysroot`，未用 sudo）。
+在**全新目录**（交付仓库重新 `git clone` + 独立 `WORK_DIR`，日志写到 `LOG_ROOT=/tmp/...`）按 00→40 顺序一键跑通，耗时为该次实测（mill / coursier / firtool 下载缓存沿用本机 `~/.cache`，干净机器首次会多出下载时间）。
+
+| 脚本 | Linux x86_64 实测 | 关键结果 |
+|---|---|---|
+| `scripts/00_setup_env_host.sh` | ✅ 226 s（含按 pin 克隆 XiangShan 全部子模块与 NEMU） | 依赖缺失时列出 apt 命令后退出；`LOCAL_SYSROOT=1` 免 sudo 解包 readline/SDL2；自动探测 JDK 17 与支持 `rv64gcv_zve64x` 的交叉编译器；最后调用 `04` 生成两棵补丁工作树。重复执行全部「跳过」 |
+| `scripts/01_setup_env_docker.sh` + `scripts/docker/Dockerfile.xsdev` | ⚠️ 未实测（本机无 Docker） | 镜像与平台按宿主架构自动选择（amd64/arm64），不再写死 arm64 与 `/work`。Linux 上不需要它 |
+| `scripts/02_build_nemu.sh` | ✅ 29 s | 两种形态构建成功，`git status --short` 为空（零 patch） |
+| `scripts/03_run_hello.sh` | ✅ 2 s | `hello xiangshan, I am cie2026-vdot, IP address <本机IP>`，HIT GOOD TRAP |
+| `scripts/04_make_vdot_trees.sh`（新增） | ✅（由 00 调用） | 生成 `XiangShan-vdot` / `XiangShan-cosim` = kmhv2 + `rtl/patch/0001` + `0002` + `tests/unit/yunsuan_vdot_testbench.patch` |
+| `scripts/10_build_yunsuan_sim.sh` | ✅ 105 s | 3 段均 `EMU EXCEEDED LIMIT` |
+| `scripts/11_build_vdot_sim.sh` | ✅ 105 s | 8 段均 `EMU EXCEEDED LIMIT` |
+| `scripts/20_run_func_tests.sh` | ✅ 317 s | 合计 290103 / 290103 通过，失败 suite 0，与存档 `p5_summary.log` 数字相同 |
+| `scripts/21_build_nemu_vdot.sh`（含 `verify-patch`、`fault`） | ✅ 21 s / 10 s / 21 s | 30758 / 0，must-trap 4834/4834，`.so` HIT GOOD TRAP；故障注入 5/5（21103 / 12079 / 10173 / 3202 / 1584，与存档相同） |
+| `scripts/30_run_cosim.sh`（含 `fault`） | ✅ 251 s / 96 s | 72758 条，值比对 0 失配、判定分歧 0；分 suite 汇总与存档 `p6_cosim_run.log:22-52` 逐行相同。故障注入 6/6：5116 / **6378（新增 T3-RTL-1b）** / 586 / 4944 / 分歧 162 / 分歧 74 |
+| `scripts/40_run_bench.sh` | ✅ 126 s | [A] 25924/0、[B] 24 个长度 0 失配；9 个 CSV 中 6 个与仓库逐字节相同，`instr_count_loop` / `instr_count_single` / `speedup` 因 GCC 15 的 `minstret` 绝对值 +2 而不同（斜率不变，见 `logs/stage3/p7_baseline_gcc15_supplement.log`）。绘图需 matplotlib + CJK 字体，缺失时跳过并告警 |
+| `scripts/tools/*` | ✅（随 20 / 30 / 40 间接实测） | `run_vimacu_tb` / `run_decode_tb` / `verify_patches` / `capture_vdot_waves` / `sync_rtl_sources` 已改为支持 `WORK_DIR`、GNU `mktemp`、`md5sum`。`fault_inject_vdot.sh`（`md5 -q`）与 `run_vecfu_latency.sh`（写死 `<仓库根>/work`）尚未改：前者在 Linux 上 `WITH_FAULT=1` 时会失败，后者要求 `WORK_DIR` 等于 `<仓库根>/work`（40 会检查并给出提示） |
+
+公共约定见 `scripts/lib/common.sh` 文件头：`WORK_DIR`、`LOG_ROOT`、`RESULTS_DIR`、`FIG_DIR`、`BUILD_ROOT`、`XS_RUNNER`（`auto`：Linux 在宿主机执行，macOS 进容器）、`CROSS`、`JOBS`、`PYTHON`。
+已知限制：上游 yunsuan `emu.cpp` 用 `getcwd(cwd, 64)` 拼 VCD 路径，yunsuan 目录超过 63 字节时波形会静默丢失。40 已改为在短路径临时目录里运行 emu；`10`/`11` 的 `WAVE=1` 与 `20` 的 `WITH_WAVE=1` 遇到长路径时直接报错，提示改用较短的 `WORK_DIR`。
 
 ### 平台差异带来的两点好处
 

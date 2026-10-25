@@ -1,22 +1,27 @@
 # =============================================================================
-# xsdev —— 香山 / NEMU 软件侧可复现构建环境（linux/arm64）
+# xsdev —— 香山 / NEMU 软件侧可复现构建环境（linux/amd64 与 linux/arm64 通用）
 #
 # 设计依据：
 #   1. 对齐官方 xs-env 的 install-scripts/base.sh 依赖清单（NEMU 侧），
 #      仅保留 NEMU 构建与 RISC-V 交叉编译所需的部分；
-#      JDK / mill / Verilator / gsim 由硬件侧工程师在宿主机单独部署，
+#      JDK / mill / Verilator 由硬件侧在宿主机单独部署，
 #      故本镜像刻意不包含，以缩短构建时间、减小体积。
 #   2. 基础镜像选 ubuntu:24.04：其 apt 自带 GCC 13/14 级别的 RISC-V 交叉
 #      工具链与 binutils 2.42，可完整汇编 RVV 1.0（ubuntu:22.04 的
 #      binutils 2.38 / GCC 11 对 RVV 1.0 支持不完整，实测不可用）。
-#   3. 宿主为 macOS/arm64，Docker Desktop 的 Linux VM 亦为 aarch64，
-#      因此全程使用原生 linux/arm64，不引入 qemu 用户态模拟。
+#   3. 平台由 `docker build --platform` 决定（scripts/01_setup_env_docker.sh 按宿主
+#      架构自动选择 linux/amd64 或 linux/arm64，可用 XSDEV_PLATFORM 覆盖），
+#      全程原生执行，不引入 qemu 用户态模拟。
 #      NEMU 源码中的 x86 intrinsic 均由 __x86_64__ 宏保护，arm64 下可编译。
+#   4. 容器内不固定任何工作路径：交付脚本把仓库与 WORK_DIR 以宿主机上的
+#      **同一绝对路径**挂载进来，并通过 -e NEMU_HOME=... 传入（见 scripts/lib/common.sh 的 xrun）。
+#
+# Linux x86_64 宿主机上不需要本镜像：交付脚本默认直接在宿主机执行（XS_RUNNER=host）。
 # =============================================================================
-FROM --platform=linux/arm64 ubuntu:24.04
+FROM ubuntu:24.04
 
 LABEL org.opencontainers.image.title="xsdev"
-LABEL org.opencontainers.image.description="XiangShan/NEMU software-side build environment (arm64)"
+LABEL org.opencontainers.image.description="XiangShan/NEMU software-side build environment"
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LC_ALL=C.UTF-8
@@ -113,9 +118,4 @@ RUN set -eux; \
     echo "RVV 1.0 assembler probe OK: $(riscv64-linux-gnu-gcc --version | head -n1)"; \
     rm -f /tmp/rvv_probe.S /tmp/rvv_probe.o
 
-# NEMU 相关环境变量（容器内默认挂载点 /work）
-ENV NEMU_HOME=/work/work/NEMU
-ENV XS_PROJECT_ROOT=/work/work
-
-WORKDIR /work
 CMD ["/bin/bash"]

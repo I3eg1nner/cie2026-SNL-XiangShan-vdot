@@ -15,9 +15,9 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-YS_DIR="${REPO_ROOT}/work/XiangShan-vdot/yunsuan"
+YS_DIR="${WORK_DIR:-${REPO_ROOT}/work}/XiangShan-vdot/yunsuan"
 VEC_DIR="${REPO_ROOT}/tests/vectors"
-WAVE_DIR="${REPO_ROOT}/logs/stage2/waveform"
+WAVE_DIR="${LOG_ROOT:-${REPO_ROOT}/logs}/stage2/waveform"
 KEEP_TRACE="${KEEP_TRACE:-0}"
 EXTRACT_ONLY="${EXTRACT_ONLY:-0}"   # 1 = 复用已有 VCD，只重新导出信号轨迹
 
@@ -120,7 +120,7 @@ capture() {     # $1=名字 $2=语料文件
 
 echo ""
 echo "--- (2) 构造单条定向语料 ---"
-T1="$(mktemp -t wvdot)"; T2="$(mktemp -t wvdotacc)"; T3="$(mktemp -t wvdot4a)"
+T1="$(mktemp "${TMPDIR:-/tmp}/wvdot.XXXXXX")"; T2="$(mktemp "${TMPDIR:-/tmp}/wvdotacc.XXXXXX")"; T3="$(mktemp "${TMPDIR:-/tmp}/wvdot4a.XXXXXX")"
 echo "  vdot.vv（全 0x80 × 全 0x80，期望 0x00040000 = 262144）"
 mk_single "${VEC_DIR}/negative.txt" \
   '$8=="80808080808080808080808080808080" && $9=="80808080808080808080808080808080" && $6==1' "${T1}"

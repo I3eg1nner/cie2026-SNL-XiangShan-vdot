@@ -17,7 +17,7 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-XS_DIR="${REPO_ROOT}/work/XiangShan-vdot"
+XS_DIR="${WORK_DIR:-${REPO_ROOT}/work}/XiangShan-vdot"
 OBJ_DIR="${XS_DIR}/build/decode-tb"
 SKIP_ELAB="${SKIP_ELAB:-0}"
 
@@ -66,7 +66,7 @@ if [ "${PROVE_FAIL:-0}" = "1" ]; then
   echo ""
   echo "--- (4) 反向验证：临时撤掉 dotEmulIllegal，确认 LMUL 用例会失败 ---"
   SRC="${XS_DIR}/src/main/scala/xiangshan/backend/decode/VecExceptionGen.scala"
-  BK="$(mktemp -t vecexcgen)"
+  BK="$(mktemp "${TMPDIR:-/tmp}/vecexcgen.XXXXXX")"
   cp "${SRC}" "${BK}"
   restore_src() { cp "${BK}" "${SRC}"; rm -f "${BK}"; }
   trap restore_src EXIT

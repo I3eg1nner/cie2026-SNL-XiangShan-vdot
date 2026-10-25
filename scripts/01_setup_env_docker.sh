@@ -14,50 +14,45 @@
 #   source ./scripts/01_setup_env_docker.sh
 #   xsdev riscv64-linux-gnu-gcc --version
 #
-# 约定：交付仓库根目录挂载到容器内 /work（读写），容器内：
-#   NEMU_HOME=/work/work/NEMU
+# 约定：交付仓库根目录与 WORK_DIR 以宿主机上的**同一绝对路径**挂载进容器，
+#       NEMU_HOME=${WORK_DIR}/NEMU 通过 -e 传入（与 scripts/lib/common.sh 的 xrun 一致）。
+#
+# 镜像与平台默认按宿主架构选择（x86_64 -> linux/amd64，arm64 -> linux/arm64），
+# 可用 XSDEV_IMAGE / XSDEV_PLATFORM 覆盖。Linux x86_64 宿主机上不需要本镜像：
+# 交付脚本默认直接在宿主机执行（XS_RUNNER=host），只有设置 XS_RUNNER=docker 时才会用到。
 # =============================================================================
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." && pwd)"
-IMAGE_NAME="${XSDEV_IMAGE:-xsdev:ubuntu24.04-arm64}"
+# shellcheck disable=SC1091
+source "$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)/lib/common.sh"
+IMAGE_NAME="${XSDEV_IMAGE}"
 DOCKERFILE="${REPO_ROOT}/scripts/docker/Dockerfile.xsdev"
-LOG_DIR="${REPO_ROOT}/logs/stage1"
+LOG_DIR="${LOG_ROOT}/stage1"
 
-# 在容器内执行命令。
-# 属主说明：这里【没有】传 --user。在 macOS / Docker Desktop 下，virtiofs 会把容器内
-# 写出的文件映射成宿主当前用户所属，实测 build/ 产物属主正常；但容器内 `ls -l` 仍显示
-# root（见 logs/stage1/p1_nemu_build.log:126 的 `root root`）。
-# 在 Linux 宿主上没有这层映射，会真的生成 root 所属文件 —— 此时请自行加上
-#   --user "$(id -u):$(id -g)"
-# 并注意容器内 HOME 不可写与 git 的 safe.directory 两个副作用。
+# 在容器内执行命令（Linux 宿主上以当前 uid/gid 运行，避免产出 root 所属文件）。
+_docker_args() {
+    local args=(--platform "${XSDEV_PLATFORM}" -v "${REPO_ROOT}:${REPO_ROOT}" -w "${REPO_ROOT}"
+                -e NEMU_HOME="${NEMU_DIR}" -e WORK_DIR="${WORK_DIR}" -e XS_RUNNER=host)
+    case "${WORK_DIR}/" in "${REPO_ROOT}/"*) ;; *) args+=(-v "${WORK_DIR}:${WORK_DIR}") ;; esac
+    if [ "${HOST_OS}" = "Linux" ]; then args+=(--user "$(id -u):$(id -g)" -e HOME=/tmp); fi
+    printf '%s\0' "${args[@]}"
+}
+
 xsdev() {
-    docker run --rm -i \
-        --platform linux/arm64 \
-        -v "${REPO_ROOT}:/work" \
-        -w /work \
-        -e NEMU_HOME=/work/work/NEMU \
-        -e XS_PROJECT_ROOT=/work/work \
-        "${IMAGE_NAME}" \
-        bash -lc "$*"
+    local a=(); while IFS= read -r -d '' x; do a+=("$x"); done < <(_docker_args)
+    docker run --rm -i "${a[@]}" "${IMAGE_NAME}" bash -lc "$*"
 }
 
 xsdev_tty() {
-    docker run --rm -it \
-        --platform linux/arm64 \
-        -v "${REPO_ROOT}:/work" \
-        -w /work \
-        -e NEMU_HOME=/work/work/NEMU \
-        -e XS_PROJECT_ROOT=/work/work \
-        "${IMAGE_NAME}" \
-        "$@"
+    local a=(); while IFS= read -r -d '' x; do a+=("$x"); done < <(_docker_args)
+    docker run --rm -it "${a[@]}" "${IMAGE_NAME}" "$@"
 }
 
 do_build() {
     mkdir -p "${LOG_DIR}"
     echo "[xsdev] building ${IMAGE_NAME} from ${DOCKERFILE}"
     docker build \
-        --platform linux/arm64 \
+        --platform "${XSDEV_PLATFORM}" \
         --progress=plain \
         -f "${DOCKERFILE}" \
         -t "${IMAGE_NAME}" \

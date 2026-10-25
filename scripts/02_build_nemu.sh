@@ -1,32 +1,35 @@
 #!/usr/bin/env bash
 # =============================================================================
-# 02_build_nemu.sh —— 在 xsdev 容器内构建 NEMU 的两种形态
+# 02_build_nemu.sh —— 构建 NEMU 的两种形态（Linux 宿主机直接构建 / macOS 进 xsdev 容器）
 #   [A] 独立解释器      riscv64-xs-kmhv2_defconfig      -> build/riscv64-nemu-interpreter
 #   [B] difftest 参考库 riscv64-xs-kmhv2-ref_defconfig  -> build/riscv64-nemu-interpreter-so
 #
-# 本脚本在宿主机执行时会自动把自己放进容器里再跑一遍（见 __IN_CONTAINER__ 判断）。
+# 执行位置：Linux 宿主机直接执行；macOS 自动进 xsdev 容器（见 scripts/lib/common.sh 的
+# XS_RUNNER / xrun）。脚本会把自己以 __inner 模式在目标环境里再跑一遍。
 # 用法： ./scripts/02_build_nemu.sh            # 两种形态都构建
 #        ./scripts/02_build_nemu.sh standalone # 只构建 [A]
 #        ./scripts/02_build_nemu.sh ref        # 只构建 [B]
+# 环境变量：WORK_DIR（NEMU 在 ${WORK_DIR}/NEMU）、LOG_ROOT、XS_RUNNER、JOBS，见 scripts/lib/common.sh
 # =============================================================================
 set -euo pipefail
 
-TARGET="${1:-all}"
+# shellcheck disable=SC1091
+source "$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)/lib/common.sh"
 
-if [ ! -f /.dockerenv ]; then
-    # ---- 宿主机侧：转入容器 ----
-    REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." && pwd)"
-    mkdir -p "${REPO_ROOT}/logs/stage1"
-    docker run --rm --platform linux/arm64 \
-        -v "${REPO_ROOT}:/work" -w /work \
-        "${XSDEV_IMAGE:-xsdev:ubuntu24.04-arm64}" \
-        bash /work/scripts/02_build_nemu.sh "${TARGET}" \
-        2>&1 | tee "${REPO_ROOT}/logs/stage1/p1_nemu_build.log"
+if [ "${1:-}" != "__inner" ]; then
+    # ---- 编排侧：检查依赖后转入执行环境 ----
+    TARGET="${1:-all}"
+    [ -d "${NEMU_DIR}" ] || die "找不到 ${NEMU_DIR}，请先执行 scripts/00_setup_env_host.sh"
+    setup_nemu_host_deps
+    mkdir -p "${LOG_ROOT}/stage1"
+    xrun "bash '${REPO_ROOT}/scripts/02_build_nemu.sh' __inner '${TARGET}'" \
+        2>&1 | tee "${LOG_ROOT}/stage1/p1_nemu_build.log"
     exit "${PIPESTATUS[0]}"
 fi
 
-# ---- 容器内 ----
-export NEMU_HOME=/work/work/NEMU
+# ---- 执行环境内（宿主机或容器） ----
+TARGET="${2:-all}"
+export NEMU_HOME="${NEMU_DIR}"
 
 echo "=============================================================="
 echo " P1-T2 NEMU 构建   $(date -u '+%Y-%m-%dT%H:%M:%SZ') UTC"
@@ -46,8 +49,8 @@ build_standalone() {
     echo "######## [A] 独立解释器：riscv64-xs-kmhv2_defconfig ########"
     echo "\$ make riscv64-xs-kmhv2_defconfig"
     make riscv64-xs-kmhv2_defconfig
-    echo "\$ make -j\$(nproc)"
-    make -j"$(nproc)"
+    echo "\$ make -j${JOBS}"
+    make -j"${JOBS}"
     echo "--- 产物 ---"
     ls -l build/riscv64-nemu-interpreter
     file build/riscv64-nemu-interpreter
@@ -58,8 +61,8 @@ build_ref() {
     echo "######## [B] difftest 参考实现：riscv64-xs-kmhv2-ref_defconfig ########"
     echo "\$ make riscv64-xs-kmhv2-ref_defconfig"
     make riscv64-xs-kmhv2-ref_defconfig
-    echo "\$ make -j\$(nproc)"
-    make -j"$(nproc)"
+    echo "\$ make -j${JOBS}"
+    make -j"${JOBS}"
     echo "--- 产物 ---"
     ls -l build/riscv64-nemu-interpreter-so
     file build/riscv64-nemu-interpreter-so
@@ -75,8 +78,8 @@ restore_standalone_config() {
     echo "######## [C] 把工作区配置恢复为独立解释器（供运行 RISC-V 程序使用）########"
     echo "\$ make riscv64-xs-kmhv2_defconfig"
     make riscv64-xs-kmhv2_defconfig
-    echo "\$ make -j\$(nproc)"
-    make -j"$(nproc)"
+    echo "\$ make -j${JOBS}"
+    make -j"${JOBS}"
     echo "--- 恢复后 include/generated/autoconf.h 的关键项 ---"
     grep -E 'CONFIG_MBASE|CONFIG_UARTLITE_MMIO|CONFIG_MMIO_RESET_VECTOR' include/generated/autoconf.h
 }

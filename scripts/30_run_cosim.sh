@@ -14,32 +14,35 @@
 #         + 每条指令 10000 条架构内随机 + 三类非法面随机各 3000 条
 #     [6] 打印汇总表
 #
-#   为什么要用容器：NEMU 的参考共享库是 linux/aarch64 ELF，必须在 Linux 里
-#   dlopen；而 verilator / mill 装在 macOS 宿主机上。于是「精化 + verilate」
-#   在宿主机做，「编译 + dlopen + 运行」在容器里做。
+#   执行位置：
+#     * Linux 宿主机（默认）：全部步骤直接在宿主机执行（NEMU .so 与宿主同架构，可直接 dlopen）。
+#     * macOS：NEMU 的参考共享库是 linux ELF，必须在 Linux 里 dlopen，而 verilator / mill
+#       装在宿主机上。于是「精化 + verilate」在宿主机做，「NEMU 构建 + 编译 + dlopen + 运行」
+#       进 xsdev 容器（XS_RUNNER=docker，见 scripts/lib/common.sh）。
+#
+#   工作树：${WORK_DIR}/XiangShan-cosim（不存在时自动调用 scripts/04_make_vdot_trees.sh cosim 生成）
+#   构建目录：${BUILD_ROOT}/cosim（默认 ${WORK_DIR}/build/cosim，不落进交付仓库）
 #
 #   用法：
 #     ./scripts/30_run_cosim.sh                 # 构建 + 跑完整协同仿真
-#     ./scripts/30_run_cosim.sh fault           # 故障注入自测（RTL 侧 2 次 + NEMU 侧 3 次）
+#     ./scripts/30_run_cosim.sh fault           # 故障注入自测（RTL 侧 3 次 + NEMU 侧 3 次）
 #     FORCE_NEMU=1 ./scripts/30_run_cosim.sh    # 强制重建 NEMU 参考共享库
 #
-#   日志：
-#     logs/stage3/cosim/p6_build.log
-#     logs/stage3/cosim/p6_cosim_run.log
-#     logs/stage3/cosim/p6_fault_injection.log
+#   日志（${LOG_ROOT}/stage3/cosim/，LOG_ROOT 默认 logs/）：
+#     p6_build.log / p6_cosim_run.log / p6_fault_injection.log
 # =============================================================================
 set -euo pipefail
 
 MODE="${1:-all}"
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." && pwd)"
-IMAGE="${XSDEV_IMAGE:-xsdev:ubuntu24.04-arm64}"
+# shellcheck disable=SC1091
+source "$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)/lib/common.sh"
 
-XS="${REPO_ROOT}/work/XiangShan-cosim"
+XS="${XS_COSIM}"
 YS="${XS}/yunsuan"
-NEMU="${REPO_ROOT}/work/NEMU"
+NEMU="${NEMU_DIR}"
 COSIM="${REPO_ROOT}/tests/cosim"
-BUILD="${COSIM}/build"
-LOG_DIR="${REPO_ROOT}/logs/stage3/cosim"
+BUILD="${BUILD_ROOT}/cosim"
+LOG_DIR="${LOG_ROOT}/stage3/cosim"
 NEMU_SO="${NEMU}/build/riscv64-nemu-interpreter-so"
 PATCH="${REPO_ROOT}/nemu/patch/0001-add-vdot-instruction-family.patch"
 
@@ -49,17 +52,26 @@ SEED="${SEED:-20260324}"
 
 mkdir -p "${LOG_DIR}" "${BUILD}"
 
+[ -d "${NEMU}" ] || die "找不到 ${NEMU}，请先执行 scripts/00_setup_env_host.sh"
+if [ ! -d "${XS}" ]; then
+    info "找不到 ${XS}，调用 scripts/04_make_vdot_trees.sh cosim 生成"
+    bash "${REPO_ROOT}/scripts/04_make_vdot_trees.sh" cosim
+fi
+setup_nemu_host_deps
+load_host_env
+need_cmd verilator
+need_cmd java "JDK 17"
+need_cmd mill "由 scripts/00_setup_env_host.sh 安装到 \${WORK_DIR}/tools/mill"
+need_cmd python3
+
 banner() {
     echo "=============================================================="
     echo " $*   $(date -u '+%Y-%m-%dT%H:%M:%SZ') UTC"
     echo "=============================================================="
 }
 
-in_container() {
-    docker run --rm --platform linux/arm64 \
-        -v "${REPO_ROOT}:/work" -w /work \
-        -e NEMU_HOME=/work/work/NEMU \
-        "${IMAGE}" bash -lc "$1"
+in_container() {   # 名字沿用旧版；实际按 XS_RUNNER 在宿主机或容器内执行
+    xrun "$1"
 }
 
 # -----------------------------------------------------------------------------
@@ -74,36 +86,32 @@ build_nemu_ref() {
         ls -l "${NEMU_SO}" "${vdot_obj}"
         return 0
     fi
-    in_container '
-set -euo pipefail
-cd /work/work/NEMU
-git config --global --add safe.directory /work/work/NEMU >/dev/null 2>&1 || true
-echo "$ git log --oneline -1"; git log --oneline -1
-if git apply --check --reverse /work/nemu/patch/0001-add-vdot-instruction-family.patch >/dev/null 2>&1; then
-  echo "vdot patch 已处于已应用状态，跳过"
-elif git apply --check /work/nemu/patch/0001-add-vdot-instruction-family.patch >/dev/null 2>&1; then
-  git apply /work/nemu/patch/0001-add-vdot-instruction-family.patch
-  echo "vdot patch 应用成功"
+    in_container "
+cd '${NEMU}'
+echo '\$ git log --oneline -1'; git log --oneline -1
+if git apply --check --reverse '${PATCH}' >/dev/null 2>&1; then
+  echo 'vdot patch 已处于已应用状态，跳过'
+elif git apply --check '${PATCH}' >/dev/null 2>&1; then
+  git apply '${PATCH}'
+  echo 'vdot patch 应用成功'
 else
-  echo "ERROR: patch 既不能正向应用也不是已应用状态"; git status --short; exit 1
+  echo 'ERROR: patch 既不能正向应用也不是已应用状态'; git status --short; exit 1
 fi
 make riscv64-xs-kmhv2-ref_defconfig
 grep -n CONFIG_CUSTOM_XVDOT include/generated/autoconf.h
-make -j"$(nproc)" 2>&1 | tail -5
+make -j${JOBS} 2>&1 | tail -5
 ls -l build/riscv64-nemu-interpreter-so
 file build/riscv64-nemu-interpreter-so
 ls -l build/obj-riscv64-nemu-interpreter-so/src/isa/riscv64/instr/rvv/vdot.o
-nm -D --defined-only build/riscv64-nemu-interpreter-so | grep -E "difftest_init$|difftest_exec$|difftest_regcpy$|difftest_memcpy$|DIFFTEST_REG_SIZE"
-'
+nm -D --defined-only build/riscv64-nemu-interpreter-so | grep -E 'difftest_init\$|difftest_exec\$|difftest_regcpy\$|difftest_memcpy\$|DIFFTEST_REG_SIZE'
+"
 }
 
 # -----------------------------------------------------------------------------
 # [2] mill 精化出两个被测模块
 # -----------------------------------------------------------------------------
 elaborate_rtl() {
-    banner "[2] 从 work/XiangShan-cosim 精化 RTL"
-    # shellcheck disable=SC1091
-    source "${REPO_ROOT}/scripts/env_host.sh"
+    banner "[2] 从 ${XS} 精化 RTL"
     echo "java      : $(java -version 2>&1 | head -1)"
     echo "verilator : $(verilator --version)"
 
@@ -127,40 +135,37 @@ elaborate_rtl() {
 # [3] verilator --cc（宿主机）
 # -----------------------------------------------------------------------------
 verilate() {
-    banner "[3] verilator --cc（宿主机 verilator 5.052）"
-    # shellcheck disable=SC1091
-    source "${REPO_ROOT}/scripts/env_host.sh"
+    banner "[3] verilator --cc（宿主机 $(verilator --version | awk '{print $1, $2}')）"
     rm -rf "${BUILD}/vdut" "${BUILD}/ddut"
     verilator --cc --Mdir "${BUILD}/vdut" --prefix VDotTopDut --top-module VDotTop -Wno-fatal \
         "${YS}/build/vdot/VDotTop.sv"
     verilator --cc --Mdir "${BUILD}/ddut" --prefix DecodeProbeDut --top-module VdotDecodeProbe \
         -Wno-fatal "${XS}/build/vdot/VdotDecodeProbe.v"
-    # verilator 运行时源码（verilated.cpp 等）要在容器里编译，Docker 只共享仓库目录，
-    # 因此把它复制进 build/（已被 .gitignore 排除）
+    # verilator 运行时源码（verilated.cpp 等）要在执行环境里编译；容器模式下宿主机的
+    # verilator 安装目录不在挂载范围内，因此统一复制一份到 ${BUILD}/verilator
     local vroot
     vroot="$(verilator --getenv VERILATOR_ROOT)"
     rm -rf "${BUILD}/verilator"
     mkdir -p "${BUILD}/verilator"
     cp -R "${vroot}/include" "${BUILD}/verilator/"
     echo "verilator runtime <- ${vroot}/include"
-    ls "${BUILD}/vdut" | head -3
-    ls "${BUILD}/ddut" | head -3
+    ls "${BUILD}/vdut" | head -3 || true
+    ls "${BUILD}/ddut" | head -3 || true
 }
 
 # -----------------------------------------------------------------------------
 # [4] 容器内编译
 # -----------------------------------------------------------------------------
 compile_cosim() {
-    banner "[4] 容器内 g++ 编译协同仿真驱动"
-    in_container '
-set -euo pipefail
-cd /work/tests/cosim
+    banner "[4] g++ 编译协同仿真驱动（执行环境：${XS_RUNNER}）"
+    in_container "
+cd '${COSIM}'
 uname -m; g++ --version | head -1
-make clean
-make VERILATOR_INC=/work/tests/cosim/build/verilator/include
-ls -l build/cosim
-file build/cosim
-'
+make clean BUILD='${BUILD}'
+make -j${JOBS} BUILD='${BUILD}' VERILATOR_INC='${BUILD}/verilator/include'
+ls -l '${BUILD}/cosim'
+file '${BUILD}/cosim'
+"
 }
 
 # -----------------------------------------------------------------------------
@@ -170,13 +175,12 @@ run_campaign() {
     banner "[5] 协同仿真实跑"
     local vec_args=""
     for f in "${REPO_ROOT}"/tests/vectors/*.txt; do
-        vec_args="${vec_args} --vectors /work/tests/vectors/$(basename "$f")"
+        vec_args="${vec_args} --vectors ${f}"
     done
-    vec_args="${vec_args} --vectors /work/tests/riscv/vdot/extra_vectors/vstart_range.txt"
+    vec_args="${vec_args} --vectors ${REPO_ROOT}/tests/riscv/vdot/extra_vectors/vstart_range.txt"
     in_container "
-set -euo pipefail
-cd /work/tests/cosim
-./build/cosim --so /work/work/NEMU/build/riscv64-nemu-interpreter-so \
+cd '${COSIM}'
+'${BUILD}/cosim' --so '${NEMU_SO}' \
   ${vec_args} --random ${RANDOM_N} --illegal ${ILLEGAL_N} --seed ${SEED} --dbg 6
 "
 }
@@ -210,13 +214,13 @@ PY
     small_run() { # 跑一轮小规模协同仿真，输出存到 ${LAST}，返回 cosim 的真实退出码
         set +e
         in_container "
-cd /work/tests/cosim
-./build/cosim --so /work/work/NEMU/build/riscv64-nemu-interpreter-so \
-  --vectors /work/tests/vectors/positive.txt \
-  --vectors /work/tests/vectors/negative.txt \
-  --vectors /work/tests/vectors/boundary.txt \
-  --vectors /work/tests/vectors/vdotacc_boundary.txt \
-  --vectors /work/tests/vectors/vdot4a_boundary.txt \
+cd '${COSIM}'
+'${BUILD}/cosim' --so '${NEMU_SO}' \
+  --vectors '${REPO_ROOT}/tests/vectors/positive.txt' \
+  --vectors '${REPO_ROOT}/tests/vectors/negative.txt' \
+  --vectors '${REPO_ROOT}/tests/vectors/boundary.txt' \
+  --vectors '${REPO_ROOT}/tests/vectors/vdotacc_boundary.txt' \
+  --vectors '${REPO_ROOT}/tests/vectors/vdot4a_boundary.txt' \
   --random 2000 --illegal 500 --seed ${SEED}
 " > "${LAST}" 2>&1
         local rc=$?
@@ -227,12 +231,11 @@ cd /work/tests/cosim
     divergence() { grep -E '^RESULT\(LEGALITY\)' "${LAST}" | grep -oE '[0-9]+' | tail -1; }
 
     rebuild_nemu_so() {
-        in_container '
-set -euo pipefail
-cd /work/work/NEMU
+        in_container "
+cd '${NEMU}'
 make riscv64-xs-kmhv2-ref_defconfig >/dev/null
-make -j"$(nproc)" 2>&1 | tail -2
-'
+make -j${JOBS} 2>&1 | tail -2
+"
     }
 
     local detected=0 injections=0
@@ -244,8 +247,13 @@ make -j"$(nproc)" 2>&1 | tail -2
     base_div="$(divergence)"
     echo ">>> 基线：值比对 PASS，已知判定分歧 ${base_div} 条"
 
-    # ---------------- RTL 侧注入 1：写回值翻一位 ----------------
-    banner "[T3-RTL-1] 在生成的 VDotTop.sv 里把写回结果的 bit0 翻转"
+    # ---------------- RTL 侧注入 1：输出格式选择取反 ----------------
+    # 历史说明：此项早期被描述为「写回结果 bit0 翻转」，但生成的 VDotTop.sv 中 io_vd 是
+    # `isDot4aS2 ? {...} : ...` 条件表达式，Verilog 的 `^` 优先级高于 `?:`，实际得到
+    # `(128'h1 ^ isDot4aS2) ? ... : ...`，即 vdot4a 格式与归约格式互换（verilator 的
+    # WIDTHEXPAND / WIDTHTRUNC 警告即旁证）。注入文本保持不变，以便与存档结果对照；
+    # 真正的 bit0 翻转见下面的 T3-RTL-1b。
+    banner "[T3-RTL-1] 在生成的 VDotTop.sv 里把 io_vd 的输出格式选择取反（vdot4a 格式与归约格式互换）"
     inject "${SV}" "  assign io_vd =" "  assign io_vd = 128'h1 ^" 1
     verilate >/dev/null
     compile_cosim >/dev/null
@@ -255,6 +263,30 @@ make -j"$(nproc)" 2>&1 | tail -2
         echo ">>> T3-RTL-1 未被检出  => 比对链路失效，FAIL"
     else
         echo ">>> T3-RTL-1 被检出  => OK"
+        detected=$((detected + 1))
+    fi
+    cp -f "${BUILD}/VDotTop.sv.orig" "${SV}"
+
+    # ---------------- RTL 侧注入 1b：写回结果真正的 bit0 翻转 ----------------
+    banner "[T3-RTL-1b] 把整个 io_vd 表达式加括号后与 128'h1 异或（写回结果 bit0 翻转）"
+    python3 - "${SV}" <<'PY'
+import sys
+p = sys.argv[1]; s = open(p).read()
+head = "  assign io_vd ="
+assert s.count(head) == 1, "注入点命中 %d 次，期望 1 次 —— 源码已变动，拒绝假装注入成功" % s.count(head)
+i = s.index(head); j = s.index(';', i)
+s = s[:i] + head + " 128'h1 ^ (" + s[i + len(head):j] + ");" + s[j + 1:]
+open(p, 'w').write(s)
+print("注入成功：%s  (1 处，整个 io_vd 表达式加括号后与 128'h1 异或)" % p)
+PY
+    verilate >/dev/null
+    compile_cosim >/dev/null
+    injections=$((injections + 1))
+    echo "--- 注入后实跑（期望 RESULT(VALUE): FAIL）---"
+    if small_run; then
+        echo ">>> T3-RTL-1b 未被检出  => 比对链路失效，FAIL"
+    else
+        echo ">>> T3-RTL-1b 被检出  => OK"
         detected=$((detected + 1))
     fi
     cp -f "${BUILD}/VDotTop.sv.orig" "${SV}"
