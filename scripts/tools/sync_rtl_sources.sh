@@ -54,8 +54,8 @@ PATCH_SPECS=(
 # ---------------------------------------------------------------- 1. 导出基线
 declare_exported=""
 echo "=== rtl/chisel 交付副本 ${MODE}  ==="
-echo "pristine 基线 : ${PRISTINE} @ $(git -C "${PRISTINE}" rev-parse --short HEAD)"
-echo "               yunsuan @ $(git -C "${PRISTINE}/yunsuan" rev-parse --short HEAD)"
+echo "pristine 基线 : ${PRISTINE} @ $(git -C "${PRISTINE}" rev-parse --short=7 HEAD)"
+echo "               yunsuan @ $(git -C "${PRISTINE}/yunsuan" rev-parse --short=7 HEAD)"
 
 for spec in "${PATCH_SPECS[@]}"; do
   IFS='|' read -r rel repo exp sub desc <<< "${spec}"
@@ -141,8 +141,8 @@ MANIFEST_FILE="${STAGE}/${MANIFEST_NAME}"
 | 项 | 值 |
 |---|---|
 | 生成方式 | pristine 基线 \`git archive\` 导出 + 依次 \`git apply\` 补丁 |
-| XiangShan 基线 | \`work/XiangShan-kmhv2\` @ \`$(git -C "${PRISTINE}" rev-parse --short HEAD)\` |
-| YunSuan 基线 | \`work/XiangShan-kmhv2/yunsuan\` @ \`$(git -C "${PRISTINE}/yunsuan" rev-parse --short HEAD)\` |
+| XiangShan 基线 | \`work/XiangShan-kmhv2\` @ \`$(git -C "${PRISTINE}" rev-parse --short=7 HEAD)\` |
+| YunSuan 基线 | \`work/XiangShan-kmhv2/yunsuan\` @ \`$(git -C "${PRISTINE}/yunsuan" rev-parse --short=7 HEAD)\` |
 | 重建命令 | \`bash scripts/tools/sync_rtl_sources.sh\` |
 | 一致性自检 | \`bash scripts/tools/sync_rtl_sources.sh --check\`（有漂移则退出码 1） |
 | 文件总数 | ${n_total} |

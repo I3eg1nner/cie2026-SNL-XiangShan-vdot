@@ -357,7 +357,8 @@ for name, bits in PAT.findall(text):
 
 ### 2.3 真实运行输出
 
-命令与输出（完整日志存档于 `logs/stage2/check_funct6.log`）：
+命令与输出（完整日志存档于 `logs/stage2/check_funct6.log`）。下面是当年在 macOS 建设环境上的原样输出，其中的绝对路径是当时的仓库根；
+复现时在仓库根执行 `python3 scripts/tools/check_funct6.py` 即可（需先由 `scripts/00_setup_env_host.sh` 生成 `work/XiangShan-kmhv2`）：
 
 ```
 $ cd /Users/i3eg1nner/code/cie && python3 scripts/tools/check_funct6.py
@@ -968,7 +969,7 @@ io.out.bits.res.vxsat.get := Mux(outIsDot, false.B, (outVxsat & mgu.io.out.activ
 
 | # | 模块 / 结构 | 位置 | 复用方式 | 改动量 |
 |---|---|---|---|---|
-| 1 | **Booth radix-4 + Wallace 乘法阵列**（2 × `VIMac64b`，16 组 8×8） | `$XS/yunsuan/src/main/scala/yunsuan/vector/vectorIMAC/VIMac64b.scala:12-208` | **100% 原样复用**，只加一个输出端口 `io.prod16 := sum_wo` | +2 行 |
+| 1 | **Booth radix-4 + Wallace 乘法阵列**（2 × `VIMac64b`，16 组 8×8） | `$XS/yunsuan/src/main/scala/yunsuan/vector/vectorIMAC/VIMac64b.scala:12-208` | **100% 原样复用**，只加一个输出端口 `io.prod16 := sum_wo` | +7 行（`rtl/patch/0002-yunsuan-vdot.patch` 实计；其中有效代码 2 行：端口声明 `val prod16 = Output(...)` 与赋值 `io.prod16 := sum_wo`，其余 5 行为空行与注释） |
 | 2 | `CSA4to2(width)` 压缩原语 | `$XS/yunsuan/src/main/scala/yunsuan/vector/VectorFloatFMA.scala:1596-1643` | 直接例化 12 个 `CSA4to2(32)` | 0 行（`private[vector]` 对 `yunsuan.vector.mac` 可见） |
 | 3 | `CSA3to2(width)` 压缩原语 | `$XS/yunsuan/.../VectorFloatFMA.scala:1581-1595` | 直接例化 4 个 `CSA3to2(32)` | 0 行 |
 | 4 | `Mgu(vlen)` 尾部/掩码成形 | `$XS/src/main/scala/xiangshan/backend/fu/vector/Mgu.scala:34-131` | `vdot4a` 完整复用（`eew=e32` 自动给出 32 位掩码粒度） | 0 行 |

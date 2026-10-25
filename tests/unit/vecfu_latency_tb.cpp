@@ -134,7 +134,7 @@ static void report(const Hist &h) {
   if (h.timeout) printf("timeout×%ld ", h.timeout);
   int u = h.uniq(h.lat);
   printf("=> %s", u >= 0 ? "" : "不唯一");
-  if (u >= 0) printf("实测 %d 拍", u);
+  if (u >= 0) printf("out.valid（harness 构造，非独立证据）%d 拍", u);
   printf(" | 数据成形: ");
   for (int i = 0; i <= MAXW; i++) if (h.settle[i]) printf("%d拍×%ld ", i, h.settle[i]);
   if (h.data_ok || h.data_bad)
@@ -184,7 +184,7 @@ int main(int argc, char **argv) {
   do_reset();
 
   printf("=====================================================================\n");
-  printf(" %s —— 功能单元延迟实测（in.fire -> out.valid）\n", STR(TOPMOD));
+  printf(" %s —— 功能单元延迟测量（out.valid 为 harness 构造值，数据成形拍为独立观测）\n", STR(TOPMOD));
   printf(" harness: src/test/scala/xiangshan/backend/fu/VecFuLatHarness.scala\n");
   printf(" 每条指令 %ld 笔随机激励\n", nops);
   printf("=====================================================================\n\n");

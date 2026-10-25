@@ -128,7 +128,7 @@ def fig_speedup(res, out):
     sp_D = [data[("baseline_D", n)] / data[("vdotacc", n)] for n in Ns]
     sp_A = [data[("baseline_A", n)] / data[("vdotacc", n)] for n in Ns]
     sp_4 = [data[("baseline_D", n)] / data[("vdot4a", n)] for n in Ns]
-    # 建模：稳态每迭代指令数之比（N -> 无穷 的渐近值）
+    # 实测回归斜率之比：稳态每迭代指令数之比，即 N -> 无穷 的外推渐近值（斜率由实测点回归得到，渐近值是外推）
     asym = slope["baseline_D"] / slope["vdotacc"] if slope.get("vdotacc") else None
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13.5, 5.2))
@@ -145,7 +145,7 @@ def fig_speedup(res, out):
                          xytext=(0, dy), ha="center", fontsize=7)
     if asym:
         ax1.axhline(asym, color="black", linestyle="--", linewidth=1.2,
-                    label="稳态渐近值 %.3f（建模：斜率之比）" % asym)
+                    label="稳态渐近值 %.3f（实测斜率之比，N→∞ 外推）" % asym)
     ax1.axhline(1.0, color="black", linestyle=":", linewidth=1.0)
     ax1.text(0.35, 0.97, "1.0 = 没有加速", fontsize=7.5, va="top")
     ax1.set_xticks(list(xs))

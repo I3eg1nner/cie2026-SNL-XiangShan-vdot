@@ -236,3 +236,50 @@ R14 终态：交付仓库 git status --short 为空；未写 logs/、bench/resul
 
 **阶段三交付物完成度（25 分）预测：20 / 25**（优秀区间下部）。扣分主要来自：全核 difftest 缺位、吞吐只有建模值（−3）；I-1 至 I-4（−2）。
 I-1 至 I-3 合计约 1 小时即可整改；I-4 需要半天，但它直接决定评委能否一键复现，建议优先处理。
+
+---
+
+## 8. 整改记录（审计后追加，以上正文未改动）
+
+| 项 | 值 |
+|---|---|
+| 整改依据 | 本报告 §5（阻塞 0、重要 4、次要 9）与 §5「提示」 |
+| 整改提交 | `8b28fcb`（I-1/I-3/M-1/M-2/M-3/M-6）、`87de89b`（I-2/M-4/M-5/M-7/M-8/M-9 与 `latency_fu.csv` 措辞）、`73722be`（I-4）、`b7a5e81`（I-4 收尾与 I-2 同类表述的清理）；之后的文档同步见本节末「后续跟进」 |
+| 核验原则 | 下表「现位置」一列逐条在当前工作树中打开核对过；行号以追加本节时的文件为准，之后的修订可能使其偏移 |
+| 未改动 | 本报告 §0–§7 正文（审计记录）；所有存档日志只追加或按段替换并注明原因，未删改既有段落之外的内容 |
+
+### 8.1 重要级（4 项）
+
+| # | 整改提交 | 做了什么 | 现位置（核验点） |
+|---|---|---|---|
+| **I-1** | `8b28fcb` | 删去 `p6_build.log` 中不存在的行号引用，`.so` 构建证据改引真实存在的 `p5_nemu_build.log`；`p6_build.log` 只引其真实内容（`:4-6` 跳过重建、`:45-50` 编译） | `docs/stage3/21_协同仿真验证报告.md:106-107`（§2.1）、`:268-269`（§3.4 证据块：`p5_nemu_build.log:45` `CONFIG_CUSTOM_XVDOT`、`:143` aarch64 `.so`） |
+| **I-2** | `87de89b`、`b7a5e81` | `vimacu_latency_tb.cpp` 新增不读 `out.valid` 的数据成形拍测量（下界型，扰动前驱排除残留值），`out.valid` 明确标为平台构造值；`p7_latency_measure.log` [3] 段按新 tb 重跑替换并注明原因；`22` §4.3 / §7.2 / §9.1 / §12、README 改为「第 1 拍未成形、第 2 拍逐位正确」口径；`b7a5e81` 把 `VecFuLatHarness.scala`、`docs/stage2/10`、`12` 中同类表述一并改正 | `tests/unit/vimacu_latency_tb.cpp:7-25`；`logs/stage3/p7_latency_measure.log:190-197`（[3] 段替换说明）；`docs/stage3/22_基线实现与延迟加速分析.md:401`、`:724`、`:771`；`README.md:45` |
+| **I-3** | `8b28fcb`、`73722be` | 文档把 T3-RTL-1 更正为「输出格式选择取反」；新增私有副本补充重跑（`scripts/tools/cosim_fault_rtl1_rerun.sh`），真正的 bit0 翻转 6378/6378 被检出；`73722be` 把加括号的 bit0 翻转作为 T3-RTL-1b 并入 `30_run_cosim.sh fault`（6 项） | `docs/stage3/21_协同仿真验证报告.md:587-648`（§8）；`scripts/30_run_cosim.sh:251-256`（T3-RTL-1 更名与说明）、`:270-292`（T3-RTL-1b）；`logs/stage3/cosim/p6_fault_rtl1_rerun.log:41-58` |
+| **I-4** | `73722be`、`b7a5e81` | 新增 `scripts/lib/common.sh`（路径、平台判别、`XS_RUNNER=auto`：Linux 宿主机直接执行，macOS 进容器）与 `scripts/04_make_vdot_trees.sh`（按补丁生成 `XiangShan-vdot` / `XiangShan-cosim`）；00–40 号脚本与 `env_host.sh` 去掉写死的 arm64 镜像、`/work` 与 macOS 绝对路径；`corpus.S` 改为 `.incbin CORPUS_BIN`；README 写明 Linux 依赖；在全新目录按 00→40 实测通过 | `scripts/lib/common.sh:68-72`；`scripts/04_make_vdot_trees.sh:1-3`；`docs/_plan/HANDOFF_TODO.md:59-77`（脚本适用性表，按 Linux x86_64 实测重写）；`README.md:119-123`（Linux 依赖） |
+
+### 8.2 次要级（9 项）
+
+| # | 整改提交 | 做了什么 | 现位置（核验点） |
+|---|---|---|---|
+| M-1 | `8b28fcb` | 改为「两个文件都带本项目补丁，其中 `vstartIllegal` 判据是上游原有、未改动的」 | `docs/stage3/21_协同仿真验证报告.md:121`；`docs/00_项目总览.md:79` |
+| M-2 | `8b28fcb` | 删去「已定位的缺口」这一陈旧结论；`vdot.c` 行号更新为 S-7' 之后的 `108/136/168/207` | `docs/stage3/21_协同仿真验证报告.md:780` |
+| M-3 | `8b28fcb` | 改述为「设计阶段 R-06 已识别，协同仿真首次量化为 1946 条确定性分歧并迫使裁定修订」 | `docs/stage3/21_协同仿真验证报告.md:33`（§0 说明）、`:548`（§7.5 标题）、`:572` |
+| M-4 | `87de89b` | 改为「2.00× 只在假设④这一维上是下界」，并列出低于 2.00× 的三种情形与 1.00×–5.00× 区间 | `docs/stage3/22_基线实现与延迟加速分析.md:564-566` |
+| M-5 | `87de89b` | 文首声明源码行号基准；`VecDecoder.scala` 行号同时给出 pristine 与实现树 | `docs/stage3/22_基线实现与延迟加速分析.md:7-11` |
+| M-6 | `8b28fcb` | blob / 镜像大小改为日志值 2 707 176 / 2 713 352；行数表更新（`pack_corpus.py` 171、`gen_extra_vectors.py` 139、`fault_inject.sh` 202）；`refproxy.h` 引用改为 `274-278` | `docs/stage3/20_NEMU指令扩展说明.md:239-251`、`:497` |
+| M-7 | `87de89b` | `run_vimacu_latency.sh` 改为在 `val VimacCfg` 定义块内定位 latency 行，不再取第 2 个 grep 匹配 | `scripts/tools/run_vimacu_latency.sh:56-61` |
+| M-8 | `87de89b`、`73722be` | `baseline_test.c` 的 `static_instr` 改为运行时从函数入口逐条解码到 `ret` 计数；`22` 注明 `minstret` 绝对值依赖编译器（GCC 15 每点 +2，斜率不变），补充日志 `p7_baseline_gcc15_supplement.log` | `tests/riscv/baseline/baseline_test.c:683`；`docs/stage3/22_基线实现与延迟加速分析.md:576-581` |
+| M-9 | `87de89b` | 交付 2 路累加器内核 `vdot_dot_i8_acc2` 并在 NEMU 上实测等价性（24 个长度 0 失配）与指令数（斜率 8.00）；周期数仍标为建模 | `bench/baseline/baseline_rvv.S:212`；`docs/stage3/22_基线实现与延迟加速分析.md:637-642`；`logs/stage3/p7_baseline_gcc15_supplement.log:118-142,170-173` |
+
+### 8.3 提示项与排除项
+
+| 事项 | 处理 |
+|---|---|
+| `latency_fu.csv`「数值比对 0 笔一致」措辞（排除项） | `87de89b`：未做数值比对的行改为「数值未建模（未做数值比对）」（`bench/results/latency_fu.csv:6-7`） |
+| 图 2(a) N=4096 标注与「1.0 = 没有加速」文字重叠 | `87de89b` 重绘图 1–4 时一并调整（`bench/plot_results.py` 中该文字已移到左侧） |
+| L1 平台 `io_fire` 持续约 3 拍 | 属平台特性说明，未改动 |
+
+### 8.4 后续跟进（整改提交之后发现的跨文档不一致）
+
+- 协同仿真故障注入的现行口径统一为 **6/6**（RTL 侧 3、NEMU 侧 3，T3-RTL-1b 为补充项）：按现行脚本在独立工作目录重跑 `30_run_cosim.sh fault`，日志存为 `logs/stage3/cosim/p6_fault_injection_v2.log`（`:350` 为 `FAULT-INJECTION: 6/6 被检出`），存档的 `p6_fault_injection.log`（5/5）保留未覆盖；`21` §8、README、`docs/00` 已同步。
+- `tests/unit/vecfu_latency_tb.cpp` 的打印文案把 `out.valid` 标为 harness 构造值（与 I-2 同类），`p7_latency_measure.log` [4] 段按新 tb 重跑替换并注明原因（`:293-300`），CSV 重新生成后 9 个文件逐字节不变。

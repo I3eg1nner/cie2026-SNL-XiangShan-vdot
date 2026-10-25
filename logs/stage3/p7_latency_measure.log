@@ -290,7 +290,15 @@ RESULT: PASS
 ##############################################################
 # [4] VIAluFix / VIPU 直驱延迟实测
 ##############################################################
-=== VIAluFix / VIPU 延迟实测  2026-10-24 23:32:45 CST ===
+# 【本段于 2026-10-25 重跑，替换 2026-10-24 的原段落】原因：原段落由 tests/unit/vecfu_latency_tb.cpp
+#   打印「out.valid 延迟 … => 实测 N 拍」，与该文件头「out.valid 由 harness 按 cfg.latency 搭的寄存器链
+#   产生、按构造等于声明值、不是独立证据」的说明矛盾（与审计 I-2 同类）。tb 只改了两处打印文案
+#   （out.valid 标注为 harness 构造值），测量逻辑与 CSVROW 格式未改；重跑后 CSVROW 数值与原段落逐项相同。
+#   运行环境与本日志 [2] 段不同：[2] 段为 macOS arm64 + Verilator 5.052；本段为 Linux x86_64 +
+#   Verilator 5.024，命令 WORK_DIR=<独立工作目录> bash scripts/tools/run_vecfu_latency.sh，
+#   工作树为独立 WORK_DIR 下的 XiangShan-cosim（由 scripts/04_make_vdot_trees.sh 按同一组补丁生成，路径不同）。
+#   本段之外的内容未改动。
+=== VIAluFix / VIPU 延迟实测  2026-10-25 05:08:55 UTC ===
 
 声明值（香山源码）：
     FuConfig.scala:533:    name = "vialuFix",
@@ -299,44 +307,44 @@ RESULT: PASS
     FuConfig.scala:615  VipuCfg.latency  = CertainLatency(2)
 
 --- (0) 把交付仓库里的 harness 源码同步进工作树 ---
-    tests/unit/VecFuLatHarness.scala -> work/XiangShan-cosim/src/test/scala/xiangshan/backend/fu/
+    tests/unit/VecFuLatHarness.scala -> /data/my/cie2026-vdot-xiangshan-linuxrepro/work/XiangShan-cosim/src/test/scala/xiangshan/backend/fu/
 
 --- (1) 精化 harness ---
-[860/860] =============== xiangshan.test.runMain xi...ld/vdot --target verilog =============== 10s
+[860/860] =============== xiangshan.test.runMain xi...ld/vdot --target verilog =============== 15s
 ==================================================================================================
     VIAluFixHarness.v : 7671 行
-[860/860] =============== xiangshan.test.runMain xi...ld/vdot --target verilog =============== 10s
+[860/860] =============== xiangshan.test.runMain xi...ld/vdot --target verilog =============== 17s
 ==================================================================================================
     VIPUHarness.v : 4981 行
 
 --- (2) Verilator 构建并运行 ---
 
 =====================================================================
- VIAluFixHarness —— 功能单元延迟实测（in.fire -> out.valid）
+ VIAluFixHarness —— 功能单元延迟测量（out.valid 为 harness 构造值，数据成形拍为独立观测）
  harness: src/test/scala/xiangshan/backend/fu/VecFuLatHarness.scala
  每条指令 64 笔随机激励
 =====================================================================
 
 CSVHDR,instruction,fu,measured_latency_cycles,data_settle_cycles,transactions,data_checked
-  vadd.vv      事务=64    out.valid 延迟: 1拍×64 => 实测 1 拍 | 数据成形: 1拍×64 | 数值比对 ok=64 bad=0
+  vadd.vv      事务=64    out.valid 延迟: 1拍×64 => out.valid（harness 构造，非独立证据）1 拍 | 数据成形: 1拍×64 | 数值比对 ok=64 bad=0
 CSVROW,vadd.vv,VIAluFixHarness,1,1,64,64
-  vwadd.wv     事务=64    out.valid 延迟: 1拍×64 => 实测 1 拍 | 数据成形: 1拍×64 | 数值比对 ok=64 bad=0
+  vwadd.wv     事务=64    out.valid 延迟: 1拍×64 => out.valid（harness 构造，非独立证据）1 拍 | 数据成形: 1拍×64 | 数值比对 ok=64 bad=0
 CSVROW,vwadd.wv,VIAluFixHarness,1,1,64,64
-  vmv.s.x      事务=64    out.valid 延迟: 1拍×64 => 实测 1 拍 | 数据成形: 1拍×64 | 数值比对 ok=64 bad=0
+  vmv.s.x      事务=64    out.valid 延迟: 1拍×64 => out.valid（harness 构造，非独立证据）1 拍 | 数据成形: 1拍×64 | 数值比对 ok=64 bad=0
 CSVROW,vmv.s.x,VIAluFixHarness,1,1,64,64
 
 RESULT: PASS
 
 =====================================================================
- VIPUHarness —— 功能单元延迟实测（in.fire -> out.valid）
+ VIPUHarness —— 功能单元延迟测量（out.valid 为 harness 构造值，数据成形拍为独立观测）
  harness: src/test/scala/xiangshan/backend/fu/VecFuLatHarness.scala
  每条指令 64 笔随机激励
 =====================================================================
 
 CSVHDR,instruction,fu,measured_latency_cycles,data_settle_cycles,transactions,data_checked
-  vredsum.vs   事务=64    out.valid 延迟: 2拍×64 => 实测 2 拍 | 数据成形: 2拍×64 | 数值比对：未建模 (64 笔)
+  vredsum.vs   事务=64    out.valid 延迟: 2拍×64 => out.valid（harness 构造，非独立证据）2 拍 | 数据成形: 2拍×64 | 数值比对：未建模 (64 笔)
 CSVROW,vredsum.vs,VIPUHarness,2,2,64,0
-  vwredsum.vs  事务=64    out.valid 延迟: 2拍×64 => 实测 2 拍 | 数据成形: 2拍×64 | 数值比对：未建模 (64 笔)
+  vwredsum.vs  事务=64    out.valid 延迟: 2拍×64 => out.valid（harness 构造，非独立证据）2 拍 | 数据成形: 2拍×64 | 数值比对：未建模 (64 笔)
 CSVROW,vwredsum.vs,VIPUHarness,2,2,64,0
 
 RESULT: PASS

@@ -35,7 +35,7 @@ NEMU↔RTL 协同仿真、RVV 1.0 基线实现与延迟加速比分析。所有�
 | 3.1.1 NEMU 指令扩展 | **30758 条语料 0 失配**；4834 条必须 trap 的用例全部以 `mcause=2` trap；difftest 参考共享库上同一语料 `trap code:0` | 实测 | `logs/stage3/p5_vdot_tests.log:87-90,116,126` |
 | 　NEMU 补丁干净应用 / 故障注入 | 干净副本上重跑 30758/30758；故障注入 5/5 被检出（另 1 个经论证的等价变异体） | 实测 | `logs/stage3/p5_patch_verify.log:47,51`、`p5_fault_injection.log:165-169` |
 | 3.1.2 协同仿真（**Level 1**：真实 NEMU `.so` ↔ Verilated 译码单元 + vdot 功能单元） | 72758 条激励；值比对 **55924/55924，0 失配**；非法判定 **分歧 0**（首轮 6415 条分歧经 G5a 补守卫 + 裁定 S-7' 后归零） | 实测 | `logs/stage3/cosim/p6_cosim_run.log:45-52`；首轮记录见 `docs/stage3/21_协同仿真验证报告.md` §7.4 |
-| 　协同仿真故障注入 | 5/5 被检出（RTL 侧 2、NEMU 侧 3，其中一项专门守护 S-7'）；其中 T3-RTL-1 实为输出格式选择取反，另补跑真正的 `io_vd` bit0 翻转，6378/6378 失配被检出 | 实测 | `logs/stage3/cosim/p6_fault_injection.log:111`；`logs/stage3/cosim/p6_fault_rtl1_rerun.log:41-58` |
+| 　协同仿真故障注入 | 6/6 被检出（RTL 侧 3、NEMU 侧 3，其中一项专门守护 S-7'）；T3-RTL-1 实为输出格式选择取反，真正的 `io_vd` bit0 翻转是补充项 T3-RTL-1b，6378/6378 失配被检出 | 实测 | `logs/stage3/cosim/p6_fault_injection_v2.log:350`（现行脚本重跑）；`logs/stage3/cosim/p6_fault_rtl1_rerun.log:41-58`；存档首版 `p6_fault_injection.log:111` 不含 T3-RTL-1b，为 5/5 |
 | 3.2 基线等价性 | RVV 1.0 基线序列与 vdot 指令族在 NEMU 上 **25924 条实跑用例逐位相同，0 失配**；长向量循环 24 个长度 0 失配 | 实测 | `logs/stage3/p7_baseline_equiv.log:112-114,144` |
 
 ### 1.2 延迟与加速比（赛题 3.3）
@@ -43,13 +43,13 @@ NEMU↔RTL 协同仿真、RVV 1.0 基线实现与延迟加速比分析。所有�
 | 项目 | 基线 | vdot | 结果 | 标注 | 证据 |
 |---|---:|---:|---:|---|---|
 | vdot 三条指令的 FU 延迟 | — | 2 拍 | 按**数据成形拍**判定（逐拍采 `io_vd` 与参考模型比较，不读 `out.valid`）：`VIMacU` 直驱 178/178/190 笔全部「第 1 拍未成形、第 2 拍逐位正确」；L1 `VDotTop` 波形 12×3 笔 DUT 内部 S2 寄存器与 `io_vd` 均在第 2 拍成形。两个平台的 `out.valid` 都由测试平台按声明延迟构造，不作证据 | 实测（FU 级） | `logs/stage3/p7_latency_measure.log:238-252`；`logs/stage3/waveform/p7_*.vcd` |
-| 基线核心指令 FU 延迟 | `vmv.s.x` 1 拍、`vwmul.vv` 2 拍、`vwredsum.vs` 2 拍 | — | 与 `FuConfig` 声明值一致（同样按数据成形拍判定；`vwredsum.vs` 未做数值比对） | 实测（FU 级） | `bench/results/latency_fu.csv`；`p7_latency_measure.log:260-264,325,339` |
+| 基线核心指令 FU 延迟 | `vmv.s.x` 1 拍、`vwmul.vv` 2 拍、`vwredsum.vs` 2 拍 | — | 与 `FuConfig` 声明值一致（同样按数据成形拍判定；`vwredsum.vs` 未做数值比对） | 实测（FU 级） | `bench/results/latency_fu.csv`；`p7_latency_measure.log:260-264,333,347` |
 | `vsetvli` 延迟 | 0 拍 | 0 拍 | 未实测（落在整数侧 BJU2，不在向量 FU 平台内） | 声明值 | `docs/stage3/22_基线实现与延迟加速分析.md` §4.5 |
 | 单次 16 元素点积：架构指令条数 | 6 | 2 | **3.00×** | 实测（反汇编） | `bench/results/speedup.csv` |
 | 单次点积：向量算术指令条数 | 3 | 1 | **3.00×** | 实测 | 同上 |
 | 单次点积：译码级 uop 条数 | 14 | 3 | **4.67×** | 源码推导 | 同上；`UopInfoGen.scala:197-235` |
 | 单次点积：FU 延迟关键路径 | 4 拍 | 2 拍 | **2.00×** | **建模**（实测 FU 延迟按依赖链相加，假设完美前递、无端口冲突） | `bench/results/critical_path.csv`、`sensitivity.csv` |
-| 长向量循环 N=4096：动态指令数 | 2575 | 2061 | **1.249×**（渐近 1.250×） | 实测（NEMU `minstret`，是指令数不是周期数） | `bench/results/instr_count_loop.csv`；`p7_baseline_equiv.log:160-167` |
+| 长向量循环 N=4096：动态指令数 | 2575 | 2061 | **1.249×**（渐近 1.250×，为实测回归斜率之比 10/8 的 N→∞ 外推，不是实测点） | 实测（NEMU `minstret`，是指令数不是周期数） | `bench/results/instr_count_loop.csv`；`p7_baseline_equiv.log:160-167` |
 | 长向量稳态吞吐 | 3 拍/迭代 | 2 拍/迭代 | **1.50×**（2 路累加器展开时 3.00×） | **建模**（FU 级平台测不到）。2 路累加器内核 `vdot_dot_i8_acc2` 已交付并在 NEMU 上实测：24 个长度 0 失配、每 16 个 int8 8.00 条指令；其周期数仍是建模值 | `docs/stage3/22_基线实现与延迟加速分析.md` §5.3；`logs/stage3/p7_baseline_gcc15_supplement.log:142,170-173` |
 
 > 上表各行**量纲不同、不可互相替代**，不能挑最大的一个当作「加速比」。2.00× 的敏感性区间为
@@ -92,7 +92,7 @@ NEMU↔RTL 协同仿真、RVV 1.0 基线实现与延迟加速比分析。所有�
 | `docs/stage1/` | 环境版本锁定、部署报告、`vadd.vv` 执行过程分析、仿真平台搭建报告；`figures/` 6 张波形图 |
 | `docs/stage2/` | `10` 设计文档、`11` RTL 实现说明、`12` 基础功能测试报告、`13` 参考模型与测试向量说明；`figures/` 3 张 vdot 功能波形图 |
 | `docs/stage3/` | `20` NEMU 指令扩展说明、`21` 协同仿真验证报告、`22` 基线实现与延迟加速分析；`figures/` 4 张数据图 + 3 张延迟实测波形图 |
-| `docs/ppt/` | 答辩材料目录（**当前为空**，见局限性） |
+| `docs/ppt/` | 答辩与提交的准备材料：`讲解大纲.md`（逐页要点与证据出处）、`录屏脚本.md`（三段录屏分镜）、`提交清单.md`（加密提交流程与自检项）；PPT 文件与录屏本身尚未制作（见局限性） |
 | `rtl/patch/` | 对上游的正式交付：`0001-xiangshan-vdot.patch`、`0002-yunsuan-vdot.patch` |
 | `rtl/chisel/` | 打完补丁后全部新增/修改 Chisel 源码的只读副本（`MANIFEST.md`），由 `scripts/tools/sync_rtl_sources.sh` 重建与校验 |
 | `rtl/verilog/` | 生成的 Verilog：`vdot/`（`VDotTree.sv`、`VDotTop.sv`、`VIMacU.v`、`DecodeUnit.v` 等）与 `baseline/`（零回归对照） |
@@ -186,7 +186,7 @@ bash scripts/40_run_bench.sh             # 3.2/3.3：基线等价性、FU 延迟
 3. **LMUL 固定为 1**（裁定 S-6）：`LMUL != 1` 的 vdot 一律判非法；多 uop 累加链方案已在设计文档 §8.3 论证但未实现。
 4. **吞吐加速比是建模值。** 1.50× / 3.00× 来自端口与依赖下界模型（3.00× 对应的 2 路累加器内核已交付，但只实测了指令数与等价性）；单次点积的 2.00× 也是把实测 FU 延迟按依赖链相加的模型值。
    实测的只有 FU 延迟、指令条数与功能等价性。`vsetvli` 延迟为声明值；uop 条数为源码推导。
-5. **提交物未完成**：赛题要求的三段录屏、答辩 PPT（`docs/ppt/` 为空）与加密提交流程均**未做**。
+5. **提交物未完成**：赛题要求的三段录屏、答辩 PPT 与加密提交流程均**未做**；`docs/ppt/` 中已有讲解大纲、录屏分镜脚本与提交清单，PPT 与录屏仍需团队据此制作。
 6. 阶段二波形以 VCD + 文本轨迹交付，未另附截图；`tests/unit/VectorSimTop.scala` 等上游派生文件中保留了上游原有的
    `TODO`/`FIXME` 注释（本项目补丁未新增任何此类注释）。
 
