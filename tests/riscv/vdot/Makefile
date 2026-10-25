@@ -5,15 +5,16 @@
 # 配置里抽出来（CONFIG_MBASE / CONFIG_UARTLITE_MMIO / VLEN），并用
 # check-config 守卫；difftest ref 配置关掉了所有串口设备，抽不到值会立刻失败。
 #
-# 额外一步：把 tests/vectors/*.txt 打包成 build/corpus.bin，由 corpus.S
-# 用 .incbin 嵌进镜像。
+# 额外一步：把 tests/vectors/*.txt 打包成 $(BUILD)/corpus.bin，由 corpus.S
+# 用 .incbin 嵌进镜像（路径经 -DCORPUS_BIN 传入，BUILD 可指向任意目录）。
 #
 # 用法：
-#   make NEMU_HOME=/work/work/NEMU
-#   make run NEMU_HOME=/work/work/NEMU
+#   make NEMU_HOME=<work>/NEMU [CROSS=<前缀>] [BUILD=<构建目录>]
+#   make run NEMU_HOME=<work>/NEMU
+# （scripts/21_build_nemu_vdot.sh 会自动传入 NEMU_HOME / CROSS）
 # =============================================================================
 
-NEMU_HOME   ?= /work/work/NEMU
+NEMU_HOME   ?= ../../../work/NEMU
 CROSS       ?= riscv64-linux-gnu-
 BUILD       ?= build
 VECTORS_DIR ?= ../../vectors
@@ -31,7 +32,8 @@ NEMU_XVDOT         := $(shell grep -cE '^\#define CONFIG_CUSTOM_XVDOT[ \t]' $(AU
 
 CFLAGS  := -march=rv64gcv_zve64x -mabi=lp64d -mcmodel=medany \
            -ffreestanding -nostdlib -nostartfiles -fno-builtin -fno-pic \
-           -fno-tree-vectorize -O2 -g -Wall -Wextra -I$(BUILD)
+           -fno-tree-vectorize -O2 -g -Wall -Wextra -I$(BUILD) \
+           -DCORPUS_BIN='"$(abspath $(BUILD))/corpus.bin"'
 # -no-pie 是必需的：Ubuntu 的 gcc 默认 -pie，产出的 ELF 带 .rela.dyn 动态重定位。
 # 对纯 PC 相对的代码没影响，但编译器为 switch 生成的指针表（CSWTCH.*）里是
 # **绝对地址**，要靠装载器施加 R_RISCV_RELATIVE 才正确。NEMU 把 objcopy 出来的

@@ -74,15 +74,15 @@ JDK **17**（JDK 21/25 会失败）、mill **0.12.3**（XiangShan）与 **0.11.1
 | `scripts/21_build_nemu_vdot.sh`（含 `verify-patch`、`fault`） | ✅ 21 s / 10 s / 21 s | 30758 / 0，must-trap 4834/4834，`.so` HIT GOOD TRAP；故障注入 5/5（21103 / 12079 / 10173 / 3202 / 1584，与存档相同） |
 | `scripts/30_run_cosim.sh`（含 `fault`） | ✅ 251 s / 96 s | 72758 条，值比对 0 失配、判定分歧 0；分 suite 汇总与存档 `p6_cosim_run.log:22-52` 逐行相同。故障注入 6/6：5116 / **6378（新增 T3-RTL-1b）** / 586 / 4944 / 分歧 162 / 分歧 74 |
 | `scripts/40_run_bench.sh` | ✅ 126 s | [A] 25924/0、[B] 24 个长度 0 失配；9 个 CSV 中 6 个与仓库逐字节相同，`instr_count_loop` / `instr_count_single` / `speedup` 因 GCC 15 的 `minstret` 绝对值 +2 而不同（斜率不变，见 `logs/stage3/p7_baseline_gcc15_supplement.log`）。绘图需 matplotlib + CJK 字体，缺失时跳过并告警 |
-| `scripts/tools/*` | ✅（随 20 / 30 / 40 间接实测） | `run_vimacu_tb` / `run_decode_tb` / `verify_patches` / `capture_vdot_waves` / `sync_rtl_sources` 已改为支持 `WORK_DIR`、GNU `mktemp`、`md5sum`。`fault_inject_vdot.sh`（`md5 -q`）与 `run_vecfu_latency.sh`（写死 `<仓库根>/work`）尚未改：前者在 Linux 上 `WITH_FAULT=1` 时会失败，后者要求 `WORK_DIR` 等于 `<仓库根>/work`（40 会检查并给出提示） |
+| `scripts/tools/*` | ✅（随 20 / 30 / 40 间接实测） | `run_vimacu_tb` / `run_decode_tb` / `verify_patches` / `capture_vdot_waves` / `sync_rtl_sources` 已改为支持 `WORK_DIR`、GNU `mktemp`、`md5sum`。`fault_inject_vdot.sh`（改为 `md5sum`/`md5` 自动选择、支持 `WORK_DIR`/`YS_DIR`）与 `run_vecfu_latency.sh`（支持 `WORK_DIR`/`XS_DIR`）也已改完，`40` 不再要求 `WORK_DIR` 等于 `<仓库根>/work`；在独立 `WORK_DIR` 上复测：`40` 通过，`WITH_FAULT=1 bash scripts/20_run_func_tests.sh` 357 s，故障注入 5/5，各故障检出项数 10/9/5/9/5（/13）与存档 `p5_fault_injection.log` 相同 |
 
 公共约定见 `scripts/lib/common.sh` 文件头：`WORK_DIR`、`LOG_ROOT`、`RESULTS_DIR`、`FIG_DIR`、`BUILD_ROOT`、`XS_RUNNER`（`auto`：Linux 在宿主机执行，macOS 进容器）、`CROSS`、`JOBS`、`PYTHON`。
 已知限制：上游 yunsuan `emu.cpp` 用 `getcwd(cwd, 64)` 拼 VCD 路径，yunsuan 目录超过 63 字节时波形会静默丢失。40 已改为在短路径临时目录里运行 emu；`10`/`11` 的 `WAVE=1` 与 `20` 的 `WITH_WAVE=1` 遇到长路径时直接报错，提示改用较短的 `WORK_DIR`。
 
-### 平台差异带来的两点好处
+### 平台差异的处理现状（已固化进脚本）
 
-1. `yunsuan/src/main/resources/espresso` 是 **Linux x86-64 ELF**。本机为此自建了 arm64 版本；**你那台机器可直接用上游自带的，`env_host.sh` 里相关的 PATH 前置和 `forkEnv.json` 清理逻辑都可以删掉。**
-2. 官方镜像 `ghcr.io/openxiangshan/xs-env` 仅有 amd64 —— **你那台机器可以直接用官方镜像**，不必像本机那样自建。
+1. `yunsuan/src/main/resources/espresso` 是上游自带的 **Linux x86-64 ELF**。`00_setup_env_host.sh` 第 4 步在 x86_64 上直接复制这份上游二进制到 `${WORK_DIR}/tools/bin/`（`00_setup_env_host.sh:262-269`），只有在它跑不起来时（如 arm64）才从源码自建；`10`/`11` 的 `forkEnv.json` 校验在两种平台上都无害，保留即可。
+2. Linux 上 `XS_RUNNER=auto` 直接在宿主机执行 NEMU / 交叉编译 / cosim，**不需要 Docker**。官方镜像 `ghcr.io/openxiangshan/xs-env` 只有 amd64，未与本仓库脚本联调，非必要不用。
 
 ---
 
@@ -189,7 +189,7 @@ JDK **17**（JDK 21/25 会失败）、mill **0.12.3**（XiangShan）与 **0.11.1
 
 ## 五、交接时的仓库约定
 
-- `work/` 被 `.gitignore` 排除，**不入库**。上游仓库由 `scripts/00_setup_env_host.sh`（需 Linux 改写）按 pin 克隆。
+- `work/` 被 `.gitignore` 排除，**不入库**。上游仓库由 `scripts/00_setup_env_host.sh` 按 pin 克隆（Linux x86_64 与 macOS arm64 均可，见第二节「已有脚本与其适用性」）。
 - 所有对上游的改动以 **patch 形式**沉淀在 `rtl/patch/`、`nemu/patch/`、`tests/unit/`，严禁直接提交上游工作树。
 - `scripts/tools/sync_rtl_sources.sh --check` 校验 `rtl/chisel/` 与补丁是否漂移，**请纳入提交前检查**。
 - 执行纪律（`MASTER_PLAN.md` 第 2 节）对接手方同样有效：**禁止伪造日志与数据，无法执行的必须标注「未执行」及原因**。本项目全部产物均满足该标准，请勿破坏。

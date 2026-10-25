@@ -3,16 +3,16 @@
 # fault_inject.sh —— 故障注入自测：证明 tests/riscv/vdot 的比对确实在起作用
 #
 # "全部用例 PASS" 本身不能证明测试有效 —— 也可能是比对逻辑形同虚设。
-# 本脚本把 NEMU 的 vdot 实现（work/NEMU/src/isa/riscv64/instr/rvv/vdot.c）
+# 本脚本把 NEMU 的 vdot 实现（${NEMU_HOME}/src/isa/riscv64/instr/rvv/vdot.c）
 # 人为改坏若干处，每次重新编译 NEMU 并重跑完整语料，要求**每一次都必须 FAIL**。
 # 跑完后把源码还原并重新编译，恢复到干净状态。
 #
-# 必须在 xsdev 容器内执行（需要 gcc 与 riscv64-linux-gnu-gcc）。
-#   NEMU_HOME=/work/work/NEMU bash /work/tests/riscv/vdot/fault_inject.sh
+# 由 scripts/21_build_nemu_vdot.sh 调用（Linux 宿主机或 xsdev 容器，需要 gcc），须先 make。
+#   NEMU_HOME=<work>/NEMU bash tests/riscv/vdot/fault_inject.sh
 # =============================================================================
 set -uo pipefail
 
-NEMU_HOME="${NEMU_HOME:-/work/work/NEMU}"
+NEMU_HOME="${NEMU_HOME:?请设置 NEMU_HOME=<work>/NEMU}"
 TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VDOT_C="${NEMU_HOME}/src/isa/riscv64/instr/rvv/vdot.c"
 BACKUP="$(mktemp)"

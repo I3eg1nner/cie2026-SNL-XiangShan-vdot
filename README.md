@@ -111,36 +111,64 @@ NEMU↔RTL 协同仿真、RVV 1.0 基线实现与延迟加速比分析。所有�
 
 ## 4. 复现快速上手
 
-**本快照的验证平台**：macOS 15.5 / Darwin 24.5.0 arm64（Apple Silicon，16 GB）+ Docker 容器
-`xsdev:ubuntu24.04-arm64`（NEMU 构建、RISC-V 交叉编译在容器内）；Verilator 5.052、OpenJDK 17、
-mill 0.12.3（XiangShan）/ 0.11.1（YunSuan）。在 x86_64 Linux 上复现的改动点见
-[`docs/_plan/HANDOFF_TODO.md`](docs/_plan/HANDOFF_TODO.md) 第二节（`00` 号脚本需改写，其余脚本可直接使用）。
+**验证平台**：本快照的存档日志产生于 macOS 15.5 arm64（16 GB）+ Docker 容器 `xsdev:ubuntu24.04-arm64`
+（Verilator 5.052）。交付脚本随后在 **Linux x86_64**（Ubuntu 22.04.5，宿主 GCC 11.4，Verilator 5.024，
+OpenJDK 17.0.20，交叉 GCC 15.2，无 Docker、无 root）上从全新目录**一键实测通过**，见下表。
+macOS + Docker 路径在脚本改为跨平台之后**未重新实测**。
+
+**Linux 依赖**（Ubuntu/Debian）：
 
 ```bash
-bash scripts/00_setup_env_host.sh       # 宿主机工具链 + 按锁定 commit 克隆上游到 work/（macOS/brew 专用）
-source scripts/env_host.sh               # 每个新 shell 先导入 PATH / JAVA_HOME
-./scripts/01_setup_env_docker.sh build   # 构建 xsdev 容器镜像（NEMU 与交叉工具链）
-./scripts/02_build_nemu.sh               # 容器内构建 NEMU 独立解释器与 difftest 参考共享库
-./scripts/03_run_hello.sh                # 1.1：裸机程序在 NEMU 上打印 hello 串
+sudo apt-get install -y build-essential git curl rsync file bison flex python3 python3-venv \
+  openjdk-17-jdk verilator libreadline-dev libsdl2-dev zlib1g-dev libzstd-dev libncurses-dev device-tree-compiler
+pip install matplotlib && sudo apt-get install -y fonts-noto-cjk   # 仅 40 号脚本绘图需要（或 fonts-wqy-zenhei）
+```
+
+* **JDK 必须是 17**（mill + Scala 2.13.15 在 JDK 21/25 下失败；`scripts/env_host.sh` 会自动寻找 JDK 17）。
+* **Verilator 建议 5.x**：实测 5.024 / 5.052；Ubuntu 22.04 apt 自带的 4.038 未验证。
+* **RISC-V 交叉 GCC ≥ 12**（需支持 `-march=rv64gcv_zve64x`）：Ubuntu 24.04 用 apt 的 `gcc-riscv64-linux-gnu`；
+  22.04 自带的是 11.4，需从 [riscv-collab/riscv-gnu-toolchain](https://github.com/riscv-collab/riscv-gnu-toolchain/releases)
+  下载预编译包解压到 `/opt/riscv`（脚本自动探测），或用 `CROSS=<前缀>` 指定。
+* **没有 root**：`LOCAL_SYSROOT=1 bash scripts/00_setup_env_host.sh`，把 readline / SDL2 开发包解包到 `${WORK_DIR}/sysroot`。
+* macOS：`brew install verilator openjdk@17 gnu-sed cmake` + Docker Desktop，并先执行 `./scripts/01_setup_env_docker.sh build`；
+  NEMU 与交叉编译在容器内执行（`XS_RUNNER=auto` 自动选择）。
+
+```bash
+bash scripts/00_setup_env_host.sh        # 检查依赖、安装 mill / espresso、按锁定 commit 克隆上游到 work/，并生成两棵补丁工作树
+bash scripts/02_build_nemu.sh            # 构建 NEMU 独立解释器与 difftest 参考共享库
+bash scripts/03_run_hello.sh             # 1.1：裸机程序在 NEMU 上打印 hello 串
 bash scripts/10_build_yunsuan_sim.sh     # L1：YunSuan 官方 FU 仿真平台（WAVE=1 抓 vadd 波形，1.3）
 bash scripts/11_build_vdot_sim.sh        # L0/L1：带 vdot 的 RTL 精化、构建与冒烟测试
-bash scripts/20_run_func_tests.sh        # 2.3：正数/负数/边界/随机/回归/译码级/VIMacU 直驱全套功能测试
-./scripts/21_build_nemu_vdot.sh          # 3.1.1：打 NEMU 补丁、构建两种形态、跑 30758 条语料
-./scripts/30_run_cosim.sh                # 3.1.2：NEMU↔RTL Level 1 协同仿真（加参数 fault 跑故障注入）
+bash scripts/20_run_func_tests.sh        # 2.3：正数/负数/边界/随机/回归/译码级/VIMacU 直驱全套功能测试（WITH_FAULT=1 加跑 RTL 故障注入）
+bash scripts/21_build_nemu_vdot.sh       # 3.1.1：打 NEMU 补丁、构建两种形态、跑 30758 条语料（子命令 verify-patch / fault）
+bash scripts/30_run_cosim.sh             # 3.1.2：NEMU↔RTL Level 1 协同仿真（子命令 fault 跑故障注入）
 bash scripts/40_run_bench.sh             # 3.2/3.3：基线等价性、FU 延迟实测、CSV 与图表
 ```
 
-| 脚本 | 做什么 | 主要产物 | 本快照验证情况 |
+所有脚本 `source scripts/lib/common.sh`，可配置变量见其文件头：`WORK_DIR`（上游仓库与构建产物，默认 `work/`）、
+`LOG_ROOT` / `RESULTS_DIR` / `FIG_DIR`（日志、CSV、图表输出位置，默认即仓库内存档位置，**复跑会覆盖存档**，
+只想验证时请指到别处）、`BUILD_ROOT`、`XS_RUNNER`、`CROSS`、`JOBS`、`PYTHON`。
+
+| 脚本 | 做什么 | 主要产物 | Linux x86_64 全新目录实测 |
 |---|---|---|---|
-| `00_setup_env_host.sh` | 安装 verilator / openjdk@17 / mill / 原生 espresso，按 pin 克隆 XiangShan（11 个子模块）与 NEMU | `work/` | macOS/arm64；Linux 需改写 |
-| `01_setup_env_docker.sh` | 构建并进入 xsdev 容器 | `logs/stage1/p1_docker_build.log` | macOS + Docker（arm64 镜像） |
-| `02_build_nemu.sh` / `03_run_hello.sh` | 构建 NEMU；运行 1.1 验证程序 | `logs/stage1/p1_nemu_build.log`、`p1_hello_xiangshan.log` | 同上 |
-| `10_build_yunsuan_sim.sh` | YunSuan L1 平台 + `vadd.vv` 波形 | `logs/stage1/waveform/` | macOS/arm64 宿主机 |
-| `11_build_vdot_sim.sh` | vdot RTL 精化、Verilog、L1 冒烟 | `logs/stage2/p4_*.log`、`rtl/verilog/vdot/` | macOS/arm64 宿主机 |
-| `20_run_func_tests.sh` | 阶段二全部功能测试并生成汇总表 | `logs/stage2/p5_*.log` | macOS/arm64 宿主机 |
-| `21_build_nemu_vdot.sh` | NEMU 扩展构建与一致性测试（`fault` / `verify-patch` 子命令） | `logs/stage3/p5_*.log` | 容器内 |
-| `30_run_cosim.sh` | 协同仿真（宿主机 Verilator + 容器内链接 NEMU `.so`） | `logs/stage3/cosim/` | 宿主机 + 容器 |
-| `40_run_bench.sh` | 基线等价性（容器内 NEMU）+ FU 延迟实测（宿主机）+ 绘图 | `logs/stage3/p7_*.log`、`bench/results/`、`docs/stage3/figures/` | 宿主机 + 容器 |
+| `00_setup_env_host.sh` | 依赖检查、mill / espresso、按 pin 克隆 XiangShan（11 个子模块）与 NEMU，调用 `04` 生成补丁工作树 | `work/` | ✅ 226 s |
+| `01_setup_env_docker.sh` | 构建并进入 xsdev 容器（仅 macOS 需要） | `logs/stage1/p1_docker_build.log` | 未实测（Linux 不需要） |
+| `02_build_nemu.sh` / `03_run_hello.sh` | 构建 NEMU；运行 1.1 验证程序 | `logs/stage1/p1_nemu_build.log`、`p1_hello_xiangshan.log` | ✅ 29 s / 2 s |
+| `10_build_yunsuan_sim.sh` | YunSuan L1 平台 + `vadd.vv` 波形 | `logs/stage1/waveform/` | ✅ 105 s |
+| `11_build_vdot_sim.sh` | vdot RTL 精化、Verilog、L1 冒烟 | `logs/stage2/p4_*.log`、`rtl/verilog/vdot/` | ✅ 105 s |
+| `20_run_func_tests.sh` | 阶段二全部功能测试并生成汇总表 | `logs/stage2/p5_*.log` | ✅ 317 s，290103 条 0 失败 |
+| `21_build_nemu_vdot.sh` | NEMU 扩展构建与一致性测试（`fault` / `verify-patch` 子命令） | `logs/stage3/p5_*.log` | ✅ 21 s（`verify-patch` 10 s、`fault` 21 s） |
+| `30_run_cosim.sh` | 协同仿真（Verilator + 链接 NEMU `.so`） | `logs/stage3/cosim/` | ✅ 251 s（`fault` 96 s） |
+| `40_run_bench.sh` | 基线等价性（NEMU）+ FU 延迟实测 + 绘图 | `logs/stage3/p7_*.log`、`bench/results/`、`docs/stage3/figures/` | ✅ 126 s |
+
+以上 12 步（含 `21 verify-patch`、`21 fault`、`30 fault`）全部通过，功能与一致性数字与存档相同。两点已知差异与限制：
+
+* **交叉 GCC 版本会改变 `minstret` 绝对值**：GCC 15 下长向量循环的动态指令数比存档（xsdev 容器内的 `riscv64-linux-gnu-gcc` 13.3）多 2 条
+  （N=4096：2575/2061 → 2577/2063，比值 1.249 不变；N=64：1.222 → 1.213），每 16 元素的斜率不变
+  （`logs/stage3/p7_baseline_gcc15_supplement.log`）。
+* **波形模式要求 yunsuan 目录路径 ≤ 63 字节**：上游 `emu.cpp` 用 `getcwd(cwd, 64)` 拼 VCD 路径，超长时波形静默丢失。
+  `40` 已改为在短路径临时目录里运行 emu；`10`/`11` 的 `WAVE=1` 与 `20` 的 `WITH_WAVE=1` 遇到长路径会直接报错，
+  请把 `WORK_DIR` 设到较短的路径。
 
 提交前自检：`bash scripts/tools/sync_rtl_sources.sh --check`（校验 `rtl/chisel/` 与补丁无漂移，只读）、
 `bash scripts/tools/verify_patches.sh`（三份补丁可干净应用到 pristine 上游）。

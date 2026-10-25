@@ -5,9 +5,9 @@
 | 对应赛题 | 阶段二 2.1「vdot 指令设计」 |
 | 目标处理器 | XiangShan 昆明湖 V2（`kunminghu-v2`，HEAD `a4eeaab`） |
 | 目标子模块 | `yunsuan` @ `9559211` |
-| 代码树根（下文简称 `$XS`） | `/Users/i3eg1nner/code/cie/work/XiangShan-kmhv2` |
+| 代码树根（下文简称 `$XS`） | `<仓库根>/work/XiangShan-kmhv2`（由 `scripts/00_setup_env_host.sh` 按 pin 克隆） |
 | 架构参数 | VLEN = 128，ELEN = 64，XLEN = 64 |
-| 语义唯一事实来源 | `/Users/i3eg1nner/code/cie/tests/golden/vdot_ref.c` + `vdot_ref.h` |
+| 语义唯一事实来源 | `tests/golden/vdot_ref.c` + `vdot_ref.h` |
 | 规范约束 | `docs/_plan/MASTER_PLAN.md` 决策 **D2** 与 **D2.1 语义裁定 S-1…S-9** |
 
 ## 0. 阅读约定
@@ -568,7 +568,7 @@ io.out.valid       ────────────────────�
 ```
 
 **结论**：`vdot.vv` 的 FU 延迟 = **2 个周期**，与 `vmul.vv`/`vmacc.vv` 完全相同，不改变 `VimacCfg.latency`（`FuConfig.scala:563`），因此调度器、唤醒网络、写回仲裁一律不动。
-实测周期数：**2 周期**（P7 实测，FU 级：直驱 `VIMacU` 178 笔全部 2 拍且数据逐位正确，另有 L1 波形 12 笔；`docs/stage3/22_基线实现与延迟加速分析.md` §4.2/§4.3，`logs/stage3/p7_latency_measure.log:221`）。
+实测周期数：**2 周期**（P7 实测，FU 级，按数据成形拍判定：直驱 `VIMacU` 时 vdot 178 笔全部「第 1 拍未成形、第 2 拍与参考模型逐位一致」，`logs/stage3/p7_latency_measure.log:238-242`；vdotacc / vdot4a 见 `:243-252`；另有 L1 波形 12×3 笔，DUT 内部 S2 寄存器与 `io_vd` 均在第 2 拍成形。两个平台的 `out.valid` 都由测试平台按声明延迟构造，不作证据；详见 `docs/stage3/22_基线实现与延迟加速分析.md` §4.2/§4.3）。
 
 ### 3.5 背靠背发射行为
 

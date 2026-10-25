@@ -99,8 +99,9 @@ ls build/obj-riscv64-nemu-interpreter-so/src/isa/riscv64/instr/rvv/vdot.o
 ### 2.3 跑一致性测试
 
 ```bash
+export NEMU_HOME=<WORK_DIR>/NEMU      # 默认 WORK_DIR 为 <仓库根>/work
 cd tests/riscv/vdot
-make NEMU_HOME=/work/work/NEMU
+make NEMU_HOME=$NEMU_HOME [CROSS=<交叉工具链前缀>] [BUILD=<构建目录>]
 $NEMU_HOME/build/riscv64-nemu-interpreter -b --log=build/nemu-run.log build/vdot_test.bin
 ```
 
@@ -115,7 +116,7 @@ $NEMU_HOME/build/riscv64-nemu-interpreter -b --log=build/nemu-run.log build/vdot
 
 ```bash
 make -C $NEMU_HOME/tools/ref-so-runner
-make run-ref NEMU_HOME=/work/work/NEMU
+make run-ref NEMU_HOME=$NEMU_HOME
 ```
 
 ---

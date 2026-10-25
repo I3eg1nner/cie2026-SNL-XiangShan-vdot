@@ -107,8 +107,8 @@ work/   上游仓库（.gitignore 排除）
 **目标**：在本机建立可复现的香山开发环境，产出环境验证信息、完整操作日志、向量加法指令执行过程分析。
 
 **交付物**
-- `scripts/00_setup_env_host.sh`：宿主机（macOS/arm64）一键环境搭建 —— 按锁定 commit 克隆 XiangShan `kunminghu-v2`（`a4eeaab`，含 11 个子模块 + rocket-chip `--recursive`）与 NEMU（`9090839`），并安装 verilator / openjdk@17 / mill / 原生 espresso
-- `scripts/01_setup_env_docker.sh`：xsdev 容器镜像构建与进入（含 Docker 镜像定义 `scripts/docker/Dockerfile.xsdev`）
+- `scripts/00_setup_env_host.sh`：宿主机一键环境搭建（Linux x86_64：检查 apt 依赖、`LOCAL_SYSROOT=1` 可免 root；macOS arm64：Homebrew 安装 verilator / openjdk@17 并自建原生 espresso）—— 按锁定 commit 克隆 XiangShan `kunminghu-v2`（`a4eeaab`，含 11 个子模块 + rocket-chip `--recursive`）与 NEMU（`9090839`），安装 mill，生成 `${WORK_DIR}/tools/env.local.sh`
+- `scripts/01_setup_env_docker.sh`：xsdev 容器镜像构建与进入（含 Docker 镜像定义 `scripts/docker/Dockerfile.xsdev`；仅 macOS 需要，Linux 在宿主机直接执行）
 - `docs/stage1/00_环境版本锁定.md`：所有仓库 commit SHA、工具链版本
 - `docs/stage1/01_环境部署报告.md`：部署全过程、遇到的问题与解决
 - `logs/stage1/*.log`：真实终端日志

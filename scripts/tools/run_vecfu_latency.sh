@@ -6,15 +6,16 @@
 #   vmv.s.x / vwadd.wv  -> FuType.vialuF -> VIAluFix (VialuCfg, 声明 latency=1)
 #   vwredsum.vs         -> FuType.vipu   -> VIPU     (VipuCfg,  声明 latency=2)
 #
-# 工作树：work/XiangShan-cosim（P7 专用；不触碰 work/XiangShan-vdot）
+# 工作树：${WORK_DIR}/XiangShan-cosim（P7 专用；不触碰 XiangShan-vdot）
 #
 # 用法： bash scripts/tools/run_vecfu_latency.sh
 #        SKIP_ELAB=1 跳过 mill 精化
+#        XS_DIR=<树>    直接指定工作树；否则用 ${WORK_DIR:-<仓库根>/work}/XiangShan-cosim
 # =============================================================================
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-XS_DIR="${REPO_ROOT}/work/XiangShan-cosim"
+XS_DIR="${XS_DIR:-${WORK_DIR:-${REPO_ROOT}/work}/XiangShan-cosim}"
 SKIP_ELAB="${SKIP_ELAB:-0}"
 OPS="${VECFU_LAT_OPS:-64}"
 

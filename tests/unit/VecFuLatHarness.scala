@@ -14,7 +14,7 @@ import xiangshan.backend.fu.vector.VecPipedFuncUnit
 import xiangshan.backend.fu.wrapper.{VIAluFix, VIPU}
 
 /** VecFuLatHarness —— 把任意一个 `VecPipedFuncUnit` 收窄成与 `VIMacUHarness` 完全
-  * 相同的窄 IO，用来实测该功能单元 in.fire -> out.valid 的周期数（P7 / 赛题 3.3）。
+  * 相同的窄 IO，供 `tests/unit/vecfu_latency_tb.cpp` 直接驱动该功能单元（P7 / 赛题 3.3）。
   *
   *  背景：RVV 1.0 基线序列由 `vmv.s.x` / `vwmul.vv` / `vwredsum.vs` 三类指令组成，
   *  分别落在三个不同的功能单元上：
@@ -25,8 +25,12 @@ import xiangshan.backend.fu.wrapper.{VIAluFix, VIPU}
   *  `VIAluFWrapper` / `VPermTop` 等模块，既没有 `VIMacU` 也没有 `VIPU`，
   *  而且它的 `io.out.valid` 是平台计数器按常量产生的，不能单独证明 DUT 的流水深度。
   *  本 harness 与 `VIMacUHarness` 一样照搬 `ExeUnit.scala:228-241` 的 pipelineReg 链，
-  *  `io.outValid` 直接来自功能单元自己的 `io.out.valid`，因此测到的就是该 FU
-  *  在昆明湖 V2 流水线里的真实延迟。
+  *  链长取自 `cfg.latency`（下方 `nLat`）。`io.outValid` 虽然直接接功能单元的
+  *  `io.out.valid`，但后者由 `validPipe(nLat) && validVecThisFu(nLat)` 得到
+  *  （FuncUnit.scala:213-238），而 validPipe 正是本 harness 按 nLat 搭的寄存器链——
+  *  所以 in.fire -> out.valid 的拍数按构造等于声明值，只是**平台构造值**，
+  *  不是独立证据。数据通路深度要看 tb 里独立观测的「数据成形拍」（io_vd 第一次
+  *  等于最终结果的拍数，属下界型证据），判读口径见 vecfu_latency_tb.cpp 文件头。
   *
   *  本文件只做连线，不含任何算术逻辑，也不修改任何 RTL。
   */

@@ -7,11 +7,12 @@
 # 因此必须先把 NEMU 配置成 riscv64-xs-kmhv2_defconfig 并构建过一次。
 #
 # 用法：
-#   make NEMU_HOME=/work/work/NEMU HOST_IP=192.168.30.213
-#   make run NEMU_HOME=... HOST_IP=...
+#   make NEMU_HOME=<work>/NEMU [CROSS=<前缀>] [HOST_IP=<本机IP>]
+#   make run NEMU_HOME=<work>/NEMU
+# （scripts/03_run_hello.sh 会自动传入这些变量）
 # =============================================================================
 
-NEMU_HOME ?= /work/work/NEMU
+NEMU_HOME ?= ../../../work/NEMU
 CROSS     ?= riscv64-linux-gnu-
 BUILD     ?= build
 

@@ -438,9 +438,8 @@ else
 fi
 
 if [ "${WITH_FAULT}" = "1" ]; then
-  require_tool_workdir "${REPO_ROOT}/scripts/tools/fault_inject_vdot.sh"
   step "7b/7 故障注入（5 个故障，每个重建一次 emu）"
-  ( bash "${REPO_ROOT}/scripts/tools/fault_inject_vdot.sh" || true ) 2>&1 | tee "${LOG_DIR}/p5_fault_injection.log"
+  ( YS_DIR="${YS_DIR}" bash "${REPO_ROOT}/scripts/tools/fault_inject_vdot.sh" || true ) 2>&1 | tee "${LOG_DIR}/p5_fault_injection.log"
 else
   info "跳过故障注入（WITH_FAULT=1 开启；已存档结果见 ${LOG_DIR}/p5_fault_injection.log）"
 fi

@@ -74,9 +74,6 @@ if [ "${SKIP_RTL}" != "1" ]; then
     info "找不到 ${XS_DIR}，调用 scripts/04_make_vdot_trees.sh cosim 生成"
     bash "${REPO_ROOT}/scripts/04_make_vdot_trees.sh" cosim
   fi
-  # run_vimacu_latency.sh 支持 XS_DIR 覆盖（下面透传）；run_vecfu_latency.sh 若仍写死
-  # <仓库根>/work，则要求它与 WORK_DIR 一致，避免读写到别的工作树
-  require_tool_workdir "${REPO_ROOT}/scripts/tools/run_vecfu_latency.sh"
 fi
 TMPW="$(mktemp_d p7)"
 trap 'rm -rf "${TMPW}"' EXIT
@@ -249,7 +246,7 @@ echo "# [4] VIAluFix / VIPU 直驱延迟实测"
 echo "##############################################################"
 SKIP_ELAB="$([ "${FORCE}" = "1" ] && echo 0 || echo 1)" \
 VECFU_LAT_OPS="${VECFU_LAT_OPS}" \
-  bash "${REPO_ROOT}/scripts/tools/run_vecfu_latency.sh"
+  XS_DIR="${XS_DIR}" bash "${REPO_ROOT}/scripts/tools/run_vecfu_latency.sh"
 } 2>&1 | tee -a "${LAT_LOG}"
 else
   info "SKIP_RTL=1，跳过 [2][3][4]；沿用已有的 ${LAT_LOG}"

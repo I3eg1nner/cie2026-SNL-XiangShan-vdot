@@ -496,7 +496,7 @@ endif
 
 **所以对本赛题来说：XiangShan 默认配置 + `riscv64-xs-kmhv2-ref_defconfig` 已经开启了向量寄存器比对，vdot 的结果会被自动校验，无需额外开关。** 要确认的只有一点：构建 emu 时 `--enable-difftest` 要在（`work/XiangShan/Makefile:264` 的 `DEBUG_ARGS` 默认带，只要不设 `RELEASE=1`/`FPGA=1`）。
 
-> **已知限制**：`refproxy.h:313-317`
+> **已知限制**：`refproxy.h:274-278`
 > ```c
 > #ifdef CONFIG_DIFFTEST_ARCHVECREGSTATE
 >   // TODO: vec skip is not supported at this time.

@@ -18,7 +18,7 @@
 # 小规模激励与 30 号脚本 small_run() 完全相同（5 份定向 + random 2000 + illegal 500，
 # seed 20260324）。
 #
-# 只读取共享的 work/ 树（VDotTop.sv、VdotDecodeProbe.v、NEMU 参考 .so），
+# 只读取共享的 ${WORK_DIR:-<仓库根>/work} 树（VDotTop.sv、VdotDecodeProbe.v、NEMU 参考 .so），
 # 所有修改、verilate、编译都发生在 ${PRIV} 私有目录里，不改动 work/。
 #
 # 用法： bash scripts/tools/cosim_fault_rtl1_rerun.sh [PRIV_DIR]
@@ -31,9 +31,9 @@ export LC_ALL=C
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PRIV="${1:-${REPO_ROOT}/../cosim-faultinj-copy}"
-SRC_SV="${SRC_SV:-${REPO_ROOT}/work/XiangShan-cosim/yunsuan/build/vdot/VDotTop.sv}"
-SRC_DP="${SRC_DP:-${REPO_ROOT}/work/XiangShan-cosim/build/vdot/VdotDecodeProbe.v}"
-SRC_SO="${SRC_SO:-${REPO_ROOT}/work/NEMU/build/riscv64-nemu-interpreter-so}"
+SRC_SV="${SRC_SV:-${WORK_DIR:-${REPO_ROOT}/work}/XiangShan-cosim/yunsuan/build/vdot/VDotTop.sv}"
+SRC_DP="${SRC_DP:-${WORK_DIR:-${REPO_ROOT}/work}/XiangShan-cosim/build/vdot/VdotDecodeProbe.v}"
+SRC_SO="${SRC_SO:-${WORK_DIR:-${REPO_ROOT}/work}/NEMU/build/riscv64-nemu-interpreter-so}"
 SEED="${SEED:-20260324}"
 VEC="${REPO_ROOT}/tests/vectors"
 

@@ -15,7 +15,7 @@
  *       vecException.io.decodedInst := latchedInst
  *       vecException.io.vtype       := latchedInst.vpu.vtype
  *       vecException.io.vstart      := latchedInst.vpu.vstart
- *   DecodeUnitComp.scala:199
+ *   DecodeUnitComp.scala:198
  *       dst.exceptionVec(EX_II) := latchedInst.exceptionVec(EX_II) || illegalInst
  *
  * 这里唯一省略的是 DecodeUnitComp 入口的那一级寄存器（latch），它只影响时序、

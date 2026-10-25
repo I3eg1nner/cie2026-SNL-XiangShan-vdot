@@ -459,26 +459,26 @@ YS_VDOT_VECTORS=tests/vectors/positive.txt ./build/emu -O 40
 ## 5. 如何重建与复跑
 
 ```bash
-cd /Users/i3eg1nner/code/cie
+cd <仓库根>
 source scripts/env_host.sh                       # 必须：pin openjdk@17（JDK 25 不行）
 
 # ---- L0：两个 mill 工程编译 + Verilog 生成 ----
 cd work/XiangShan-vdot/yunsuan && mill -i YunSuan.compile                 # mill 0.11.1
-cd /Users/i3eg1nner/code/cie/work/XiangShan-vdot && mill -i xiangshan.compile   # mill 0.12.3
+cd <仓库根>/work/XiangShan-vdot && mill -i xiangshan.compile   # mill 0.12.3
 
 cd work/XiangShan-vdot/yunsuan
 mill -i YunSuan.runMain yunsuan.vector.mac.VerilogVDotTree     # -> build/vdot/VDotTree.sv
 mill -i YunSuan.runMain yunsuan.vector.mac.VerilogVDotTop      # -> build/vdot/VDotTop.sv
 mill -i YunSuan.runMain yunsuan.vector.mac.VerilogVIMac        # -> build/vimac/VIMac.sv
 
-cd /Users/i3eg1nner/code/cie/work/XiangShan-vdot
+cd <仓库根>/work/XiangShan-vdot
 mill -i -D jvm-xmx=8G xiangshan.test.runMain xiangshan.backend.fu.VIMacUMain \
      --target-dir build/vdot --target verilog                  # -> build/vdot/VIMacU.v
 mill -i -D jvm-xmx=8G xiangshan.test.runMain xiangshan.DecodeMain \
      --target-dir build/vdot --target verilog                  # -> build/vdot/DecodeUnit.v
 
 # ---- L1：构建仿真器并跑冒烟测试 ----
-cd /Users/i3eg1nner/code/cie
+cd <仓库根>
 bash scripts/11_build_vdot_sim.sh                 # 构建 + 冒烟（日志 logs/stage2/p4_smoke_test.log）
 OPS=20000 bash scripts/11_build_vdot_sim.sh       # 加大随机条数
 WAVE=1 bash scripts/11_build_vdot_sim.sh          # 带波形重建并抓一段 vdot.vv

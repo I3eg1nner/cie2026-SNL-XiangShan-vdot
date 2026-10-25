@@ -245,18 +245,6 @@ stage_tests() {
   done
 }
 
-# 当某个 scripts/tools/*.sh 仍然写死 ${REPO_ROOT}/work 时，确认它与 WORK_DIR 指向同一处
-require_tool_workdir() {  # require_tool_workdir <tool 脚本路径>
-  local tool="$1"
-  grep -q 'WORK_DIR' "${tool}" && return 0
-  local a b
-  a="$(cd "${REPO_ROOT}/work" 2>/dev/null && pwd -P || echo "<不存在>")"
-  b="$(cd "${WORK_DIR}" && pwd -P)"
-  [ "${a}" = "${b}" ] && return 0
-  die "$(relpath "${tool}") 写死使用 ${REPO_ROOT}/work，与 WORK_DIR=${WORK_DIR} 不一致。
-       请不设 WORK_DIR，或建立符号链接：ln -s '${WORK_DIR}' '${REPO_ROOT}/work'"
-}
-
 # 上游 yunsuan emu.cpp 的 timestamp_filename() 用 getcwd(cwd, 64) 取当前目录并把 VCD 写到
 # <cwd>/build/；目录超过 63 字节时 getcwd 失败，VCD 被写到不存在的 /build/ 而静默丢失。
 # 在 yunsuan 目录里带 --dump-wave 运行 emu 之前调用本函数做检查。

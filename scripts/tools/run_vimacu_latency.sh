@@ -12,7 +12,7 @@
 #                         同时覆盖上游既有的 vmul / vwmul / vmacc，用来回答
 #                         「新增 vdot 有没有把既有 vimac 指令变慢」
 #
-# 工作树：默认 work/XiangShan-cosim（P7 专用；不触碰 work/XiangShan-vdot）；
+# 工作树：默认 ${WORK_DIR:-<仓库根>/work}/XiangShan-cosim（P7 专用；不触碰 XiangShan-vdot）；
 #         可用 XS_DIR=<路径> 指向一份私有副本
 #
 # 用法： bash scripts/tools/run_vimacu_latency.sh
@@ -21,7 +21,7 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-XS_DIR="${XS_DIR:-${REPO_ROOT}/work/XiangShan-cosim}"
+XS_DIR="${XS_DIR:-${WORK_DIR:-${REPO_ROOT}/work}/XiangShan-cosim}"
 VEC_DIR="${REPO_ROOT}/tests/vectors"
 GOLDEN="${REPO_ROOT}/tests/golden"
 OBJ_DIR="${XS_DIR}/build/vimacu-lat-tb"
@@ -29,7 +29,7 @@ SKIP_ELAB="${SKIP_ELAB:-0}"
 
 # shellcheck disable=SC1091
 [ -f "${REPO_ROOT}/scripts/env_host.sh" ] && source "${REPO_ROOT}/scripts/env_host.sh"
-# env_host.sh 由生成它的那台机器决定；JAVA_HOME 指向不存在的目录时回退到 PATH 上的 java
+# env_host.sh 会载入本机的 ${WORK_DIR}/tools/env.local.sh；JAVA_HOME 指向不存在的目录时回退到 PATH 上的 java
 if [ -n "${JAVA_HOME:-}" ] && [ ! -x "${JAVA_HOME}/bin/java" ]; then unset JAVA_HOME; fi
 
 echo "=== VIMacU 延迟测量  $(date '+%Y-%m-%d %H:%M:%S %Z') ==="

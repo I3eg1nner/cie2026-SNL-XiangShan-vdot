@@ -7,16 +7,18 @@
 # （至少一个 suite 报 EMU BADTRAP）。每轮结束后自动还原源码。
 #
 # 用法： bash scripts/tools/fault_inject_vdot.sh
+#        工作树取 ${WORK_DIR:-<仓库根>/work}/XiangShan-vdot/yunsuan，也可用 YS_DIR=<目录> 直接指定
 # 日志： logs/stage2/p5_fault_injection.log（由调用方 tee，或本脚本直接写）
 # =============================================================================
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-YS_DIR="${REPO_ROOT}/work/XiangShan-vdot/yunsuan"
+WORK_DIR="${WORK_DIR:-${REPO_ROOT}/work}"
+YS_DIR="${YS_DIR:-${WORK_DIR}/XiangShan-vdot/yunsuan}"
 VEC_DIR="${REPO_ROOT}/tests/vectors"
 TREE="${YS_DIR}/src/main/scala/yunsuan/vector/vectorIMAC/VDotTree.scala"
 TOP="${YS_DIR}/src/main/scala/yunsuan/vector/vectorIMAC/VDotTop.scala"
-BK="${REPO_ROOT}/work/.fault_backup"
+BK="${WORK_DIR}/.fault_backup"
 
 # shellcheck disable=SC1091
 source "${REPO_ROOT}/scripts/env_host.sh"
@@ -28,19 +30,25 @@ cp -f "${TOP}"  "${BK}/VDotTop.scala"
 restore() { cp -f "${BK}/VDotTree.scala" "${TREE}"; cp -f "${BK}/VDotTop.scala" "${TOP}"; }
 trap 'restore' EXIT
 
+# 文件内容摘要（Linux：coreutils md5sum；macOS：md5 -q）
+file_md5() {
+  if command -v md5sum >/dev/null 2>&1; then md5sum "$1" | awk '{print $1}'
+  else md5 -q "$1"; fi
+}
+
 # 重建 emu。返回非 0 表示构建失败。
 # 另外校验 build/emu 的内容确实变了 —— 否则「故障没被检出」可能只是因为根本没重编。
 rebuild() {
   local expect_change="${1:-yes}"
   local before=""
-  [ -f "${YS_DIR}/build/emu" ] && before=$(md5 -q "${YS_DIR}/build/emu")
+  [ -f "${YS_DIR}/build/emu" ] && before=$(file_md5 "${YS_DIR}/build/emu")
   bash "${REPO_ROOT}/scripts/tools/mill_state_guard.sh" "${YS_DIR}" >/dev/null 2>&1 || true
   if ! make -C "${YS_DIR}" emu > /tmp/fault_rebuild.log 2>&1; then
     echo "    [BUILD FAILED] 见 /tmp/fault_rebuild.log"
     tail -25 /tmp/fault_rebuild.log | sed 's/^/      /'
     return 1
   fi
-  local after; after=$(md5 -q "${YS_DIR}/build/emu")
+  local after; after=$(file_md5 "${YS_DIR}/build/emu")
   echo "    emu md5: ${before:-<none>} -> ${after}"
   if [ "${expect_change}" = "yes" ] && [ -n "${before}" ] && [ "${before}" = "${after}" ]; then
     echo "    [警告] emu 二进制没有变化，故障可能没有真正进入构建"
