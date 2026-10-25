@@ -37,7 +37,7 @@
 | 创新性 | 设计优化独特性 | 5 | — | XOR 蝶形折叠树、三指令共享阵列 |
 | 创新性 | 扩展应用潜力 | 5 | — | 现固定 LMUL=1 → **T4 可提升** |
 
-> **结论（更新）**：原先投入产出比最高的 T1（全核 difftest）已完成（`docs/stage3/23_全核difftest验证报告.md`，提交 `057ef76`）。
+> **结论（更新）**：原先投入产出比最高的 T1（全核 difftest）已完成（`docs/stage3/23_全核difftest验证报告.md`，提交 `19a29ea`）。
 > 全核 emu 现已能在本机构建，T3 的微基准周期（单次点积、依赖链、长向量循环）已在 MinimalConfig 全核上实测（`docs/stage3/22_*.md` §5.5），真实 LLM 内核仍未做；其余各项按第三节顺序。
 
 ---
@@ -94,7 +94,7 @@ JDK **17**（JDK 21/25 会失败）、mill **0.12.3**（XiangShan）与 **0.11.1
 
 ### T1 — 全核 difftest 【已完成】
 
-> **状态：已完成**（提交 `057ef76`），报告 `docs/stage3/23_全核difftest验证报告.md`，日志 `logs/stage3/fullcore/`，一键脚本 `scripts/50_run_fullcore_difftest.sh`。
+> **状态：已完成**（提交 `19a29ea`），报告 `docs/stage3/23_全核difftest验证报告.md`，日志 `logs/stage3/fullcore/`，一键脚本 `scripts/50_run_fullcore_difftest.sh`。
 > 下面的验收标准逐条对应：
 > * 全部语料 0 mismatch：MinimalConfig 全核上 30758/30758，4834 条必须 trap 的用例全部 `mcause=2`，6/6 批 HIT GOOD TRAP（`summary.log:1-9`）；另加 10 个背靠背依赖内核 × 4 个种子 0 失败（`summary.log:10-37`）；合计 24,517,314 条提交 0 失配（`23` §5.4）。
 > * 故障注入：`VIMacU` 中 vdot 结果 bit0 翻转，3/3 个程序被 difftest 中止（`fault_summary.log:1-5`）。
@@ -227,7 +227,7 @@ JDK **17**（JDK 21/25 会失败）、mill **0.12.3**（XiangShan）与 **0.11.1
 | 项 | 说明 | 建议 |
 |---|---|---|
 | ~~审计 I-3（阶段二部分）~~ **已处理** | 阶段二 3 张（`docs/stage2/figures/`，嵌入 `12` §10.2–10.4）、阶段三 3 张（`docs/stage3/figures/fig5–7`，嵌入 `22` §4.2）已由 `scripts/tools/make_stage23_figures.sh` 从入库 VCD 生成 | — |
-| ~~`bench/results/latency_fu.csv` 措辞~~ **已处理** | 提交 `87de89b` 已改生成脚本：`vwredsum`/`vredsum` 行为「数值未建模（未做数值比对）」，`vmul`/`vmacc` 行在 `VIMacU` 直驱补了数值比对后为「数值比对 64 笔一致」（`bench/results/latency_fu.csv:6,7,9,10`） | — |
+| ~~`bench/results/latency_fu.csv` 措辞~~ **已处理** | 提交 `5c89692` 已改生成脚本：`vwredsum`/`vredsum` 行为「数值未建模（未做数值比对）」，`vmul`/`vmacc` 行在 `VIMacU` 直驱补了数值比对后为「数值比对 64 笔一致」（`bench/results/latency_fu.csv:6,7,9,10`） | — |
 | 指令计数口径 | 设计文档按 6→1（不含 vsetvli），P7 按 6→2（含 vsetvli），已在设计文档加注 | PPT 与录屏统一使用 6→2（3.00×，实测口径） |
 | 守卫命名 | 方案文档称 `dotLmulIllegal`，代码为 `dotEmulIllegal`，已加注 | 无需改代码 |
-| ~~阶段三独立审计~~ **已处理** | 已完成独立验收审计（`docs/_plan/ACCEPTANCE_P3.md`，预测 20/25，阻塞 0、重要 4、次要 9），全部问题已整改（提交 `8b28fcb`、`87de89b`、`73722be`、`b7a5e81`；逐条位置见该文件 §8「整改记录」） | 如需确认整改效果，可另行安排复审 |
+| ~~阶段三独立审计~~ **已处理** | 已完成独立验收审计（`docs/_plan/ACCEPTANCE_P3.md`，预测 20/25，阻塞 0、重要 4、次要 9），全部问题已整改（提交 `1a9384c`、`5c89692`、`b0e27dc`、`75aa818`；逐条位置见该文件 §8「整改记录」） | 如需确认整改效果，可另行安排复审 |
