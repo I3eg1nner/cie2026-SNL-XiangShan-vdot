@@ -44,7 +44,7 @@
 ```
 cpu_exec()                       src/cpu/cpu-exec.c
    └─ fetch_decode()/execute()
-        ├─ isa_fetch_decode(s)   src/isa/riscv64/instr/decode.c:128
+        ├─ isa_fetch_decode(s)   src/isa/riscv64/instr/decode.c:129
         │     └─ table_main(s)   src/isa/riscv64/instr/decode.c:165
         │           └─ 一层层 def_INSTR_TAB 模式匹配，最终返回一个 EXEC_ID_xxx
         └─ g_exec_table[EXEC_ID_xxx](s)   src/cpu/cpu-exec.c:595
@@ -188,8 +188,8 @@ EOF
 | 逐元素：inactive 目的元素按 `vma` | 与 `arithmetic_instr()`（`vcompute_impl.c:564-576`）同构：`vma=1` 写全 1，`vma=0` 保持 | `vdot.c:173-179` | Q5 |
 | 归约 tail（`vta=1`） | `set_vreg_tail(vd)`（`vreg_impl.c:286`，把整个寄存器置全 1）再写元素 0 —— 与 `reduction_instr()` `:1563-1569` 完全一致 | `vdot.c:130-135` | **S-3**、R6 |
 | 逐元素 tail（`vta=1`） | `get_vlen_max(vsew, vlmul, 0)`（`vreg_impl.c:106`）求 VLMAX，再逐元素写全 1 —— 与 `arithmetic_instr()` `:992-1000` 一致 | `vdot.c:195-203` | Q6 |
-| 元素读写与 EEW 换算 | `get_vreg()` / `set_vreg()`（`vreg_impl.c:135` / `:178`）。源用 `vsew=0`（EEW=8，`SIGNED` 已按 `(int64_t)(int8_t)` 扩展），目的用 `vsew=2`（EEW=32，写回时自动截断 → 2^32 模回绕） | `vdot.c:86-90`、`:134`、`:204` | 溢出回绕 |
-| 结束时 `vstart = 0` | 归约形态 `vstart->val = 0`（同 `reduction_instr():1571`）；逐元素形态 `rtl_li + vcsr_write(IDXVSTART, 0)`（同 `arithmetic_instr():1007-1008`） | `vdot.c:137`、`:205-206` | R9 |
+| 元素读写与 EEW 换算 | `get_vreg()` / `set_vreg()`（`vreg_impl.c:135` / `:178`）。源用 `vsew=0`（EEW=8，`SIGNED` 已按 `(int64_t)(int8_t)` 扩展），目的用 `vsew=2`（EEW=32，写回时自动截断 → 2^32 模回绕） | `vdot.c:86-90`、`:134`、`:192`、`:200` | 溢出回绕 |
+| 结束时 `vstart = 0` | 归约形态 `vstart->val = 0`（同 `reduction_instr():1572`）；逐元素形态 `rtl_li + vcsr_write(IDXVSTART, 0)`（同 `arithmetic_instr():1009-1010`） | `vdot.c:137`、`:205-206` | R9 |
 | `mstatus.VS` 置脏 | `vp_set_dirty()` | `vdot.c:108/136/168/207` | difftest CSR 比对必需 |
 | `vxsat` / `vcsr` | **不调用** `update_vcsr()` —— 本指令族不饱和（溢出证明见 D2），不应改 `vxsat` | — | 溢出分析 |
 
@@ -236,25 +236,25 @@ vdot_instr(opcode, s)                     vdot.c:210
 
 | 文件 | 行数 | 作用 |
 |---|---:|---|
-| `pack_corpus.py` | 167 | 把文本 suite 打包成二进制 blob（**只做格式转换，不计算任何期望值**） |
-| `gen_extra_vectors.py` | 125 | 生成补充定向语料（覆盖裁定 S-9）；期望值由 `tests/golden/vdot_cli` 现算 |
+| `pack_corpus.py` | 171 | 把文本 suite 打包成二进制 blob（**只做格式转换，不计算任何期望值**） |
+| `gen_extra_vectors.py` | 139 | 生成补充定向语料（覆盖裁定 S-9）；期望值由 `tests/golden/vdot_cli` 现算 |
 | `extra_vectors/vstart_range.txt` | 55 条 | 上一行的产物，随仓库提交 |
-| `corpus.S` | 15 | 用 `.incbin` 把 2 702 952 字节的 blob 嵌进镜像的 `.rodata` |
+| `corpus.S` | 15 | 用 `.incbin` 把 2 707 176 字节的 blob（`logs/stage3/p5_vdot_tests.log:28`）嵌进镜像的 `.rodata` |
 | `start.S` | 90 | 裸机启动 + **M 态 trap handler**（记录 `mcause`/`mepc`，`mepc += 4` 后 `mret`） |
 | `vdot_test.c` | 353 | 逐条执行 + 比对 + 分 suite 统计 + UART 输出 |
 | `vdot.ld.in` | 49 | 链接脚本模板，`@MBASE@` 由 Makefile 从 NEMU 实际配置替换 |
 | `Makefile` | 139 | 构建 + `check-config` 守卫 + `run` / `run-ref` / `extra-vectors` |
-| `fault_inject.sh` | 173 | 故障注入自测（§5） |
+| `fault_inject.sh` | 202 | 故障注入自测（§5） |
 
 **为什么把 30758 条用例嵌进镜像**：NEMU 上跑的是裸机程序，没有文件系统也没有 libc。
 若以 C 数组形式嵌入，编译器要处理约 270 万个初始化项，编译极慢；打成二进制再
-`.incbin`，汇编器一次 `read` 即可，编译时间可忽略，镜像 2 709 128 字节。
+`.incbin`，汇编器一次 `read` 即可，编译时间可忽略，镜像 2 713 352 字节（`logs/stage3/p5_vdot_tests.log:33`）。
 
 **单条用例的执行序列**（`vdot_test.c:run_case()`）：
 
 1. `vsetivli x0,16,e8,m1,ta,ma` + 4 条 `vle8.v` —— 把 `v0`(掩码)/`v1`(vs1)/`v2`(vs2)/`v3`(vd_in) 整体灌进去；
 2. `vsetvl x0, a4, a5` —— `a4 = vl`，`a5 = (vma<<7)|(vta<<6)|(vsew<<3)|0`。用寄存器形式而不是
-   16 份立即数变体，`rd=x0 && rs1!=x0` 对应 NEMU `get_mode()`（`vcommon.c:95`）的 mode 0；
+   16 份立即数变体，`rd=x0 && rs1!=x0` 对应 NEMU `get_mode()`（`vcommon.c:96`）的 mode 0；
    随后 `csrr vl` 回读并与语料比对（统计项 `vl-readback-mismatch`，实测 0）；
 3. `csrw vstart, a6` —— 必须在 `vsetvl` **之后**，因为 `set_vtype_vl()` 末尾会把 `vstart` 清零；
 4. 发射被测指令（6 条静态编码之一，`.4byte`）；
@@ -357,7 +357,7 @@ NEMU 侧佐证（`p5_vdot_tests.log:99-103`）：
 
 **difftest 参考共享库** `build/riscv64-nemu-interpreter-so`
 （`p5_vdot_tests.log:106-130`）：ref 配置关掉了全部串口设备
-（`configs/riscv64-xs-kmhv2-ref_defconfig:190` `# CONFIG_HAS_UARTLITE is not set`），
+（`configs/riscv64-xs-kmhv2-ref_defconfig:191`（patch 后；patch 前为 `:190`）`# CONFIG_HAS_UARTLITE is not set`），
 因此改用静默变体 `vdot_test_quiet.bin`（计算与比对逻辑完全相同，只是不输出，
 结果以 `main` 的返回值 = 失败条数经 `nemu_trap` 作为 `halt_ret` 报告），
 用 NEMU 自带的 `tools/ref-so-runner`（`dlopen` + `difftest_memcpy` + `difftest_exec`）驱动：
@@ -494,7 +494,7 @@ S-9 的检查代码保留不删：它让 NEMU 与参考模型的判定次序逐�
 5. **跑 difftest 时推荐先用 `tools/ref-so-runner` 自检一遍**：
    `make -C tests/riscv/vdot run-ref`，几百毫秒内就能确认当前 `.so` 的 vdot 行为正确，
    避免把 REF 侧的问题误判成 RTL 的问题。
-6. **不要给 vdot 打 difftest skip**：`work/difftest/src/test/csrc/difftest/refproxy.h:313-317`
+6. **不要给 vdot 打 difftest skip**：`work/XiangShan-kmhv2/difftest/src/test/csrc/difftest/refproxy.h:274-278`（difftest @ `3729300`）
    有 `if (vecwen) assert(0)`，向量指令本就不支持 skip。vdot 不访存，无需 skip。
 
 ---
