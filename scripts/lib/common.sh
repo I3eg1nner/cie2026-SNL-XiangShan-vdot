@@ -254,3 +254,44 @@ require_short_emu_cwd() {  # require_short_emu_cwd <yunsuan 目录>
   die "yunsuan 目录路径 ${d} 长 ${#d} 字节，超过上游 emu 的 63 字节限制（emu.cpp getcwd(cwd, 64)），
        波形会丢失。请把 WORK_DIR 设到更短的路径后重跑（例如 WORK_DIR=\$HOME/xswork）。"
 }
+
+# -----------------------------------------------------------------------------
+# NEMU 工作区形态（同一份 ${NEMU_DIR}/.config 在两种 defconfig 之间切换）
+#   standalone：riscv64-xs-kmhv2_defconfig     -> build/riscv64-nemu-interpreter
+#               （带 UARTLITE 串口，03_run_hello.sh / 21 的独立解释器测试使用）
+#   ref       ：riscv64-xs-kmhv2-ref_defconfig -> build/riscv64-nemu-interpreter-so
+#               （关掉全部串口设备，30 / 50 的 difftest 参考共享库使用）
+# 以生成的 include/generated/autoconf.h 是否含 CONFIG_UARTLITE_MMIO 判别
+# （tests/riscv/hello/Makefile 也按这一项检查）。
+# -----------------------------------------------------------------------------
+nemu_form() {  # 打印 standalone / ref / unknown（尚未 make 过 defconfig）
+  local ac="${NEMU_DIR}/include/generated/autoconf.h"
+  if [ ! -f "${ac}" ]; then echo unknown
+  elif grep -qE '^#define CONFIG_UARTLITE_MMIO[[:space:]]' "${ac}"; then echo standalone
+  else echo ref
+  fi
+}
+
+# nemu_restore_standalone —— 把 ${NEMU_DIR} 切回独立解释器形态并重建 riscv64-nemu-interpreter
+#   已是 standalone 形态且解释器存在时直接返回 0（不触发重编）。
+#   build/riscv64-nemu-interpreter-so 与它的 obj 目录不受影响，之后 30 / 50 仍可复用。
+#   调用前需已 source 本文件；宿主机模式下会自动调用 setup_nemu_host_deps。
+#   输出写到 stdout，调用方自行决定是否 tee 到日志。失败时返回非 0（不 exit）。
+nemu_restore_standalone() {
+  [ -d "${NEMU_DIR}" ] || { warn "找不到 ${NEMU_DIR}，跳过 NEMU 形态恢复"; return 1; }
+  local form; form="$(nemu_form)"
+  if [ "${form}" = "standalone" ] && [ -x "${NEMU_DIR}/build/riscv64-nemu-interpreter" ]; then
+    echo "NEMU 已是独立解释器形态（autoconf.h 含 CONFIG_UARTLITE_MMIO），无需恢复"
+    return 0
+  fi
+  echo "NEMU 当前形态：${form}，恢复为独立解释器形态（riscv64-xs-kmhv2_defconfig）"
+  setup_nemu_host_deps
+  xrun "cd '${NEMU_DIR}'
+echo '\$ make riscv64-xs-kmhv2_defconfig'
+make riscv64-xs-kmhv2_defconfig >/dev/null
+echo '\$ make -j${JOBS}'
+make -j${JOBS} 2>&1 | tail -3
+grep -E 'CONFIG_MBASE|CONFIG_UARTLITE_MMIO|CONFIG_CUSTOM_XVDOT' include/generated/autoconf.h
+ls -l build/riscv64-nemu-interpreter" || return 1
+  [ "$(nemu_form)" = "standalone" ] || { warn "恢复后 autoconf.h 仍无 CONFIG_UARTLITE_MMIO"; return 1; }
+}

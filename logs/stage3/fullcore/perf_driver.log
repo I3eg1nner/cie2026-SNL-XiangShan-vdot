@@ -1,0 +1,19 @@
+==============================================================
+ [1] NEMU 参考共享库（私有副本 work/NEMU-fullcore）   2026-10-25T09:22:41Z UTC
+==============================================================
+    vdot 补丁已处于已应用状态
+    已存在：/data/my/cie2026-vdot-xiangshan/work/NEMU-fullcore/ref/riscv64-nemu-interpreter-so（FORCE_NEMU=1 可强制重建）
+-rwxrwxr-x 1 user user 1475824 Oct 25 05:08 /data/my/cie2026-vdot-xiangshan/work/NEMU-fullcore/ref/riscv64-nemu-interpreter-so
+NEMU commit: 90908390 feat(difftest): support fast shared reference execution (#1247)
+difftest_* 导出符号数: 41
+==============================================================
+ [P] 全核周期实测（MinimalConfig，fence + mcycle，PERF_REPS=5）   2026-10-25T09:22:41Z UTC
+==============================================================
+-rwxrwxr-x 1 user user 7736 Oct 25 09:22 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/perf/perf_cycles.bin
+PERF TOTAL measurements=300 result-mismatch=0 unexpected-trap=0
+RESULT: PASS
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000042
+[0m[35mCore-0 instrCnt = 622388, cycleCnt = 927651, IPC = 0.670929
+end: 2026-10-25T09:27:21Z  wall=280s  emu-exit=0
+    日志：logs/stage3/fullcore/perf_cycles.log；CSV：python3 bench/collect_results.py ... --fullcore-perf-log logs/stage3/fullcore/perf_cycles.log（scripts/40_run_bench.sh 会自动带上）
+rc=0

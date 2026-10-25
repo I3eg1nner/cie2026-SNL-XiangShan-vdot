@@ -159,12 +159,13 @@ def fig_speedup(res, out):
 
     # (b) 单次点积的多口径加速比
     sp = rd(os.path.join(res, "speedup.csv"))
-    single = [r for r in sp if r["case"].startswith("单次点积")]
+    # 只画四种原始口径；全核周期实测另见图 9
+    single = [r for r in sp if r["case"].startswith("单次点积") and not r["metric"].startswith("全核")]
     names = [r["metric"].split(" (")[0] for r in single]
     vals = [float(r["speedup"]) for r in single]
     kinds = [r["kind"] for r in single]
     for i, (nm, v, kd) in enumerate(zip(names, vals, kinds)):
-        c, h = (("#9a9a9a", "") if kd == "实测" else ("#ffffff", "///"))
+        c, h = (("#9a9a9a", "") if kd.startswith("实测") else ("#ffffff", "///"))
         ax2.barh(i, v, 0.6, color=c, hatch=h, edgecolor="black", linewidth=0.8)
         ax2.text(v + 0.1, i, "%.2fx  [%s]" % (v, kd), va="center", fontsize=8.5)
     ax2.set_yticks(range(len(names)))
@@ -176,12 +177,93 @@ def fig_speedup(res, out):
                   fontsize=10)
     ax2.legend(handles=[Patch(facecolor="#9a9a9a", edgecolor="black", label="实测"),
                         Patch(facecolor="#ffffff", hatch="///", edgecolor="black",
-                              label="建模/源码推导")],
+                              label="建模/源码推导/静态计数")],
                fontsize=8, loc="upper right")
 
     fig.suptitle("图 2  加速比：实测口径与建模口径分开呈现", fontsize=12, y=0.99)
     fig.tight_layout(rect=(0, 0, 1, 0.95))
     p = os.path.join(out, "fig2_speedup.png")
+    fig.savefig(p)
+    plt.close(fig)
+    return p
+
+
+def fig_fullcore(res, out):
+    """图 9：全核 MinimalConfig 周期实测与建模值对比（有 cycles_fullcore.csv 时才画）。"""
+    path = os.path.join(res, "cycles_fullcore.csv")
+    if not os.path.exists(path):
+        return None
+    rows = rd(path)
+    slope = {r["name"]: float(r["net_cycles_warm"]) for r in rows if r["group"] in ("loop_slope", "skel_slope")}
+    chain = {r["name"]: float(r["net_cycles_warm"]) for r in rows if r["group"] == "chain_slope"}
+    sp = rd(os.path.join(res, "speedup.csv"))
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13.5, 5.4))
+    # (a) 稳态每迭代周期：实测（实心）与建模（斜纹）
+    model = {}
+    for r in sp:
+        if r["metric"].startswith("吞吐模型"):
+            model["seqD"] = float(r["baseline"])
+            model["vdotacc_acc2" if "2 累加器" in r["metric"] else "vdotacc"] = float(r["vdot"])
+    kern = [("seqD", "基线 D"), ("seqA", "基线 A"), ("seqB", "基线 B"),
+            ("vdotacc", "vdotacc"), ("vdotacc_acc2", "vdotacc\n2 累加器"), ("vdot4a", "vdot4a")]
+    xs = range(len(kern))
+    for i, (k, _) in enumerate(kern):
+        v = slope.get(k)
+        if v is None:
+            continue
+        ax1.bar(i - 0.18, v, 0.36, color="#9a9a9a", edgecolor="black", linewidth=0.8)
+        ax1.text(i - 0.18, v + 0.2, "%.2f" % v, ha="center", fontsize=8)
+        if k in model:
+            ax1.bar(i + 0.18, model[k], 0.36, color="#ffffff", hatch="///", edgecolor="black", linewidth=0.8)
+            ax1.text(i + 0.18, model[k] + 0.2, "%g" % model[k], ha="center", fontsize=8)
+    for k, ls, nm in (("skel_vdotacc", "--", "骨架循环（vdotacc 的循环控制+装载）"),
+                      ("skel_seqD", ":", "骨架循环（基线 D 的循环控制+装载）")):
+        if k in slope:
+            ax1.axhline(slope[k], color="black", linestyle=ls, linewidth=1.0,
+                        label="%s %.2f" % (nm, slope[k]))
+    ax1.set_xticks(list(xs))
+    ax1.set_xticklabels([n for _, n in kern], fontsize=8.5)
+    ax1.set_ylabel("周期 / 每 16 个 int8（cycle）")
+    ax1.set_ylim(0, max(slope.values()) * 1.2)
+    ax1.set_title("(a) 长向量稳态：每次迭代的周期\n实心=全核实测（N=1024→4096 斜率）；斜纹=§5.3 吞吐模型",
+                  fontsize=10)
+    ax1.legend(handles=[Patch(facecolor="#9a9a9a", edgecolor="black", label="全核实测"),
+                        Patch(facecolor="#ffffff", hatch="///", edgecolor="black", label="建模估算")]
+               + ax1.get_legend_handles_labels()[0], fontsize=7.5, loc="upper right")
+
+    # (b) 加速比：实测 vs 建模
+    def find(case_prefix, metric_prefix):
+        for r in sp:
+            if r["case"].startswith(case_prefix) and r["metric"].startswith(metric_prefix):
+                return float(r["speedup"])
+        return None
+    items = [
+        ("单次点积·FU 关键路径模型", find("单次点积", "FU 延迟关键路径"), "建模"),
+        ("单次点积·全核 序列本体", find("单次点积", "全核周期·序列本体"), "实测"),
+        ("单次点积·全核 序列+取回", find("单次点积", "全核周期·序列+取回"), "实测"),
+        ("单次点积·全核 函数整体", find("单次点积", "全核周期·函数整体"), "实测"),
+        ("稳态·vdotacc 吞吐模型", find("长向量循环 (稳态)", "吞吐模型 拍/16 个 int8 (cycle)，基线 D vs vdotacc"), "建模"),
+        ("稳态·vdotacc 全核", find("长向量循环 (稳态)", "全核每 16 个 int8 的周期 (cycle)，基线 D vs vdotacc"), "实测"),
+        ("稳态·2 累加器 吞吐模型", find("长向量循环 (稳态)", "吞吐模型 拍/16 个 int8 (cycle)，基线 D vs vdotacc 2"), "建模"),
+        ("稳态·2 累加器 全核", find("长向量循环 (稳态)", "全核每 16 个 int8 的周期 (cycle)，基线 D vs vdotacc 2"), "实测"),
+    ]
+    items = [it for it in items if it[1] is not None]
+    for i, (nm, v, kd) in enumerate(items):
+        c, h = (("#9a9a9a", "") if kd == "实测" else ("#ffffff", "///"))
+        ax2.barh(i, v, 0.6, color=c, hatch=h, edgecolor="black", linewidth=0.8)
+        ax2.text(v + 0.05, i, "%.2fx  [%s]" % (v, kd), va="center", fontsize=8.5)
+    ax2.axvline(1.0, color="black", linestyle=":", linewidth=1.0)
+    ax2.set_yticks(range(len(items)))
+    ax2.set_yticklabels([it[0] for it in items], fontsize=8.5)
+    ax2.invert_yaxis()
+    ax2.set_xlim(0, max(it[1] for it in items) * 1.35)
+    ax2.set_xlabel("加速比（倍，基线周期 ÷ vdot 周期）")
+    ax2.set_title("(b) 加速比：全核实测（MinimalConfig）与建模值并列\n单次点积三种窗口口径不同，不可互相替代",
+                  fontsize=10)
+    fig.suptitle("图 9  全核 MinimalConfig 周期实测（mcycle，带 difftest，热态）", fontsize=12, y=0.99)
+    fig.tight_layout(rect=(0, 0, 1, 0.95))
+    p = os.path.join(out, "fig9_fullcore_cycles.png")
     fig.savefig(p)
     plt.close(fig)
     return p
@@ -258,9 +340,9 @@ def main():
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     made = []
-    for f in (fig_instr_count, fig_speedup, fig_latency, fig_sensitivity):
+    for f in (fig_instr_count, fig_speedup, fig_latency, fig_sensitivity, fig_fullcore):
         made.append(f(a.results, a.out))
-    for p in made:
+    for p in [x for x in made if x]:
         print("  PNG %s  (%d bytes)" % (p, os.path.getsize(p)))
     return 0
 

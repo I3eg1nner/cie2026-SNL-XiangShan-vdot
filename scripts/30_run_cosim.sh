@@ -28,8 +28,10 @@
 #     ./scripts/30_run_cosim.sh fault           # 故障注入自测（RTL 侧 3 次 + NEMU 侧 3 次）
 #     FORCE_NEMU=1 ./scripts/30_run_cosim.sh    # 强制重建 NEMU 参考共享库
 #
+#     KEEP_NEMU_REF=1 ./scripts/30_run_cosim.sh # 退出时不把 NEMU 切回独立解释器形态
+#
 #   日志（${LOG_ROOT}/stage3/cosim/，LOG_ROOT 默认 logs/）：
-#     p6_build.log / p6_cosim_run.log / p6_fault_injection.log
+#     p6_build.log / p6_cosim_run.log / p6_fault_injection.log / p6_nemu_restore.log
 # =============================================================================
 set -euo pipefail
 
@@ -73,6 +75,22 @@ banner() {
 in_container() {   # 名字沿用旧版；实际按 XS_RUNNER 在宿主机或容器内执行
     xrun "$1"
 }
+
+# 构建 / 故障注入都会把 ${NEMU} 的 .config 切到 ref 形态（关掉 UARTLITE 串口）。
+# 退出前（含失败退出）切回独立解释器形态，否则之后单独执行 03_run_hello.sh 会因
+# 缺少 CONFIG_UARTLITE_MMIO 而失败。.so 本身保留，下次运行仍可复用。
+# KEEP_NEMU_REF=1 可跳过恢复。
+restore_nemu_on_exit() {
+    local rc=$?
+    trap - EXIT
+    if [ -z "${KEEP_NEMU_REF:-}" ]; then
+        banner "[exit] 恢复 NEMU 为独立解释器形态（KEEP_NEMU_REF=1 可跳过）"
+        nemu_restore_standalone 2>&1 | tee "${LOG_DIR}/p6_nemu_restore.log" \
+            || warn "NEMU 形态恢复失败，可手动执行：bash scripts/21_build_nemu_vdot.sh 或在 ${NEMU} 下 make riscv64-xs-kmhv2_defconfig && make"
+    fi
+    exit "${rc}"
+}
+trap restore_nemu_on_exit EXIT
 
 # -----------------------------------------------------------------------------
 # [1] NEMU difftest 参考共享库

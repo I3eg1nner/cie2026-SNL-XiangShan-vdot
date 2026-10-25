@@ -2,21 +2,28 @@
 """
 collect_results.py —— 把 P7 两份真实运行日志解析成 bench/results/*.csv
 
-输入（都由 scripts/40_run_bench.sh 产生，不接受手工编辑的日志）：
-  logs/stage3/p7_baseline_equiv.log    NEMU 上的等价性验证 + minstret 实测指令数
-  logs/stage3/p7_latency_measure.log   波形事务表 + 三个 FU harness 的延迟实测
+输入（都由脚本产生，不接受手工编辑的日志）：
+  logs/stage3/p7_baseline_equiv.log    NEMU 上的等价性验证 + minstret 实测指令数（scripts/40_run_bench.sh）
+  logs/stage3/p7_latency_measure.log   波形事务表 + 三个 FU harness 的延迟实测（scripts/40_run_bench.sh）
+  logs/stage3/fullcore/perf_cycles.log 全核 MinimalConfig emu 上的 mcycle / minstret 实测
+                                       （可选，scripts/50_run_fullcore_difftest.sh perf）
+源码（只读，用于静态计数，不是常量表）：
+  tests/riscv/fullcore/perf_kernels.S  单次点积序列本体 BASE_BODY / VDOT_BODY 两个宏
+  bench/baseline/baseline_rvv.S        核对 BASE_BODY 与交付件中的序列本体逐条相同
 
 输出（bench/results/）：
   equivalence.csv        每个 suite 的用例数 / 通过数 / 跳过数（实测）
   latency_fu.csv         每条指令的功能单元延迟：实测值 + 声明值 + 证据出处
   instr_count_loop.csv   长向量循环的动态指令数（实测）与每次迭代的回归斜率
-  instr_count_single.csv 单次 16 元素点积的指令数（静态反汇编 + 实测斜率）
+  instr_count_single.csv 单次 16 元素点积的指令数（长表：每个数值单独标注来源）
+  cycles_fullcore.csv    全核 MinimalConfig 周期实测（有 --fullcore-perf-log 时生成）
   uop_count.csv          译码级 uop 条数（源码推导，非实测，逐条标注出处）
   critical_path.csv      依赖链关键路径（用实测 FU 延迟拼出的建模值）
   speedup.csv            各口径的加速比
   sensitivity.csv        敏感性分析
 
-每张表都有 `kind` 列，取值只有三种：实测 / 声明值 / 建模估算。
+每张表都有 `kind` 列，以「实测 / 声明值 / 建模估算 / 源码推导 / 静态计数」开头，
+括号里注明平台（NEMU、全核 MinimalConfig 等）。
 """
 import argparse
 import csv
@@ -178,6 +185,61 @@ def parse_latency(path):
     return out
 
 
+def parse_fullcore_perf(path):
+    """解析全核周期实测日志 perf_cycles.log 的 PERF 行。
+    返回 {(group, name, N): [(rep, cycles, instret, ok, 行号), ...]}，以及汇总行。"""
+    out = {"pts": {}, "total": None, "good_trap": False, "path": path}
+    if not path or not os.path.exists(path):
+        return None
+    for ln, line in enumerate(open(path, encoding="utf-8", errors="replace"), 1):
+        line = line.rstrip("\n")
+        m = re.match(r"^PERF,(\w+),(\w+),(\d+),(\d+),(\d+),(\d+),(-?\d+),([01-])$", line)
+        if m:
+            g, nm, n, rep, cyc, ins, res, ok = m.groups()
+            out["pts"].setdefault((g, nm, int(n)), []).append(
+                (int(rep), int(cyc), int(ins), ok, ln))
+            continue
+        m = re.match(r"^PERF TOTAL measurements=(\d+) result-mismatch=(\d+) unexpected-trap=(\d+)", line)
+        if m:
+            out["total"] = tuple(int(x) for x in m.groups()) + (ln,)
+        if "HIT GOOD TRAP" in line:
+            out["good_trap"] = True
+    return out if out["pts"] else None
+
+
+def parse_body_macros(kernels_s, baseline_s):
+    """从 perf_kernels.S 的 BASE_BODY / VDOT_BODY 宏里静态计数序列本体的指令条数，
+    并核对 BASE_BODY 与 baseline_rvv.S 中「序列 A 本体」逐条相同。"""
+    res = {}
+    if not os.path.exists(kernels_s):
+        return res
+    txt = open(kernels_s, encoding="utf-8").read()
+    for mac in ("BASE_BODY", "VDOT_BODY"):
+        m = re.search(r"^\s*\.macro\s+%s\s*\n(.*?)^\s*\.endm" % mac, txt, re.M | re.S)
+        if not m:
+            continue
+        ins = [l.split("#")[0].strip() for l in m.group(1).splitlines()]
+        ins = [l for l in ins if l and not l.startswith("/*")]
+        nvset = sum(1 for l in ins if l.startswith("vsetvli"))
+        res[mac] = {"instr": ins, "n": len(ins), "vsetvli": nvset, "arith": len(ins) - nvset,
+                    "line": txt[:m.start()].count("\n") + 1}
+    if "BASE_BODY" in res and os.path.exists(baseline_s):
+        b = open(baseline_s, encoding="utf-8").read()
+        m = re.search(r"序列 A 本体：\d+ 条 ---- \*/\n(.*?)\n\s*/\* -+ \*/", b, re.S)
+        if m:
+            ref = [l.split("/*")[0].strip() for l in m.group(1).splitlines()]
+            ref = [l for l in ref if l]
+            norm = lambda xs: [re.sub(r"\s+", " ", x) for x in xs]
+            res["BASE_BODY"]["matches_baseline_rvv"] = norm(ref) == norm(res["BASE_BODY"]["instr"])
+    return res
+
+
+def median(xs):
+    xs = sorted(xs)
+    n = len(xs)
+    return (xs[n // 2] if n % 2 else (xs[n // 2 - 1] + xs[n // 2]) / 2.0) if n else None
+
+
 def regress(points):
     """points = [(N, instr)]；返回 (每 16 字节迭代的指令数, 截距)。"""
     if len(points) < 2:
@@ -204,7 +266,13 @@ def main():
     ap.add_argument("--equiv-log", required=True)
     ap.add_argument("--latency-log", required=True)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--fullcore-perf-log", default=None,
+                    help="全核 MinimalConfig 周期实测日志（scripts/50_run_fullcore_difftest.sh perf）")
     a = ap.parse_args()
+    here = os.path.dirname(os.path.abspath(__file__))
+    repo = os.path.dirname(here)
+    perf_kernels_s = os.path.join(repo, "tests", "riscv", "fullcore", "perf_kernels.S")
+    baseline_s = os.path.join(here, "baseline", "baseline_rvv.S")
 
     os.makedirs(a.out, exist_ok=True)
     eq = parse_equiv(a.equiv_log)
@@ -297,24 +365,108 @@ def main():
       ["kernel", "N_int8", "iterations", "instr_retired_measured",
        "instr_per_iteration_slope", "prologue_epilogue_intercept", "kind", "evidence"], rows)
 
-    # ---------------- instr_count_single.csv ----------------
+    # ---------------- 全核周期实测（可选） ----------------
+    fc = parse_fullcore_perf(a.fullcore_perf_log)
+    fcname = ("logs/stage3/fullcore/" + os.path.basename(a.fullcore_perf_log)) if fc else ""
+    body = parse_body_macros(perf_kernels_s, baseline_s)
+    fcv = {}            # (group, name, N) -> 扣除开销后的热态净周期 / 净指令数等
+
+    def pts(key):
+        return fc["pts"].get(key, []) if fc else []
+
+    def evid(key):
+        p = pts(key)
+        return "%s:%d-%d" % (fcname, p[0][4], p[-1][4]) if p else ""
+
+    if fc:
+        if not fc["good_trap"] or not fc["total"] or fc["total"][1] or fc["total"][2]:
+            print("ERROR: %s 未 HIT GOOD TRAP 或有结果失配 / 异常" % a.fullcore_perf_log, file=sys.stderr)
+            return 1
+        cal = {}
+        for k in (("cal", "empty_window", 0), ("cal", "nop_call", 0)):
+            p = pts(k)
+            cal[k[1]] = (median([x[1] for x in p[1:]]), median([x[2] for x in p[1:]]), p[0][1])
+        rows = []
+        for key in sorted(fc["pts"], key=lambda k: (["cal", "single", "chain", "loop", "skel"].index(k[0]), k[1], k[2])):
+            g, nm, n = key
+            p = pts(key)
+            warm = [x[1] for x in p[1:]]
+            wins = [x[2] for x in p[1:]]
+            if g in ("single", "chain") and nm not in ("baseline_vdot_single", "vdot_single"):
+                c0, i0, _ = cal["empty_window"]
+                calname = "empty_window"
+            elif g == "cal":
+                c0, i0, calname = 0, 0, "-"
+            else:
+                c0, i0, _ = cal["nop_call"]
+                calname = "nop_call"
+            net = median(warm) - c0
+            nins = median(wins) - i0
+            fcv[key] = {"net": net, "ins": nins, "cold": p[0][1] - c0, "ev": evid(key)}
+            rows.append([g, nm, n, p[0][1], median(warm), min(warm), max(warm), len(p),
+                         calname, c0 if g != "cal" else "", "%g" % net if g != "cal" else "",
+                         "%g" % nins if g != "cal" else "",
+                         "实测(全核 MinimalConfig, mcycle/minstret)", evid(key)])
+        # 派生：依赖链每条指令的周期（48 条与 16 条之差 / 32），循环每次迭代的周期（N=1024 与 4096 之差 / 192）
+        for nm in sorted(set(k[1] for k in fc["pts"] if k[0] == "chain")):
+            a16, a48 = fcv.get(("chain", nm, 16)), fcv.get(("chain", nm, 48))
+            if a16 and a48:
+                fcv[("chain_slope", nm, 0)] = (a48["net"] - a16["net"]) / 32.0
+                rows.append(["chain_slope", nm, "16->48", "", "", "", "", "", "-", "",
+                             "%.3f" % fcv[("chain_slope", nm, 0)], "",
+                             "实测(全核 MinimalConfig, 两档长度之差 / 32)",
+                             evid(("chain", nm, 16)) + " ; " + evid(("chain", nm, 48))])
+        for g in ("loop", "skel"):
+            for nm in sorted(set(k[1] for k in fc["pts"] if k[0] == g)):
+                a1, a4 = fcv.get((g, nm, 1024)), fcv.get((g, nm, 4096))
+                if a1 and a4:
+                    fcv[(g + "_slope", nm, 0)] = (a4["net"] - a1["net"]) / 192.0
+                    rows.append([g + "_slope", nm, "1024->4096", "", "", "", "", "", "-", "",
+                                 "%.3f" % fcv[(g + "_slope", nm, 0)],
+                                 "%.3f" % ((a4["ins"] - a1["ins"]) / 192.0),
+                                 "实测(全核 MinimalConfig, 两点之差 / 192 次迭代)",
+                                 evid((g, nm, 1024)) + " ; " + evid((g, nm, 4096))])
+        w(os.path.join(a.out, "cycles_fullcore.csv"),
+          ["group", "name", "N_int8", "cold_cycles_raw_rep0", "warm_cycles_raw_median",
+           "warm_cycles_raw_min", "warm_cycles_raw_max", "reps", "overhead_calibration",
+           "overhead_cycles", "net_cycles_warm", "net_instr_warm", "kind", "evidence"], rows)
+
+    # ---------------- instr_count_single.csv（长表，每个数值单独标注来源） ----------------
     single = {v[0]: v for v in eq["single"]}
-    rows = [
-        ["baseline (候选A本体, 操作数在内存)",
-         eq["static"].get("baseline_vdot_single", ""),
-         single.get("baseline", ("", "", ""))[1],
-         6, 11, 14, "实测(静态反汇编 + minstret 斜率)",
-         "build/baseline_test.dis + " + os.path.basename(a.equiv_log)],
-        ["vdot.vv",
-         eq["static"].get("vdot_single", ""),
-         single.get("vdot", ("", "", ""))[1],
-         1, 3, 3, "实测(静态反汇编 + minstret 斜率)",
-         "build/baseline_test.dis + " + os.path.basename(a.equiv_log)],
-    ]
+    equiv_name = os.path.basename(a.equiv_log)
+    uops = dict((u[0], u[4]) for u in UOPS)
+    rows = []
+    for variant, fn, mac, seq_uops in (
+            ("baseline", "baseline_vdot_single", "BASE_BODY",
+             ["vsetvli", "vmv.s.x", "vsetvli", "vwmul.vv", "vsetvli", "vwredsum.vs"]),
+            ("vdot", "vdot_single", "VDOT_BODY", ["vsetvli", "vdot.vv"])):
+        if fn in eq["static"]:
+            rows.append([variant, "static_instr_function", "函数整体静态指令数（含装载、取回与 ret）",
+                         eq["static"][fn], "静态计数(反汇编逐条, 日志解析)",
+                         equiv_name + " 「单次点积两个 kernel 的静态指令数」段"])
+        if variant in single:
+            rows.append([variant, "instr_per_call_nemu", "每次调用的动态指令数（minstret 斜率，含调用开销）",
+                         single[variant][1], "实测(NEMU minstret 斜率)", equiv_name + " CSVROW,single16"])
+        b = body.get(mac)
+        key = ("single", "base_body" if variant == "baseline" else "vdot_body", 16)
+        if fc and key in fcv:
+            rows.append([variant, "sequence_instr", "序列本体指令数（操作数已在寄存器；含必需的 vsetvli）",
+                         "%g" % fcv[key]["ins"], "实测(全核 MinimalConfig minstret 窗口差)", fcv[key]["ev"]])
+        elif b:
+            rows.append([variant, "sequence_instr", "序列本体指令数（操作数已在寄存器；含必需的 vsetvli）",
+                         b["n"], "静态计数(源码宏)", "tests/riscv/fullcore/perf_kernels.S:%d %s" % (b["line"], mac)])
+        if b:
+            rows.append([variant, "sequence_vector_arith_instr", "序列本体中的向量算术指令数（不含 vsetvli）",
+                         b["arith"], "静态计数(源码宏)", "tests/riscv/fullcore/perf_kernels.S:%d %s" % (b["line"], mac)])
+            rows.append([variant, "sequence_vsetvli", "序列本体中的 vsetvli 条数",
+                         b["vsetvli"], "静态计数(源码宏)", "tests/riscv/fullcore/perf_kernels.S:%d %s" % (b["line"], mac)])
+        rows.append([variant, "sequence_decoded_uops", "序列本体的译码级 uop 条数",
+                     sum(uops[x] for x in seq_uops), "源码推导(UopInfoGen 查找表, 非实测)",
+                     "uop_count.csv：" + " + ".join("%s %d" % (x, uops[x]) for x in seq_uops)])
     w(os.path.join(a.out, "instr_count_single.csv"),
-      ["variant", "static_instr_total", "measured_body_instr",
-       "vector_body_instr", "arch_instr_in_sequence", "decoded_uops_model",
-       "kind", "evidence"], rows)
+      ["variant", "metric", "description", "value", "kind", "evidence"], rows)
+    if body.get("BASE_BODY") and body["BASE_BODY"].get("matches_baseline_rvv") is False:
+        print("WARNING: perf_kernels.S 的 BASE_BODY 与 baseline_rvv.S 的序列 A 本体不一致", file=sys.stderr)
 
     # ---------------- uop_count.csv ----------------
     rows = [[i, sc, st, lm, u, "源码推导(非实测)", src] for (i, sc, st, lm, u, src) in UOPS]
@@ -352,12 +504,24 @@ def main():
 
     add("单次点积 (16 int8)", "FU 延迟关键路径 (cycle)", base_cp, vdot_cp, "建模估算",
         "用实测 FU 延迟拼依赖链；假设完美前递、无发射冲突、vsetvli 延迟 0")
-    add("单次点积 (16 int8)", "架构指令条数 (条)", 6, 2, "实测",
-        "反汇编逐条；基线 6 条 (含 3 条 vsetvli)，vdot 2 条 (vsetvli + vdot.vv)")
-    add("单次点积 (16 int8)", "向量算术指令条数 (条)", 3, 1, "实测",
-        "不含 vsetvli：基线 vmv.s.x/vwmul.vv/vwredsum.vs，vdot 只有 vdot.vv")
-    add("单次点积 (16 int8)", "译码级 uop 条数 (个)", 14, 3, "源码推导",
-        "UopInfoGen.scala:197-235")
+    bb, vb = body.get("BASE_BODY"), body.get("VDOT_BODY")
+    kb, kv = ("single", "base_body", 16), ("single", "vdot_body", 16)
+    if fc and kb in fcv and kv in fcv:
+        add("单次点积 (16 int8)", "架构指令条数 (条)", int(round(fcv[kb]["ins"])), int(round(fcv[kv]["ins"])),
+            "实测(全核 minstret 窗口差)",
+            "序列本体（操作数已在寄存器，两侧都含必需的 vsetvli）；%s ; %s；与源码宏静态计数 %s / %s 条一致"
+            % (fcv[kb]["ev"], fcv[kv]["ev"], bb["n"] if bb else "?", vb["n"] if vb else "?"))
+    elif bb and vb:
+        add("单次点积 (16 int8)", "架构指令条数 (条)", bb["n"], vb["n"], "静态计数(源码宏)",
+            "tests/riscv/fullcore/perf_kernels.S BASE_BODY / VDOT_BODY；基线含 3 条 vsetvli，vdot 含 1 条")
+    if bb and vb:
+        add("单次点积 (16 int8)", "向量算术指令条数 (条)", bb["arith"], vb["arith"], "静态计数(源码宏)",
+            "不含 vsetvli：基线 vmv.s.x/vwmul.vv/vwredsum.vs，vdot 只有 vdot.vv（perf_kernels.S BASE_BODY / VDOT_BODY）")
+    ub = sum(dict((u[0], u[4]) for u in UOPS)[x] for x in
+             ["vsetvli", "vmv.s.x", "vsetvli", "vwmul.vv", "vsetvli", "vwredsum.vs"])
+    uv = sum(dict((u[0], u[4]) for u in UOPS)[x] for x in ["vsetvli", "vdot.vv"])
+    add("单次点积 (16 int8)", "译码级 uop 条数 (个)", ub, uv, "源码推导",
+        "UopInfoGen.scala:197-235（由 uop_count.csv 逐条相加）")
     for n in (64, 256, 1024, 4096):
         b = dict((x[0], x[1]) for x in [(nn, vv) for (kk, nn, vv) in eq["loop"] if kk == "baseline_D"])
         v = dict((x[0], x[1]) for x in [(nn, vv) for (kk, nn, vv) in eq["loop"] if kk == "vdotacc"])
@@ -368,6 +532,47 @@ def main():
         add("长向量循环 (稳态)", "每 16 个 int8 的指令数 (条)",
             slopes["baseline_D"], slopes["vdotacc"], "实测",
             "对 N=64..4096 四个点做线性回归得到的斜率")
+    # 吞吐模型（§5.3，建模估算）：端口下界与循环携带依赖下界取大者，单位 拍 / 16 个 int8
+    U = dict((u[0], u[4]) for u in UOPS)
+    port_D = max(U["vwmul.vv"], -(-(U["vwmul.vv"] + U["vwadd.wv"]) // 2))   # vwmul 只能在 VFEX0；vialuF 有 2 个端口
+    thr_D = max(port_D, L("vwadd.wv"))
+    thr_acc = max(U["vdotacc.vv"], L("vdotacc.vv"))
+    thr_acc2 = max(U["vdotacc.vv"], L("vdotacc.vv") / 2.0)
+    for label, v in (("vdotacc", thr_acc), ("vdotacc 2 累加器", thr_acc2)):
+        add("长向量循环 (稳态)", "吞吐模型 拍/16 个 int8 (cycle)，基线 D vs %s" % label, thr_D, v, "建模估算",
+            "端口下界与循环携带依赖下界取大者（§5.3）；FU 延迟为实测值，uop 条数为源码推导，不含读寄存器堆/唤醒开销")
+
+    if fc:
+        K = "实测(全核 MinimalConfig)"
+
+        def fadd(case, metric, kb, kv, note):
+            if kb in fcv and kv in fcv:
+                b, v = fcv[kb], fcv[kv]
+                bn = b["net"] if isinstance(b, dict) else b
+                vn = v["net"] if isinstance(v, dict) else v
+                ev = (" ; ".join(x["ev"] for x in (b, v) if isinstance(x, dict))) or "cycles_fullcore.csv"
+                sp.append([case, metric, "%g" % round(bn, 3), "%g" % round(vn, 3),
+                           "%.3f" % (bn / vn) if vn else "", K, note + "；" + ev])
+        fadd("单次点积 (16 int8)", "全核周期·序列本体 (cycle)", kb, kv,
+             "fence+mcycle 窗口扣除空窗口；操作数已在寄存器，基线 6 条 vs vdot 2 条，热态中位数")
+        fadd("单次点积 (16 int8)", "全核周期·序列+取回标量 (cycle)",
+             ("single", "base_body_x", 16), ("single", "vdot_body_x", 16),
+             "序列后两侧都加 vsetvli e32 + vmv.x.s，量到结果进入标量寄存器")
+        fadd("单次点积 (16 int8)", "全核周期·函数整体 (cycle)",
+             ("single", "baseline_vdot_single", 16), ("single", "vdot_single", 16),
+             "baseline_rvv.S 的 baseline_vdot_single / vdot_single 整体调用（含 2 条 vle8.v、取回与 ret），扣除空函数调用")
+        for n in (1024, 4096):
+            for kern, label in (("vdotacc", "vdotacc"), ("vdotacc_acc2", "vdotacc 2 累加器"),
+                                ("vdot4a", "vdot4a")):
+                fadd("长向量循环 N=%d" % n, "全核周期 (cycle)，基线 D vs %s" % label,
+                     ("loop", "seqD", n), ("loop", kern, n),
+                     "baseline_rvv.S kernel 整体调用，扣除空函数调用，热态中位数")
+        for kern, label in (("vdotacc", "vdotacc"), ("vdotacc_acc2", "vdotacc 2 累加器"),
+                            ("vdot4a", "vdot4a")):
+            fadd("长向量循环 (稳态)", "全核每 16 个 int8 的周期 (cycle)，基线 D vs %s" % label,
+                 ("loop_slope", "seqD", 0), ("loop_slope", kern, 0),
+                 "N=1024 与 N=4096 的净周期之差 / 192 次迭代（cycles_fullcore.csv 的 loop_slope 行）")
+
     w(os.path.join(a.out, "speedup.csv"),
       ["case", "metric", "baseline", "vdot", "speedup", "kind", "assumption"], sp)
 
@@ -402,6 +607,14 @@ def main():
         w(os.path.join(a.out, "vstart_control.csv"),
           ["instruction", "vstart=0", "vstart=1", "kind", "evidence"], rows)
 
+    if fc:
+        print("\n  全核实测（MinimalConfig，热态，扣除开销）：")
+        for k in sorted(fcv):
+            v = fcv[k]
+            if isinstance(v, dict):
+                print("    %-6s %-22s N=%-5d net=%-8g instr=%g" % (k[0], k[1], k[2], v["net"], v["ins"]))
+            else:
+                print("    %-12s %-16s %.3f cycle" % (k[0], k[1], v))
     print("\n  关键派生量：")
     print("    基线单次点积 FU 延迟关键路径 = %d cycle" % base_cp)
     print("    vdot 单次点积 FU 延迟关键路径 = %d cycle" % vdot_cp)

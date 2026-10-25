@@ -19,7 +19,7 @@
 | 3.1.1 NEMU 指令扩展 | ✅ | `nemu/patch/0001-*.patch`、`docs/stage3/20_*.md` |
 | 3.1.2 协同仿真验证 | ✅ Level 1（FU+译码级）+ Level 2（MinimalConfig 全核 difftest） | `docs/stage3/21_*.md`；全核 difftest 已完成（T1），见 `docs/stage3/23_全核difftest验证报告.md`、`logs/stage3/fullcore/` |
 | 3.2 基线功能实现 | ✅ | `bench/baseline/`，NEMU 实测三方比对 0 失配 |
-| 3.3 延迟加速分析 | ⚠️ 部分建模 | `docs/stage3/22_*.md` + 4 张图表；**吞吐 1.50× 为建模值，见 T3** |
+| 3.3 延迟加速分析 | ✅ 建模 + MinimalConfig 全核实测 | `docs/stage3/22_*.md` §5.5 + 图 9；全核实测单次点积 1.70×–5.17×（随窗口口径）、长向量稳态 1.81× / 2.25×（建模 1.50× / 3.00×）；只对 MinimalConfig 成立；真实 LLM kernel 见 T3 |
 | 提交要求：三段录屏 | ❌ **未做** | 见 T6，必须由人完成；分镜、命令与口播已写好（`docs/ppt/录屏脚本.md`） |
 | 提交要求：PPT | ❌ **未做** | 见 T6；逐页讲解大纲已写好（`docs/ppt/讲解大纲.md`），提交流程核对见 `docs/ppt/提交清单.md` |
 
@@ -142,7 +142,14 @@ JDK **17**（JDK 21/25 会失败）、mill **0.12.3**（XiangShan）与 **0.11.1
 
 **遗留威胁（必须解决）**：`vdotacc` 的循环携带依赖是 **2 拍**，比基线 `vwadd.wv` 的 1 拍更长。若循环是延迟受限且软件不做多累加器展开，长向量吞吐**可能不升反降**。现有 1.50× 吞吐是建模值，依赖「基线端口下界 3 拍压过其依赖下界」这一假设，FU 级平台无法验证。
 
-**全核观测（T1 附带，不是吞吐测量）**：全核 MinimalConfig 波形中，两条相互依赖的 VIMacU 指令发射间隔 **7 拍**（1494→1501→1508：发射→进 FU 3 拍 + FU 2 拍 + 写回→依赖者发射 2 拍），同一波形里 VIAluFix 上的 `vadd.vv` 从发射到依赖者发射 **6 拍**（1488→1494）（`docs/stage3/23_全核difftest验证报告.md` §7.2 第 4 条、§9 第 3 条；`logs/stage3/fullcore/wave_trace.txt:173-188`）。据此「2 拍 vs 1 拍」在全核中更接近「7 拍 vs 6 拍」，劣势会被稀释；但这只是一条依赖链、一次执行的观测，6 拍取自 `vadd`（单 uop）而非 `vwadd.wv`（LMUL=2 下 4 uop）的循环，**T3 仍需实测循环级周期数**。全核 emu 与一键脚本现已具备（`scripts/50_run_fullcore_difftest.sh`），可直接在其上跑 kernel。
+**进展（微基准部分已完成，2026-10-25）**：在 MinimalConfig 全核 emu 上带 difftest 实测了单次点积、依赖链与长向量循环的周期数
+（`bash scripts/50_run_fullcore_difftest.sh perf`；程序 `tests/riscv/fullcore/perf_cycles.c` + `perf_kernels.S` + `bench/baseline/baseline_rvv.S`；
+日志 `logs/stage3/fullcore/perf_cycles.log`；CSV `bench/results/cycles_fullcore.csv`；分析 `docs/stage3/22_*.md` §5.5）。结论：
+每跳向量依赖 = FU 延迟 + 5 拍（`vdotacc` 7、`vwadd.wv` 6）；`vdotacc` 单累加器循环 7.00 拍/迭代（被携带依赖卡住），基线 D 12.64 拍/迭代，
+**威胁不成立（没有不升反降），加速比 1.81×**；2 累加器 5.63 拍/迭代（2.25×，贴近骨架循环 5.50 拍）。
+**仍未做**：真实 LLM kernel（int8 GEMM / attention）、4 路累加器展开、默认配置上的周期、基线 D 12.64 拍瓶颈的定位（波形或 emu 性能计数器）。
+
+**全核观测（T1 附带，不是吞吐测量；已被上面的实测取代）**：全核 MinimalConfig 波形中，两条相互依赖的 VIMacU 指令发射间隔 **7 拍**（1494→1501→1508：发射→进 FU 3 拍 + FU 2 拍 + 写回→依赖者发射 2 拍），同一波形里 VIAluFix 上的 `vadd.vv` 从发射到依赖者发射 **6 拍**（1488→1494）（`docs/stage3/23_全核difftest验证报告.md` §7.2 第 4 条、§9 第 3 条；`logs/stage3/fullcore/wave_trace.txt:173-188`）。据此「2 拍 vs 1 拍」在全核中更接近「7 拍 vs 6 拍」，劣势会被稀释；但这只是一条依赖链、一次执行的观测，6 拍取自 `vadd`（单 uop）而非 `vwadd.wv`（LMUL=2 下 4 uop）的循环，循环级周期数已由上面的实测补齐。全核 emu 与一键脚本现已具备（`scripts/50_run_fullcore_difftest.sh`），可直接在其上跑 kernel。
 
 **步骤**：在全核上跑 int8 矩阵乘 / 注意力打分 kernel，vdot 版 vs 基线版，测真实周期数；做 2/4 路累加器展开的对比；给出随 N 变化的曲线。
 

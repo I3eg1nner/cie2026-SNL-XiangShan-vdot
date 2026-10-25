@@ -17,12 +17,12 @@
 
 | 验收项（HANDOFF T1） | 结果 | 证据 |
 |---|---|---|
-| 全核 emu 构建（带 difftest） | **完成**。MinimalConfig，有效耗时约 23 分钟（精化 8:29 + verilate 12:57 + C++ 1:42），峰值内存 59.2 GB（Verilator 前端） | `build_time_breakdown.log:8,13,34,39,90`；`build_emu_3.log:38,57` |
+| 全核 emu 构建（带 difftest） | **完成**。MinimalConfig，有效耗时约 23 分钟（精化 8:29 + verilate 12:57 + C++ 1:42），峰值内存 56.4 GiB（约 60.6 GB，Verilator 前端） | `build_time_breakdown.log:8,13,34,39,90`；`build_emu_3.log:38,57` |
 | 全部语料 0 mismatch | **完成**。30758 条（全部定向 + 3×10000 随机 + 55 条补充定向），其中 4834 条应 trap，6 批全部 HIT GOOD TRAP，difftest 失配 0 | `summary.log:1-9` |
 | 背靠背依赖（Level 1 证明不了的部分） | **完成**。10 个依赖内核 × 4 个随机种子 × 200 次迭代 × (背靠背 + fence 隔离) = 16000 次内核调用，自洽比较 0 失败，difftest 失配 0，4 次均 HIT GOOD TRAP | `summary.log:10-37`；`dep0.log:9-22` |
 | 异常投递与 mcause | **完成**。4834 条非法用例在全核上全部 trap 且 mcause=2；流水线中（前后有依赖指令）插入的非法 vdot/vdot4a/vstart≠0 每次恰好 trap 3 次（K8，`k8-trap-count-bad=0`）；REF 侧独立执行判定，CSR 每条提交比对 | `summary.log:8,12`；§2.2 |
 | 故障注入 | **完成**。VIMacU 的 vdot 结果 bit0 翻转后，3 个程序在**第一条** vdot 提交处被 difftest 中止（`v3_low` right/wrong 只差 bit0）；源码还原后与全核树逐字节一致 | `fault_summary.log:1-5` |
-| 全核波形（译码 → ROB 提交） | **完成**。文本轨迹 + 时序图；VCD 382 MB 不入库 | `wave_trace.txt:155-192`；`wave_fullcore_vdot.png` |
+| 全核波形（译码 → ROB 提交） | **完成**。文本轨迹 + 时序图；VCD 382 MB 不入库 | `wave_trace.txt:155-192`；`wave_fullcore_vdot.png`（嵌入 §7 图 8） |
 | Level 1 等价性论证是否成立 | **成立，且其 4 个缺口中的 G1–G4 已在全核上实测闭合**（§8） | §8 |
 | 发现 RTL / NEMU 补丁缺陷 | **未发现**。`rtl/patch/`、`nemu/patch/` 均未改动 | — |
 
@@ -102,16 +102,16 @@ make emu CONFIG=MinimalConfig EMU_THREADS=16 EMU_TRACE=1 JVM_XMX=200G \
 
 | 阶段 | 墙钟 | 峰值 RSS | 证据 |
 |---|---:|---:|---|
-| mill 精化 + firtool（含首次 Scala 编译） | 8:29 | 20.4 GB（JVM） | `build_time_breakdown.log:8,13` |
-| Verilator 生成 C++（单线程前端） | 12:57 | **59.2 GB** | `build_time_breakdown.log:34,39` |
-| C++ 编译 + 链接（clang++ 14，`-j128`） | 1:40 | 4.5 GB（单进程） | `build_time_breakdown.log:90,95`；`build_emu_3.log:38,43,57` |
-| **合计（有效）** | **约 23 分钟** | 59.2 GB | — |
+| mill 精化 + firtool（含首次 Scala 编译） | 8:29 | 19.5 GiB（JVM） | `build_time_breakdown.log:8,13` |
+| Verilator 生成 C++（单线程前端） | 12:57 | **56.4 GiB** | `build_time_breakdown.log:34,39` |
+| C++ 编译 + 链接（clang++ 14，`-j128`） | 1:40 | 4.3 GiB（单进程） | `build_time_breakdown.log:90,95`；`build_emu_3.log:38,43,57` |
+| **合计（有效）** | **约 23 分钟** | 56.4 GiB | — |
 
-说明：上表那次构建的 mill 精化与 Verilator 阶段运行期间，故障注入树（§6）的同一构建以 `nice -n 19` 并行进行，耗时偏保守。
+说明：上表那次构建的 mill 精化与 Verilator 阶段运行期间，故障注入树（§6）的同一构建以 `nice -n 19` 并行进行，耗时偏保守。 单位说明：峰值 RSS 取自 GNU time 的 `Maximum resident set size (kbytes)`，该字段单位为 KiB（1024 字节）。例如 Verilator 前端 `59157676 kbytes`（`build_time_breakdown.log:39`）= 56.4 GiB = 约 60.6 GB（10^9 字节）；本仓库早期写作「59.2 GB」，是把该字段的 KiB 误当作 10^3 字节换算所得，已统一改为 GiB。
 
-**脚本从零复测**：之后在独立 `WORK_DIR`（只含指向 `XiangShan-kmhv2`、`NEMU` 的符号链接）里执行 `bash scripts/50_run_fullcore_difftest.sh build`，从生成全核树、复制并构建私有 NEMU `.so` 到 emu 链接一次通过：`make emu` 墙钟 23:15、峰值 RSS 59.2 GB（`build_emu_scripted.log:19,2429,2434,2448`），脚本总耗时 23:31（`build_scripted_driver.log` 末尾）；分阶段为精化 8:44 / verilate 12:47 / C++ 1:39。该 emu 跑 `vdot_wave.bin` 同样 HIT GOOD TRAP（`instrCnt = 35, cycleCnt = 1588`，与存档 emu 相同）。
+**脚本从零复测**：之后在独立 `WORK_DIR`（只含指向 `XiangShan-kmhv2`、`NEMU` 的符号链接）里执行 `bash scripts/50_run_fullcore_difftest.sh build`，从生成全核树、复制并构建私有 NEMU `.so` 到 emu 链接一次通过：`make emu` 墙钟 23:15、峰值 RSS 56.4 GiB（`build_emu_scripted.log:19,2429,2434,2448`），脚本总耗时 23:31（`build_scripted_driver.log` 末尾）；分阶段为精化 8:44 / verilate 12:47 / C++ 1:39。该 emu 跑 `vdot_wave.bin` 同样 HIT GOOD TRAP（`instrCnt = 35, cycleCnt = 1588`，与存档 emu 相同）。
 
-原机器 16 GB 内存做不了的根本原因由此量化：Verilator 前端峰值 59.2 GB，远超 16 GB。
+原机器 16 GB 内存做不了的根本原因由此量化：Verilator 前端峰值 56.4 GiB（约 60.6 GB），远超 16 GB。
 
 ### 3.3 构建中真实遇到的两次失败（如实记录）
 
@@ -145,7 +145,7 @@ make emu CONFIG=MinimalConfig EMU_THREADS=16 EMU_TRACE=1 JVM_XMX=200G \
 | 内核 | 覆盖的依赖 | 源码 |
 |---|---|---|
 | K1 | `vadd`/`vsub` → vdot 的 vs1、vs2（RAW），vdot → `vmv.x.s` → 整数 `add`（跨域） | `vdot_dep_kernels.S:96` |
-| K2 | vdot → vdotacc ×3 对同一 vd 累加，末两条 vs2=vs1=vd | `:112` |
+| K2 | vdot → vdotacc ×3 对同一 vd（v3）累加；之后 `VDOTACC 4,3,3`（vs2=vs1=上一条结果 v3，vd=v4）与 `VDOTACC 4,4,3`（vd=vs2=v4，vs1=v3） | `:112`（末两条见 `:122,124`） |
 | K3 | vdot（e8）→ `vsetvl` → e32 的 `vadd` / vdot4a（vs2、vd 都是前序结果）/ `vredsum`（vs1 种子） | `:129` |
 | K4 | `vmul` → vdot4a 累加 → vdot4a（vs1=vd）→ `vmslt` 生成 v0 → 带掩码 vdot4a → `vadd` | `:145` |
 | K5 | `vmslt` → 带掩码 vdot（v0 RAW）→ 用 vdot 结果 `vmsne` 生成掩码 → 带掩码 vdotacc | `:162` |
@@ -218,7 +218,7 @@ difftest 失配报告行数（'different at' / 'ABORT'）：0
 
 `FAULT-INJECTION: 3 / 3 个程序检出`；随后源码改回，`cmp` 确认与全核树逐字节一致（`fault_summary.log:4-5`）。三处失配的 right/wrong 都**只差 bit0**，说明 difftest 比的确实是 VIMacU 写回的 vd，且粒度到位。
 
-注：difftest 报告里 `different at pc = …` 打印的是当拍提交组中的另一条指令地址；真正出错的提交由提交轨迹中的 `<--` 标出（上表最后一列）。注入版 emu 留在 `work/XiangShan-fullcore-fault/build/`（源码已还原，二进制保留以便复查）。
+注：difftest 报告里 `different at pc = …` 打印的 pc 不是出错 vdot 的地址，出错提交要看提交轨迹。轨迹中的 `<--` 标在出错**提交组**的最后一条指令上，而不一定是 vdot 本身：`vdot_wave.bin` 与 `dep0` 的出错提交组只有 1 条（`cmtcnt 1`，`fault_wave.log:29`、`fault_dep.log:33`），`<--` 正好落在 vdot 上（`fault_wave.log:54`、`fault_dep.log:67`）；`b00` 的出错提交组有 2 条（`fault_corpus_b00.log:43` 的 `cmtcnt 2`），`<--` 落在同组第二条 `j` 指令上（`:77`），vdot `e62081d7` 是同组第一条（`:76`）。上表最后一列按此判读。注入版 emu 留在 `work/XiangShan-fullcore-fault/build/`（源码已还原，二进制保留以便复查）。
 
 ---
 
@@ -233,12 +233,12 @@ emu -i vdot_wave.bin --diff <ref .so> --dump-wave -b 0 -e 2000 --wave-path work/
 emu 在 `--dump-wave`（不加 `--dump-wave-full`）下每个周期只写一个时间点，VCD 时刻即周期号。整核 1594 个周期的 VCD 为 382 MB（`wave_dump.log:19`），**不入库**；入库的是：
 
 * `logs/stage3/fullcore/wave_trace.txt`：`tests/riscv/fullcore/wave_trace.py` 从 VCD 抽取 162 个信号（译码、重命名、ROB 入队、向量发射队列入/出、VialuFix 与 Vimac 的输入输出、ROB 提交）后得到的事件轨迹；
-* `logs/stage3/fullcore/wave_fullcore_vdot.png`：用 `scripts/tools/vcd_plot.py` 从同一 VCD 渲染的 13 路信号时序图（周期 1483–1516）；
+* `logs/stage3/fullcore/wave_fullcore_vdot.png`：用 `scripts/tools/vcd_plot.py` 从同一 VCD 渲染的 13 路信号时序图（周期 1483–1516），文档内嵌的图 8 是它的逐字节副本 `docs/stage3/figures/fig8_fullcore_vdot_wave.png`； ![图 8　全核 MinimalConfig 中 vadd → vdot → vdotacc → vdot4a 背靠背的时序图](figures/fig8_fullcore_vdot_wave.png) 图 8　全核时序图（周期 1483–1516）。四条竖线标出 vdot（robIdx=22）的发射 1494、进 VIMacU 1497、写回 1499、提交 1501；`Vimac.in.valid` → `Vimac.out.valid` 三次都是 2 拍。图由 `scripts/50_run_fullcore_difftest.sh` 的 `run_wave()` 函数在抓完 VCD 后渲染；VCD 不入库，但只要 `work/build/fullcore/wave/vdot_wave.vcd` 还在，就可以只重画图、不重跑仿真：在 `PYTHON` 带 matplotlib 的环境中执行 `run_wave()` 里那条 `vcd_plot.py` 命令（`--vcd` 指向上述 VCD，`--from 1483 --to 1516`，13 个 `--signal` 原样照抄）。2026-10-25 按此重画到 `/tmp` 下核对过，信号与数值和存档图一致，只有字体渲染略有差别。
 * `logs/stage3/fullcore/wave_run.log`：同一程序带 `--dump-commit-trace` 的逐条提交记录，`wave_run.log:34,35,37` 是三条 vdot 族指令的提交，`:46` 为 `HIT GOOD TRAP`。
 
 ### 7.2 关键信号与时刻（`wave_trace.txt:155-192`）
 
-层次前缀 `TOP.SimTop.cpu.l_soc.core_with_l2.core.backend.` 省略。`IQ0` = `inner_vfScheduler.IssueQueueVfmaVialuFixVimacVppuVfaluVfcvtVipuVsetrvfwvf`（含 Vimac 的那个向量发射队列）。
+层次前缀 `TOP.SimTop.cpu.l_soc.core_with_l2.core.backend.` 省略。表中时刻取自第二次译码。轨迹里 vadd、vdot 在 1424、1459 已经各有一次译码输出（`wave_trace.txt:15,127`），但都停在重命名输入（`:19-148`），从未入 ROB（轨迹中第一条 `ROB-ENQ` 在 1487，`:168`）；1470–1482 没有事件，1483 起整组重新进入译码（`:150-153`）。这与紧挨在 vadd 之前的 `fence`（提交记录 `wave_run.log:32`）的语义一致：昆明湖V2 把 `FENCE` 译码为 `noSpec + blockBack + flushPipe`（`DecodeUnit.scala:231`，见 §4.2），更年轻的指令要等它提交，提交后流水线被冲刷、从下一条重新取指。轨迹没有抽取冲刷信号本身，所以「被 fence 冲刷」是由上述现象和源码语义推断的。`IQ0` = `inner_vfScheduler.IssueQueueVfmaVialuFixVimacVppuVfaluVfcvtVipuVsetrvfwvf`（含 Vimac 的那个向量发射队列）。
 
 | 周期 | 阶段（信号） | vadd.vv v1 | vdot.vv v3,v10,v1 | vdotacc.vv v3,v11,v8 | vdot4a.vv v4,v3,v9 |
 |---:|---|---|---|---|---|
@@ -324,4 +324,4 @@ bash scripts/50_run_fullcore_difftest.sh fault   # 故障注入（首次需额�
 | `logs/stage3/fullcore/build_emu_fault_*.log` | 故障注入版 emu 的构建日志（同样经历 g++ → clang++） |
 | `logs/stage3/fullcore/corpus_b0[0-5].log`、`dep[0-3].log`、`summary.log`、`run_driver.log` | difftest 运行日志与汇总 |
 | `logs/stage3/fullcore/fault_*.log`、`fault_diff.txt`、`fault_summary.log`、`fault_driver.log` | 故障注入 |
-| `logs/stage3/fullcore/wave_run.log`、`wave_dump.log`、`wave_trace.txt`、`wave_fullcore_vdot.png`、`wave_driver.log` | 波形 |
+| `logs/stage3/fullcore/wave_run.log`、`wave_dump.log`、`wave_trace.txt`、`wave_fullcore_vdot.png`、`wave_driver.log` | 波形（时序图副本：`docs/stage3/figures/fig8_fullcore_vdot_wave.png`） |

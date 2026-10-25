@@ -14,6 +14,7 @@
 #
 # 用法： ./scripts/03_run_hello.sh            # 自动探测本机 IP
 #        HOST_IP=10.0.0.5 ./scripts/03_run_hello.sh
+#        NO_AUTO_RESTORE=1 ./scripts/03_run_hello.sh   # NEMU 处于 ref 形态时只提示，不自动恢复
 # =============================================================================
 set -euo pipefail
 
@@ -23,6 +24,18 @@ LOG_DIR="${LOG_ROOT}/stage1"
 HELLO_SRC="${REPO_ROOT}/tests/riscv/hello"
 HELLO_BUILD="${BUILD_ROOT}/hello"
 mkdir -p "${LOG_DIR}" "${HELLO_BUILD}"
+
+# 前置检查：30 / 50 会把 NEMU 切到 difftest ref 形态（关掉 UARTLITE 串口），hello 的 Makefile
+# 在该形态下会报「没有 CONFIG_UARTLITE_MMIO」。检测到时自动切回独立解释器形态
+# （nemu_restore_standalone，见 scripts/lib/common.sh）；NO_AUTO_RESTORE=1 时只提示并退出。
+if [ -d "${NEMU_DIR}" ] && [ "$(nemu_form)" = "ref" ]; then
+    if [ -n "${NO_AUTO_RESTORE:-}" ]; then
+        die "NEMU 当前处于 difftest ref 形态（autoconf.h 无 CONFIG_UARTLITE_MMIO），hello 需要独立解释器形态。
+       请先执行：cd ${NEMU_DIR} && make riscv64-xs-kmhv2_defconfig && make，或去掉 NO_AUTO_RESTORE 让本脚本自动恢复"
+    fi
+    warn "NEMU 当前处于 difftest ref 形态（通常是之前运行过 30 / 50），自动恢复为独立解释器形态"
+    nemu_restore_standalone || die "NEMU 形态恢复失败，请手动执行 scripts/02_build_nemu.sh"
+fi
 
 [ -x "${NEMU_DIR}/build/riscv64-nemu-interpreter" ] \
     || die "找不到 ${NEMU_DIR}/build/riscv64-nemu-interpreter，请先执行 scripts/02_build_nemu.sh"

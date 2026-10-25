@@ -19,6 +19,13 @@
 #     [6] 波形：最小程序上抓 vdot 从译码到 ROB 提交的窗口，导出文本轨迹
 #   fault 模式：在 ${WORK_DIR}/XiangShan-fullcore-fault 中把 VIMacU 的 vdot 结果 bit0 翻转，
 #         重建 emu，期望 difftest 报错；随后还原源码并核对与全核树一致。
+#   perf 模式（HANDOFF T3，赛题 3.3）：tests/riscv/fullcore/perf_cycles.c + perf_kernels.S
+#         + bench/baseline/baseline_rvv.S，带 difftest 运行，用 fence + mcycle 实测单次点积、
+#         依赖链与长向量循环的周期数，日志 ${FC_LOG_DIR}/perf_cycles.log。
+#   hello 模式（赛题 1.1）：tests/riscv/hello 的程序原样编译（只换地址常量头文件），
+#         带 difftest 在全核 emu 上运行，日志 ${LOG_ROOT}/stage1/p1_hello_xiangshan_fullcore.log。
+#   NEMU 形态：[1] 若需要重建 ref .so，会把私有副本切到 ref_defconfig；脚本退出时（含出错退出）
+#         一律恢复为独立解释器形态（riscv64-xs-kmhv2_defconfig 并重建解释器），与 scripts/21 的 restore 相同。
 #
 #   用法：
 #     bash scripts/50_run_fullcore_difftest.sh            # [0]..[5]（波形与故障注入另行执行）
@@ -26,11 +33,14 @@
 #     bash scripts/50_run_fullcore_difftest.sh run        # 只做 [3]..[5]（要求 emu 已构建）
 #     bash scripts/50_run_fullcore_difftest.sh wave       # 只做 [6]
 #     bash scripts/50_run_fullcore_difftest.sh fault      # 故障注入
+#     bash scripts/50_run_fullcore_difftest.sh perf       # 周期实测（要求 emu 已构建）
+#     bash scripts/50_run_fullcore_difftest.sh hello      # hello 在全核 emu 上运行（HOST_IP 可覆盖）
 #
 #   可调参数（环境变量）：
 #     FC_CONFIG=MinimalConfig  EMU_THREADS=16  JVM_XMX=200G  BUILD_JOBS=${JOBS}
 #     BATCHES=6（语料分批数，与依赖测试一起并行运行；每个 emu 进程 EMU_THREADS 个线程）
 #     DEP_ITERS=200  WAVE_BEGIN=0 WAVE_END=2000（波形窗口，单位：周期）
+#     PERF_REPS=5（perf 模式每个测量点的重复次数）  HOST_IP（hello 模式；缺省自动探测本机 IP）
 #     PLOT_PYTHON（装有 matplotlib 的 Python，用于渲染时序图；缺省时跳过绘图）
 #     FC_LOG_DIR（默认 ${LOG_ROOT}/stage3/fullcore；已存在的同名日志不会被覆盖，改写到带时间戳的子目录）
 #
@@ -125,6 +135,23 @@ make_tree() {
 # -----------------------------------------------------------------------------
 # [1] 私有 NEMU 副本 + ref .so
 # -----------------------------------------------------------------------------
+NEMU_SWITCHED=0
+# 退出时把私有 NEMU 副本恢复为独立解释器形态（复审 M-3；做法同 scripts/21_build_nemu_vdot.sh 的 restore）
+restore_nemu_standalone() {
+  local rc=$?
+  if [ "${NEMU_SWITCHED}" = 1 ] && [ -d "${NEMU_FC}" ]; then
+    echo "[restore] $(relpath "${NEMU_FC}") -> riscv64-xs-kmhv2_defconfig（独立解释器形态）"
+    ( cd "${NEMU_FC}" && export NEMU_HOME="${NEMU_FC}" &&
+      make riscv64-xs-kmhv2_defconfig >/dev/null &&
+      make -j"${JOBS}" >/dev/null &&
+      grep -E 'CONFIG_UARTLITE_MMIO|CONFIG_CUSTOM_XVDOT' include/generated/autoconf.h ) \
+      || echo "[restore] 警告：恢复失败，请手动执行 cd $(relpath "${NEMU_FC}") && make riscv64-xs-kmhv2_defconfig && make" >&2
+    NEMU_SWITCHED=0
+  fi
+  return "${rc}"
+}
+trap restore_nemu_standalone EXIT
+
 build_nemu_ref() {
   banner "[1] NEMU 参考共享库（私有副本 $(relpath "${NEMU_FC}")）"
   setup_nemu_host_deps
@@ -142,6 +169,7 @@ build_nemu_ref() {
      [ "${NEMU_SO}" -nt "${NEMU_FC}/src/isa/riscv64/instr/rvv/vdot.c" ]; then
     info "已存在：${NEMU_SO}（FORCE_NEMU=1 可强制重建）"
   else
+    NEMU_SWITCHED=1
     ( cd "${NEMU_FC}" && export NEMU_HOME="${NEMU_FC}" &&
       make riscv64-xs-kmhv2-ref_defconfig >/dev/null &&
       grep -n 'CONFIG_CUSTOM_XVDOT' include/generated/autoconf.h &&
@@ -397,11 +425,85 @@ PY
   return "${rc}"
 }
 
+# -----------------------------------------------------------------------------
+# perf：周期实测（HANDOFF T3）
+# -----------------------------------------------------------------------------
+run_perf() {
+  banner "[P] 全核周期实测（${FC_CONFIG}，fence + mcycle，PERF_REPS=${PERF_REPS:-5}）"
+  [ -x "${XS}/build/emu" ] || die "找不到 ${XS}/build/emu，请先执行 build 模式"
+  make -s -C "${TESTS}" perf perf-probe BUILD="${BUILD}" CROSS="${CROSS}" PERF_REPS="${PERF_REPS:-5}" 2>&1 | grep -v 'RWX permissions' || true
+  ls -l "${BUILD}/perf/perf_cycles.bin" "${BUILD}/perf/perf_csrr_probe.bin"
+  # 计时方法对照：裸 csrr mcycle 与 fence + csrr mcycle（说明为什么测量窗口要用 fence）
+  local plog; plog="$(newlog perf_csrr_probe.log)"
+  run_emu "${XS}/build/emu" "${BUILD}/perf/perf_csrr_probe.bin" "${plog}"
+  grep -aE '^PROBE|HIT GOOD TRAP|ABORT|different at' "${plog}" || true
+  local log; log="$(newlog perf_cycles.log)"
+  run_emu "${XS}/build/emu" "${BUILD}/perf/perf_cycles.bin" "${log}"
+  grep -aE '^PERF TOTAL|^RESULT|HIT GOOD TRAP|ABORT|different at|instrCnt|wall=' "${log}" || true
+  grep -aq 'HIT GOOD TRAP' "${log}" && grep -aq '^RESULT: PASS' "${log}" \
+    || die "周期实测程序未通过（见 $(relpath "${log}")）"
+  info "日志：$(relpath "${log}")；CSV：python3 bench/collect_results.py ... --fullcore-perf-log $(relpath "${log}")（scripts/40_run_bench.sh 会自动带上）"
+}
+
+# -----------------------------------------------------------------------------
+# hello：赛题 1.1 的验证程序在全核 emu 上运行
+# -----------------------------------------------------------------------------
+detect_host_ip() {   # 与 scripts/03_run_hello.sh 的 Linux 分支相同
+  local a=""
+  if command -v ip >/dev/null 2>&1; then
+    a="$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src") print $(i+1)}' || true)"
+  fi
+  [ -n "${a}" ] || a="$(hostname -I 2>/dev/null | awk '{print $1}' || true)"
+  echo "${a}"
+}
+
+run_hello() {
+  [ -x "${XS}/build/emu" ] || die "找不到 ${XS}/build/emu，请先执行 build 模式"
+  local hlog="${LOG_ROOT}/stage1/p1_hello_xiangshan_fullcore.log"
+  if [ -e "${hlog}" ]; then hlog="${LOG_ROOT}/stage1/p1_hello_xiangshan_fullcore_${RUN_STAMP}.log"; fi
+  mkdir -p "$(dirname "${hlog}")"
+  local ip="${HOST_IP:-$(detect_host_ip)}"
+  [ -n "${ip}" ] || die "无法自动探测本机 IP，请用 HOST_IP=<ip> 显式指定"
+  {
+    banner "[H] 赛题 1.1：hello 在香山全核 emu（${FC_CONFIG}）上运行，带 difftest"
+    echo "### [0] 宿主机取本机 IP（与 scripts/03_run_hello.sh 同一方法；IP 在编译期写进程序的只读数据）"
+    if command -v ip >/dev/null 2>&1; then
+      echo "\$ ip -4 route get 1.1.1.1"; ip -4 route get 1.1.1.1 2>/dev/null | head -1 || true
+    else
+      echo "\$ hostname -I   （本机无 iproute2 的 ip 命令）"; hostname -I 2>/dev/null || true
+    fi
+    echo "HOST_IP = ${ip}"
+    echo
+    echo "### [1] 交叉编译（源码 = tests/riscv/hello/start.S + hello.c，未改动；nemu_config.h 由 tests/riscv/fullcore/Makefile 的 hello 目标生成）"
+    echo "\$ ${CROSS}gcc --version"; "${CROSS}gcc" --version | head -1
+    make -C "${TESTS}" hello BUILD="${BUILD}" CROSS="${CROSS}" NEMU_HOME="${NEMU_FC}" HOST_IP="${ip}" 2>&1 | grep -v 'RWX permissions' || true
+    echo "--- 生成的 nemu_config.h ---"; cat "${BUILD}/hello/nemu_config.h"
+    echo "--- 源码与 tests/riscv/hello 中的同名文件一致（sha256） ---"
+    sha256sum "${REPO_ROOT}/tests/riscv/hello/hello.c" "${REPO_ROOT}/tests/riscv/hello/start.S" | sed "s|${REPO_ROOT}/||"
+    ls -l "${BUILD}/hello/hello.bin"
+    echo "\$ strings -t x hello.bin | grep 'hello xiangshan'"; strings -t x "${BUILD}/hello/hello.bin" | grep 'hello xiangshan' || true
+    echo
+    echo "### [2] 在全核 emu 上运行（DUT = 香山 ${FC_CONFIG} + vdot 补丁，REF = NEMU .so，逐条 difftest）"
+  } > "${hlog}" 2>&1
+  local tmp; tmp="$(mktemp_f hello_run)"
+  run_emu "${XS}/build/emu" "${BUILD}/hello/hello.bin" "${tmp}"
+  cat "${tmp}" >> "${hlog}"; rm -f "${tmp}"
+  {
+    echo
+    banner "结束"
+  } >> "${hlog}" 2>&1
+  grep -aE 'hello xiangshan|HIT GOOD TRAP|ABORT|different at|instrCnt' "${hlog}" || true
+  grep -aq 'HIT GOOD TRAP' "${hlog}" || die "hello 未 HIT GOOD TRAP（见 $(relpath "${hlog}")）"
+  info "日志：$(relpath "${hlog}")"
+}
+
 case "${MODE}" in
   build) make_tree; build_nemu_ref; build_emu ;;
   run)   build_nemu_ref; build_images; run_tests ;;
   wave)  build_images; run_wave ;;
   fault) build_nemu_ref; build_images; run_fault ;;
+  perf)  build_nemu_ref; run_perf ;;
+  hello) build_nemu_ref; run_hello ;;
   all)   make_tree; build_nemu_ref; build_emu; build_images; run_tests ;;
-  *) die "未知模式 ${MODE}（可选 all / build / run / wave / fault）" ;;
+  *) die "未知模式 ${MODE}（可选 all / build / run / wave / fault / perf / hello）" ;;
 esac

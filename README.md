@@ -25,6 +25,7 @@ NEMU↔RTL 协同仿真（FU 级 Level 1 + MinimalConfig 全核 difftest Level 2
 | 项目 | 结果 | 标注 | 证据 |
 |---|---|---|---|
 | 1.1 环境验证串 | `hello xiangshan, I am cie2026-vdot, IP address 192.168.30.213`，`HIT GOOD TRAP`，8115 条指令 | 实测（NEMU 上执行的裸机 RV64 程序） | `logs/stage1/p1_hello_xiangshan.log:97,115,118` |
+| 　同一程序在香山全核 emu 上 | 源码不改，只把地址常量头文件换成香山 SoC 的值（与 NEMU 配置相同）；带 difftest 运行，打印 `hello xiangshan, I am cie2026-vdot, IP address 172.100.0.6`（运行 emu 的服务器的本机 IP），`HIT GOOD TRAP`，8369 条指令 / 68522 周期 | 实测（MinimalConfig 全核 emu + difftest） | `logs/stage1/p1_hello_xiangshan_fullcore.log:67,76-77` |
 | 2.3 功能测试总计 | **290103 条执行，0 失败**，9358 条按规范跳过（全部为架构非法用例，逐条有据） | 实测（FU 级 Verilator） | `logs/stage2/p5_summary.log:43,45` |
 | 　其中 2.3.1 正数 / 2.3.2 负数 / 2.3.3 边界 | 120 / 132 / 424 条全 PASS（边界跳过 27 条） | 实测 | `docs/stage2/12_基础功能测试报告.md` §0 |
 | 　其中随机差分（对 `tests/golden/vdot_ref.c`） | 235348 条，0 失配 | 实测 | `logs/stage2/p5_func_random.log` |
@@ -46,18 +47,21 @@ NEMU↔RTL 协同仿真（FU 级 Level 1 + MinimalConfig 全核 difftest Level 2
 | vdot 三条指令的 FU 延迟 | — | 2 拍 | 按**数据成形拍**判定（逐拍采 `io_vd` 与参考模型比较，不读 `out.valid`）：`VIMacU` 直驱 178/178/190 笔全部「第 1 拍未成形、第 2 拍逐位正确」；L1 `VDotTop` 波形 12×3 笔 DUT 内部 S2 寄存器与 `io_vd` 均在第 2 拍成形。两个平台的 `out.valid` 都由测试平台按声明延迟构造，不作证据 | 实测（FU 级） | `logs/stage3/p7_latency_measure.log:238-252`；`logs/stage3/waveform/p7_*.vcd` |
 | 基线核心指令 FU 延迟 | `vmv.s.x` 1 拍、`vwmul.vv` 2 拍、`vwredsum.vs` 2 拍 | — | 与 `FuConfig` 声明值一致（同样按数据成形拍判定；`vwredsum.vs` 未做数值比对） | 实测（FU 级） | `bench/results/latency_fu.csv`；`p7_latency_measure.log:260-264,333,347` |
 | `vsetvli` 延迟 | 0 拍 | 0 拍 | 未实测（落在整数侧 BJU2，不在向量 FU 平台内） | 声明值 | `docs/stage3/22_基线实现与延迟加速分析.md` §4.5 |
-| 单次 16 元素点积：架构指令条数 | 6 | 2 | **3.00×** | 实测（反汇编） | `bench/results/speedup.csv` |
-| 单次点积：向量算术指令条数 | 3 | 1 | **3.00×** | 实测 | 同上 |
+| 单次 16 元素点积：架构指令条数 | 6 | 2 | **3.00×** | 实测（全核 `minstret` 窗口差，与源码静态计数一致） | `bench/results/speedup.csv`；`logs/stage3/fullcore/perf_cycles.log:19-28` |
+| 单次点积：向量算术指令条数 | 3 | 1 | **3.00×** | 静态计数（源码） | 同上；`tests/riscv/fullcore/perf_kernels.S` |
 | 单次点积：译码级 uop 条数 | 14 | 3 | **4.67×** | 源码推导 | 同上；`UopInfoGen.scala:197-235` |
 | 单次点积：FU 延迟关键路径 | 4 拍 | 2 拍 | **2.00×** | **建模**（实测 FU 延迟按依赖链相加，假设完美前递、无端口冲突） | `bench/results/critical_path.csv`、`sensitivity.csv` |
 | 长向量循环 N=4096：动态指令数 | 2575 | 2061 | **1.249×**（渐近 1.250×，为实测回归斜率之比 10/8 的 N→∞ 外推，不是实测点） | 实测（NEMU `minstret`，是指令数不是周期数） | `bench/results/instr_count_loop.csv`；`p7_baseline_equiv.log:160-167` |
-| 长向量稳态吞吐 | 3 拍/迭代 | 2 拍/迭代 | **1.50×**（2 路累加器展开时 3.00×） | **建模**（FU 级平台测不到）。2 路累加器内核 `vdot_dot_i8_acc2` 已交付并在 NEMU 上实测：24 个长度 0 失配、每 16 个 int8 8.00 条指令；其周期数仍是建模值 | `docs/stage3/22_基线实现与延迟加速分析.md` §5.3；`logs/stage3/p7_baseline_gcc15_supplement.log:142,170-173` |
+| 长向量稳态吞吐 | 3 拍/迭代 | 2 拍/迭代 | **1.50×**（2 路累加器展开时 3.00×） | **建模**（FU 级端口 + 依赖下界模型） | `docs/stage3/22_基线实现与延迟加速分析.md` §5.3 |
+| **单次点积：全核周期**（MinimalConfig） | 31 / 38 / 52 拍 | 6 / 13.5 / 30.5 拍 | **5.17× / 2.81× / 1.70×**（序列本体 / 加取回标量 / 函数整体含装载） | **实测（全核 MinimalConfig，`fence`+`mcycle`，带 difftest，热态）**；三种窗口口径不同 | `logs/stage3/fullcore/perf_cycles.log:9-48`；`bench/results/cycles_fullcore.csv` |
+| **长向量稳态：全核周期**（MinimalConfig） | 12.64 拍/迭代 | 7.00（`vdotacc`）/ 5.63（2 累加器）拍/迭代 | **1.81× / 2.25×**（N=4096 整体 1.80× / 2.22×） | **实测（全核 MinimalConfig）** | `perf_cycles.log:109-133,184-233`；`docs/stage3/22_基线实现与延迟加速分析.md` §5.5 |
 
 > 上表各行**量纲不同、不可互相替代**，不能挑最大的一个当作「加速比」。2.00× 的敏感性区间为
-> 1.00×–5.00×（`bench/results/sensitivity.csv`）。`vdotacc` 的循环携带依赖为 2 拍，长于基线的 1 拍：
-> 在延迟受限且软件不做累加器展开的场景下长向量吞吐**可能不升反降**，这是本加速比结论的最大威胁（`22` §5.4）。
-> 全核 MinimalConfig 波形的单条依赖链观测：相互依赖的 VIMacU 指令发射间隔 7 拍，VIAluFix 上的 `vadd` 为 6 拍
-> （`docs/stage3/23_全核difftest验证报告.md` §7.2、§9 第 3 条），提示该劣势在真实流水线中会被稀释；这**不是吞吐测量**，循环级周期数仍未实测。
+> 1.00×–5.00×（`bench/results/sensitivity.csv`）。
+> **建模与全核实测的对比**（`22` §5.5.5）：MinimalConfig 上每一跳向量依赖实测为 FU 延迟 + 5 拍（`vdotacc` 7 拍、`vwadd.wv` 6 拍），
+> 模型的零气泡前递假设不成立。`vdotacc` 单累加器循环确实被循环携带依赖卡住（7.00 拍/迭代），但基线 D 更慢（12.64 拍/迭代，
+> 瓶颈未定位），所以实测 1.81× **高于**模型 1.50×，没有出现不升反降；2 累加器只降到 5.63 拍（已贴近只含循环控制与装载的骨架循环 5.50 拍），
+> 实测 2.25× **低于**模型 3.00×；单次点积函数整体口径 1.70× **低于**模型 2.00×。全核数字**只对 MinimalConfig 成立**，默认配置未测。
 
 ---
 
@@ -107,7 +111,7 @@ NEMU↔RTL 协同仿真（FU 级 Level 1 + MinimalConfig 全核 difftest Level 2
 | `tests/cosim/` | NEMU↔RTL 协同仿真驱动与译码探针 |
 | `bench/` | RVV 1.0 基线实现（`baseline/`）、结果数据（`results/*.csv`）、日志→CSV→图表脚本 |
 | `scripts/` | 编号一键复现脚本；`tools/` 为辅助工具（波形抽取、补丁校验、故障注入等）；`docker/` 为容器镜像定义 |
-| `logs/stage1,2,3/` | 真实终端日志；`waveform/` 下为被文档逐值引用的 8 份 VCD 与文本轨迹；`stage3/fullcore/` 为全核 difftest 日志、全核波形文本轨迹与时序图（全核 VCD 382 MB 不入库） |
+| `logs/stage1,2,3/` | 真实终端日志（两处例外均在日志文件内就地注明：`logs/stage1/p1_t1_toolchain.log:113,115` 把 brew update 自动输出的两段第三方软件清单（81 行、137 行，与本项目无关）各折叠为一行说明；`logs/stage3/p7_latency_measure.log` 的 [3]/[4] 段（替换说明见 `:192-197`、`:293-300`）因审计 I-2/M-7 整改，用 Linux x86_64 + Verilator 5.024 的重跑输出替换了 2026-10-24 的原段落，同一文件因此混有两种运行环境（其余段落为 macOS arm64 + Verilator 5.052））；`waveform/` 下为被文档逐值引用的 8 份 VCD 与文本轨迹；`stage3/fullcore/` 为全核 difftest 日志、全核波形文本轨迹与时序图（全核 VCD 382 MB 不入库） |
 | `work/` | 上游仓库工作区（`.gitignore` 排除，不入库），由 `scripts/00_setup_env_host.sh` 按锁定 commit 克隆 |
 
 ---
@@ -151,6 +155,8 @@ bash scripts/30_run_cosim.sh             # 3.1.2：NEMU↔RTL Level 1 协同仿�
 bash scripts/40_run_bench.sh             # 3.2/3.3：基线等价性、FU 延迟实测、CSV 与图表
 bash scripts/50_run_fullcore_difftest.sh build   # 3.1.2 Level 2：全核 emu 构建（clang++，≥64 GB 内存，约 23.5 分钟）
 bash scripts/50_run_fullcore_difftest.sh run     # 全核 difftest：6 批语料 + 4 个种子依赖测试（约 45 分钟；另有 wave / fault 子命令）
+bash scripts/50_run_fullcore_difftest.sh perf    # 3.3：全核周期实测（带 difftest，约 5 分钟）；之后 40 的 [5] 会解析出 cycles_fullcore.csv
+bash scripts/50_run_fullcore_difftest.sh hello   # 1.1：hello 程序在全核 emu 上运行（带 difftest，约 20 秒）
 ```
 
 所有脚本 `source scripts/lib/common.sh`，可配置变量见其文件头：`WORK_DIR`（上游仓库与构建产物，默认 `work/`）、
@@ -168,7 +174,7 @@ bash scripts/50_run_fullcore_difftest.sh run     # 全核 difftest：6 批语料
 | `21_build_nemu_vdot.sh` | NEMU 扩展构建与一致性测试（`fault` / `verify-patch` 子命令） | `logs/stage3/p5_*.log` | ✅ 21 s（`verify-patch` 10 s、`fault` 21 s） |
 | `30_run_cosim.sh` | 协同仿真（Verilator + 链接 NEMU `.so`） | `logs/stage3/cosim/` | ✅ 251 s（`fault` 96 s） |
 | `40_run_bench.sh` | 基线等价性（NEMU）+ FU 延迟实测 + 绘图 | `logs/stage3/p7_*.log`、`bench/results/`、`docs/stage3/figures/` | ✅ 126 s |
-| `50_run_fullcore_difftest.sh` | 全核 difftest（MinimalConfig emu + NEMU `.so`）：`build` / `run` / `wave` / `fault` | `logs/stage3/fullcore/` | ✅ 在 128 核、约 1 TB 内存的服务器上实测：`build` 从零 23:31（`build_scripted_driver.log:35`），`run` 约 45 分钟（`run_driver.log` 07:27→08:12），`fault` 首次需另构建一次 emu；不在上面「12 步」之内 |
+| `50_run_fullcore_difftest.sh` | 全核 difftest（MinimalConfig emu + NEMU `.so`）：`build` / `run` / `wave` / `fault` / `perf`（周期实测）/ `hello`（1.1）；退出时把私有 NEMU 副本恢复为独立解释器形态 | `logs/stage3/fullcore/`、`logs/stage1/p1_hello_xiangshan_fullcore.log` | ✅ 在 128 核、约 1 TB 内存的服务器上实测：`build` 从零 23:31（`build_scripted_driver.log:35`），`run` 约 45 分钟（`run_driver.log` 07:27→08:12），`fault` 首次需另构建一次 emu；`perf` 280 s、`hello` 20 s（`logs/stage3/fullcore/perf_cycles.log:325`、`logs/stage1/p1_hello_xiangshan_fullcore.log:81`）；不在上面「12 步」之内 |
 
 以上 12 步（含 `21 verify-patch`、`21 fault`、`30 fault`）全部通过，功能与一致性数字与存档相同。两点已知差异与限制：
 
@@ -192,13 +198,13 @@ bash scripts/50_run_fullcore_difftest.sh run     # 全核 difftest：6 批语料
    功能结论可以推广，**但默认配置与 `KunminghuV2Config` 未实际运行，波形中的周期数只对 MinimalConfig 有效**。
    LMUL≠1 的非法判定未在全核上复测（只有 Level 1 的 6000/6000）；依赖测试是 10 个固定模板，不是随机指令流。
    全核构建需要 clang++ 与 ≥64 GB 内存（Verilator 前端峰值 59.2 GB），原 16 GB 开发机做不了。
-   阶段二三项功能测试（2.3）的存档结果来自 FU 级平台（同一语料之后也在全核上 0 失配，见上）；阶段一的 hello 程序运行在 NEMU 上而非香山 RTL 上。
+   阶段二三项功能测试（2.3）的存档结果来自 FU 级平台（同一语料之后也在全核上 0 失配，见上）；阶段一的 hello 程序原先只运行在 NEMU 上，之后同一程序也在 MinimalConfig 全核 emu 上带 difftest 运行通过（`logs/stage1/p1_hello_xiangshan_fullcore.log`）。
 2. **`latency = 2` 由静态逻辑级估算 + FU 级实测支撑，没有综合。** FU 级实测证明 RTL 在第 2 拍给出正确结果；
    能否在目标频率下时序收敛未经综合与静态时序分析验证。面积 13.7% 是结构计数上界，功耗未量化。
 3. **LMUL 固定为 1**（裁定 S-6）：`LMUL != 1` 的 vdot 一律判非法；多 uop 累加链方案已在设计文档 §8.3 论证但未实现。
-4. **吞吐加速比是建模值。** 1.50× / 3.00× 来自端口与依赖下界模型（3.00× 对应的 2 路累加器内核已交付，但只实测了指令数与等价性）；单次点积的 2.00× 也是把实测 FU 延迟按依赖链相加的模型值。
-   实测的只有 FU 延迟、指令条数与功能等价性。`vsetvli` 延迟为声明值；uop 条数为源码推导。
-   全核 difftest 是功能验证，没有用全核重测加速比；全核波形只给出一条依赖链的发射间隔观测（7 拍 vs 6 拍），循环级吞吐（HANDOFF T3）未做。
+4. **周期加速比只在 MinimalConfig 上实测。** 1.50× / 3.00× / 2.00× 是 FU 级模型值；MinimalConfig 全核实测为单次点积 1.70×–5.17×（随窗口口径）、
+   长向量稳态 1.81×（单累加器）/ 2.25×（2 累加器），与模型有高有低（`22` §5.5）。默认配置（KunminghuV2Config）的周期未测；
+   基线 D 每迭代 12.64 拍的瓶颈、单次点积 31 拍的逐拍构成未用波形确认。`vsetvli` 的 FU 级延迟为声明值；uop 条数为源码推导。
 5. **提交物未完成**：赛题要求的三段录屏、答辩 PPT 与加密提交流程均**未做**；`docs/ppt/` 中已有讲解大纲、录屏分镜脚本与提交清单，PPT 与录屏仍需团队据此制作。
 6. 阶段二波形以 VCD + 文本轨迹交付，未另附截图；`tests/unit/VectorSimTop.scala` 等上游派生文件中保留了上游原有的
    `TODO`/`FIXME` 注释（本项目补丁未新增任何此类注释）。

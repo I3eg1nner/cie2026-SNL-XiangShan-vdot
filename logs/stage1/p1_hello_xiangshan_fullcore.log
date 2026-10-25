@@ -1,0 +1,85 @@
+==============================================================
+ [H] 赛题 1.1：hello 在香山全核 emu（MinimalConfig）上运行，带 difftest   2026-10-25T09:22:14Z UTC
+==============================================================
+### [0] 宿主机取本机 IP（与 scripts/03_run_hello.sh 同一方法；IP 在编译期写进程序的只读数据）
+$ hostname -I   （本机无 iproute2 的 ip 命令）
+172.100.0.6 
+HOST_IP = 172.100.0.6
+
+### [1] 交叉编译（源码 = tests/riscv/hello/start.S + hello.c，未改动；nemu_config.h 由 tests/riscv/fullcore/Makefile 的 hello 目标生成）
+$ /opt/riscv/bin/riscv64-unknown-elf-gcc --version
+riscv64-unknown-elf-gcc () 15.2.0
+make: Entering directory '/data/my/cie2026-vdot-xiangshan/tests/riscv/fullcore'
+sed 's/@MBASE@/0x80000000/g' ../hello/hello.ld.in > /data/my/cie2026-vdot-xiangshan/work/build/fullcore/hello/hello.ld
+/opt/riscv/bin/riscv64-unknown-elf-gcc -march=rv64gcv_zve64x -mabi=lp64d -mcmodel=medany -ffreestanding -nostdlib -nostartfiles -fno-builtin -fno-pic \
+    -fno-tree-vectorize -O2 -g -Wall -Wextra -I/data/my/cie2026-vdot-xiangshan/work/build/fullcore/hello \
+    -nostdlib -nostartfiles -Wl,--build-id=none -T /data/my/cie2026-vdot-xiangshan/work/build/fullcore/hello/hello.ld \
+    -o /data/my/cie2026-vdot-xiangshan/work/build/fullcore/hello/hello.elf ../hello/start.S ../hello/hello.c
+/opt/riscv/bin/riscv64-unknown-elf-objcopy -O binary /data/my/cie2026-vdot-xiangshan/work/build/fullcore/hello/hello.elf /data/my/cie2026-vdot-xiangshan/work/build/fullcore/hello/hello.bin
+/opt/riscv/bin/riscv64-unknown-elf-objdump -d -M no-aliases /data/my/cie2026-vdot-xiangshan/work/build/fullcore/hello/hello.elf > /data/my/cie2026-vdot-xiangshan/work/build/fullcore/hello/hello.dis
+make: Leaving directory '/data/my/cie2026-vdot-xiangshan/tests/riscv/fullcore'
+--- 生成的 nemu_config.h ---
+/* 自动生成：tests/riscv/fullcore/Makefile（hello 目标）。地址取香山 SoC（全核 emu）。 */
+#ifndef NEMU_CONFIG_H
+#define NEMU_CONFIG_H
+#define NEMU_DEFCONFIG      "XiangShan MinimalConfig emu (DUT) / riscv64-xs-kmhv2-ref_defconfig (REF)"
+#define NEMU_COMMIT         "90908390002f"
+#define NEMU_MBASE          0x80000000UL
+#define NEMU_UARTLITE_MMIO  0x40600000UL
+#define NEMU_VLEN           128
+#define HOST_IP             "172.100.0.6"
+#endif
+--- 源码与 tests/riscv/hello 中的同名文件一致（sha256） ---
+82d5896b93538f26ff2e08050f9d9f8983d2964e0ac7a057819ca4224e0ba28b  tests/riscv/hello/hello.c
+49b778a37f26bfadc8b701bf05669628cb645e2bc3673d26a821ef9075470fdf  tests/riscv/hello/start.S
+-rwxrwxr-x 1 user user 3328 Oct 25 09:22 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/hello/hello.bin
+$ strings -t x hello.bin | grep 'hello xiangshan'
+    ca8 hello xiangshan, I am cie2026-vdot, IP address 172.100.0.6
+
+### [2] 在全核 emu 上运行（DUT = 香山 MinimalConfig + vdot 补丁，REF = NEMU .so，逐条 difftest）
+$ /data/my/cie2026-vdot-xiangshan/work/XiangShan-fullcore/build/emu -i /data/my/cie2026-vdot-xiangshan/work/build/fullcore/hello/hello.bin --diff /data/my/cie2026-vdot-xiangshan/work/NEMU-fullcore/ref/riscv64-nemu-interpreter-so 
+start: 2026-10-25T09:22:14Z
+（下面先是 emu 的 stdout，再是 stderr；stderr 中 emu 退出时打印的 [PERF ] 性能计数器行已滤掉）
+======================================================================
+ cie2026-vdot / 2026CIE RISC-V vdot  --  Stage-1 environment check
+----------------------------------------------------------------------
+ build config (baked in from the NEMU build that runs this program)
+   NEMU defconfig  : XiangShan MinimalConfig emu (DUT) / riscv64-xs-kmhv2-ref_defconfig (REF)
+   NEMU commit     : 90908390002f
+   image base      : 0x0000000080000000  (CONFIG_MBASE)
+   serial MMIO     : 0x40600000  (CONFIG_UARTLITE_MMIO, UARTLITE)
+   NEMU VLEN macro : 128 bit
+----------------------------------------------------------------------
+ machine state read back from the simulator via csrr
+   mvendorid       : 0x0000086f
+   marchid         : 0x00000019
+   mimpid          : 0x00000000
+   misa            : 0x80000000003411af (RV64 ABCDFHIMSUV)
+   vlenb           : 16 byte -> VLEN = 128 bit
+   VLEN cross-check: MATCH (csrr vlenb == NEMU VLEN macro)
+----------------------------------------------------------------------
+ RVV 1.0 self-test : vsetivli t0,16,e8,m1,ta,ma ; vadd.vv v3,v1,v2
+     vs2(v1) = [-8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7]
+     vs1(v2) = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31]
+     vd (v3) = [-7, -4, -1, 2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35, 38]
+     result  = PASS (16/16 lanes match the C reference)
+======================================================================
+hello xiangshan, I am cie2026-vdot, IP address 172.100.0.6
+emu compiled at Oct 25 2026, 06:55:56
+%Warning: System has stack size 8192 kb which may be too small; suggest 'ulimit -s 35430' or larger
+Using simulated 1048576B flash
+Core  0's Commit SHA is: a4eeaabb4c, dirty: 1
+Using simulated 8386560MB RAM
+The image is /data/my/cie2026-vdot-xiangshan/work/build/fullcore/hello/hello.bin
+The reference model is /data/my/cie2026-vdot-xiangshan/work/NEMU-fullcore/ref/riscv64-nemu-interpreter-so
+The first instruction of core 0 has commited. Difftest enabled. 
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000038
+[0m[35mCore-0 instrCnt = 8369, cycleCnt = 68522, IPC = 0.122136
+[0m[34mSeed=0 Guest cycle spent: 68528 (this will be different from cycleCnt if emu loads a snapshot)
+[0m[34mHost time spent: 20227ms
+[0m------------------------------ emu stderr ------------------------------
+end: 2026-10-25T09:22:34Z  wall=20s  emu-exit=0
+
+==============================================================
+ 结束   2026-10-25T09:22:34Z UTC
+==============================================================

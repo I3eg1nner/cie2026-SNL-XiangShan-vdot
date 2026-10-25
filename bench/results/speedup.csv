@@ -1,10 +1,24 @@
 case,metric,baseline,vdot,speedup,kind,assumption
 单次点积 (16 int8),FU 延迟关键路径 (cycle),4,2,2.000,建模估算,用实测 FU 延迟拼依赖链；假设完美前递、无发射冲突、vsetvli 延迟 0
-单次点积 (16 int8),架构指令条数 (条),6,2,3.000,实测,反汇编逐条；基线 6 条 (含 3 条 vsetvli)，vdot 2 条 (vsetvli + vdot.vv)
-单次点积 (16 int8),向量算术指令条数 (条),3,1,3.000,实测,不含 vsetvli：基线 vmv.s.x/vwmul.vv/vwredsum.vs，vdot 只有 vdot.vv
-单次点积 (16 int8),译码级 uop 条数 (个),14,3,4.667,源码推导,UopInfoGen.scala:197-235
+单次点积 (16 int8),架构指令条数 (条),6,2,3.000,实测(全核 minstret 窗口差),序列本体（操作数已在寄存器，两侧都含必需的 vsetvli）；logs/stage3/fullcore/perf_cycles.log:19-23 ; logs/stage3/fullcore/perf_cycles.log:24-28；与源码宏静态计数 6 / 2 条一致
+单次点积 (16 int8),向量算术指令条数 (条),3,1,3.000,静态计数(源码宏),不含 vsetvli：基线 vmv.s.x/vwmul.vv/vwredsum.vs，vdot 只有 vdot.vv（perf_kernels.S BASE_BODY / VDOT_BODY）
+单次点积 (16 int8),译码级 uop 条数 (个),14,3,4.667,源码推导,UopInfoGen.scala:197-235（由 uop_count.csv 逐条相加）
 长向量循环 N=64,动态指令总数 (条),55,45,1.222,实测,NEMU CSR minstret；两侧用同一组数据、同一份 baseline_rvv.S
 长向量循环 N=256,动态指令总数 (条),175,141,1.241,实测,NEMU CSR minstret；两侧用同一组数据、同一份 baseline_rvv.S
 长向量循环 N=1024,动态指令总数 (条),655,525,1.248,实测,NEMU CSR minstret；两侧用同一组数据、同一份 baseline_rvv.S
 长向量循环 N=4096,动态指令总数 (条),2575,2061,1.249,实测,NEMU CSR minstret；两侧用同一组数据、同一份 baseline_rvv.S
 长向量循环 (稳态),每 16 个 int8 的指令数 (条),10.0,8.0,1.250,实测,对 N=64..4096 四个点做线性回归得到的斜率
+长向量循环 (稳态),吞吐模型 拍/16 个 int8 (cycle)，基线 D vs vdotacc,3,2,1.500,建模估算,端口下界与循环携带依赖下界取大者（§5.3）；FU 延迟为实测值，uop 条数为源码推导，不含读寄存器堆/唤醒开销
+长向量循环 (稳态),吞吐模型 拍/16 个 int8 (cycle)，基线 D vs vdotacc 2 累加器,3,1,3.000,建模估算,端口下界与循环携带依赖下界取大者（§5.3）；FU 延迟为实测值，uop 条数为源码推导，不含读寄存器堆/唤醒开销
+单次点积 (16 int8),全核周期·序列本体 (cycle),31,6,5.167,实测(全核 MinimalConfig),fence+mcycle 窗口扣除空窗口；操作数已在寄存器，基线 6 条 vs vdot 2 条，热态中位数；logs/stage3/fullcore/perf_cycles.log:19-23 ; logs/stage3/fullcore/perf_cycles.log:24-28
+单次点积 (16 int8),全核周期·序列+取回标量 (cycle),38,13.5,2.815,实测(全核 MinimalConfig),序列后两侧都加 vsetvli e32 + vmv.x.s，量到结果进入标量寄存器；logs/stage3/fullcore/perf_cycles.log:29-33 ; logs/stage3/fullcore/perf_cycles.log:34-38
+单次点积 (16 int8),全核周期·函数整体 (cycle),52,30.5,1.705,实测(全核 MinimalConfig),baseline_rvv.S 的 baseline_vdot_single / vdot_single 整体调用（含 2 条 vle8.v、取回与 ret），扣除空函数调用；logs/stage3/fullcore/perf_cycles.log:39-43 ; logs/stage3/fullcore/perf_cycles.log:44-48
+长向量循环 N=1024,全核周期 (cycle)，基线 D vs vdotacc,848,476,1.782,实测(全核 MinimalConfig),baseline_rvv.S kernel 整体调用，扣除空函数调用，热态中位数；logs/stage3/fullcore/perf_cycles.log:124-128 ; logs/stage3/fullcore/perf_cycles.log:199-203
+长向量循环 N=1024,全核周期 (cycle)，基线 D vs vdotacc 2 累加器,848,395,2.147,实测(全核 MinimalConfig),baseline_rvv.S kernel 整体调用，扣除空函数调用，热态中位数；logs/stage3/fullcore/perf_cycles.log:124-128 ; logs/stage3/fullcore/perf_cycles.log:224-228
+长向量循环 N=1024,全核周期 (cycle)，基线 D vs vdot4a,848,498,1.703,实测(全核 MinimalConfig),baseline_rvv.S kernel 整体调用，扣除空函数调用，热态中位数；logs/stage3/fullcore/perf_cycles.log:124-128 ; logs/stage3/fullcore/perf_cycles.log:249-253
+长向量循环 N=4096,全核周期 (cycle)，基线 D vs vdotacc,3274.5,1819.5,1.800,实测(全核 MinimalConfig),baseline_rvv.S kernel 整体调用，扣除空函数调用，热态中位数；logs/stage3/fullcore/perf_cycles.log:129-133 ; logs/stage3/fullcore/perf_cycles.log:204-208
+长向量循环 N=4096,全核周期 (cycle)，基线 D vs vdotacc 2 累加器,3274.5,1476,2.218,实测(全核 MinimalConfig),baseline_rvv.S kernel 整体调用，扣除空函数调用，热态中位数；logs/stage3/fullcore/perf_cycles.log:129-133 ; logs/stage3/fullcore/perf_cycles.log:229-233
+长向量循环 N=4096,全核周期 (cycle)，基线 D vs vdot4a,3274.5,1830.5,1.789,实测(全核 MinimalConfig),baseline_rvv.S kernel 整体调用，扣除空函数调用，热态中位数；logs/stage3/fullcore/perf_cycles.log:129-133 ; logs/stage3/fullcore/perf_cycles.log:254-258
+长向量循环 (稳态),全核每 16 个 int8 的周期 (cycle)，基线 D vs vdotacc,12.638,6.997,1.806,实测(全核 MinimalConfig),N=1024 与 N=4096 的净周期之差 / 192 次迭代（cycles_fullcore.csv 的 loop_slope 行）；cycles_fullcore.csv
+长向量循环 (稳态),全核每 16 个 int8 的周期 (cycle)，基线 D vs vdotacc 2 累加器,12.638,5.63,2.245,实测(全核 MinimalConfig),N=1024 与 N=4096 的净周期之差 / 192 次迭代（cycles_fullcore.csv 的 loop_slope 行）；cycles_fullcore.csv
+长向量循环 (稳态),全核每 16 个 int8 的周期 (cycle)，基线 D vs vdot4a,12.638,6.94,1.821,实测(全核 MinimalConfig),N=1024 与 N=4096 的净周期之差 / 192 次迭代（cycles_fullcore.csv 的 loop_slope 行）；cycles_fullcore.csv

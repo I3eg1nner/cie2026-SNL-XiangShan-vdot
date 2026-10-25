@@ -97,7 +97,7 @@ vdot4a.vv   vd, vs2, vs1, vm
 | `vdot4a.vv` | `0x77` | `0x76` | `0xEE1101D7` |
 
 > 上表机器码由位域拼接算得（`funct6<<26 | vm<<25 | vs2<<20 | vs1<<15 | funct3<<12 | vd<<7 | opcode`），已用脚本复核。
-> **UNVERIFIED**：本机未安装 RISC-V 工具链，`.insn r` 宏是否被 GNU as 接受（尤其 `v3` 这类向量寄存器名在 `.insn` 中的可用性）未实测。测试程序优先使用 `.word`，并在 P4 阶段用 `objdump -d` 回读校验。
+> **UNVERIFIED**：本机未安装 RISC-V 工具链，`.insn r` 宏是否被 GNU as 接受（尤其 `v3` 这类向量寄存器名在 `.insn` 中的可用性）未实测。测试程序优先使用 `.word`，并在 P4 阶段用 `objdump -d` 回读校验。**后续已闭合（阶段三）**：交叉工具链 `riscv64-linux-gnu-gcc` 13 已就位，P5 语料用它把 `.word` 形式的机器码汇编进镜像，`objdump -d` 回读出 6 个编码（`logs/stage3/p5_vdot_tests.log:42-49`），并在打了补丁的 NEMU 上 30758 条全部通过（同文件 `:87`）；全核 difftest 中香山译码单元把 `.4byte` 宏生成的编码译为 `vdot.vv` / `vdotacc.vv` / `vdot4a.vv`（`logs/stage3/fullcore/wave_trace.txt:159,162,170`）。`.insn r` 宏本身始终没有被任何测试程序使用，仍未实测，但已不影响编码的正确性。
 
 ### 1.3 操作数与 EEW 表
 
@@ -1446,7 +1446,7 @@ uop lmul..2lmul-2  : 把 TMP 两两相加                              （需要
 | **R-14** | `vdot.vv` 是否需要饱和逻辑 / `vxsat`？ | (a) 需要；(b) 不需要 | **(b)**。§1.6 给出严格证明：`|Σ p_i| <= 16 × 16384 = 2^18 < 2^31`，不可能溢出。`io.out.bits.res.vxsat` 对 vdot 三条指令恒为 0。`vdotacc`/`vdot4a` 的累加按 RVV §11 回绕，同样不置 `vxsat`。 |
 | **R-15** | `vdot.vv` 的 `vs1` 要不要登记进 `VecExceptionGen` 的 `vs1IsSingleElem`？ | (a) 要（照抄 `redWideningInst`）；(b) 不要 | **(b)**。`vs1IsSingleElem`（`VecExceptionGen.scala:220`）会把 `vs1Emul` 设成 `"b100"`（单寄存器，`:222`）。这对 `vwredsum.vs` 是对的（`vs1[0]` 是标量种子），对 `vdot.vv` 是错的（`vs1` 是完整的 LMUL 向量）。只有 `vdIsSingleElem`（`:245`）要加，因为 `vd` 确实只占一个寄存器。 |
 | **R-17** | 协同仿真发现：`vdot4a` + `vstart != 0` 在 NEMU 上正常执行、在香山上判非法（1946 条确定性分歧）。改哪一侧？ | (a) 改香山向 NEMU 靠：为 `vdot4a` 在 `vstartIllegal` 上开例外，并让 `Mgu` 处理 prestart；(b) 改 NEMU/ISA 向香山靠：把 `vdot4a` 的 `vstart != 0` 也裁定为非法（**裁定 S-7'**） | **(b)，依据「平台约束优先原则」**：自定义指令的 ISA 语义不应宽于宿主微架构的实际能力。昆明湖 V2 的向量算术通路不支持非零 `vstart` 重启，这是既有架构事实；让 ISA 向微架构收敛，改动面只在本指令族内，且使三条 vdot 指令与同平台所有标准向量算术指令的 `vstart` 行为完全一致（实测对照 `bench/results/vstart_control.csv`，8 条指令在 `vstart=1` 时一律 `TRAP mcause=2`）。否决 (a) 的理由同 R-06：改公共判据的回归面是整个向量后端。**本裁定是平台约束驱动的，不是语义内在限制** —— 支持 `vstart` 重启的实现可以放宽（参考模型的 `VDOT_VSTART_SKIP` 策略 + 非规范语料 `vstart_relaxed.txt` 的 40 条 vdot4a 用例已给出可执行定义）。完整论证见 §1.5.4，发现过程见 `docs/stage3/21` §7.3。**RTL 侧零改动**，由 `tests/unit/vecexcgen_tb.cpp` 的 `[I]` 组实测确认。 |
-| **R-16** | 机器码示例要不要用汇编器实际验证？ | — | 本机无 RISC-V 工具链，`.insn r` 宏的可接受性标注为 **UNVERIFIED**；`.word` 形式的机器码由位域拼接算得并用脚本复核，P4 阶段须用 `objdump -d` 回读确认。 |
+| **R-16** | 机器码示例要不要用汇编器实际验证？ | — | 本机无 RISC-V 工具链，`.insn r` 宏的可接受性标注为 **UNVERIFIED**；`.word` 形式的机器码由位域拼接算得并用脚本复核，P4 阶段须用 `objdump -d` 回读确认。**后续已闭合（阶段三）**：交叉工具链 `riscv64-linux-gnu-gcc` 13 已就位，P5 语料用它把 `.word` 形式的机器码汇编进镜像，`objdump -d` 回读出 6 个编码（`logs/stage3/p5_vdot_tests.log:42-49`），并在打了补丁的 NEMU 上 30758 条全部通过（同文件 `:87`）；全核 difftest 中香山译码单元把 `.4byte` 宏生成的编码译为 `vdot.vv` / `vdotacc.vv` / `vdot4a.vv`（`logs/stage3/fullcore/wave_trace.txt:159,162,170`）。`.insn r` 宏本身始终没有被任何测试程序使用，仍未实测，但已不影响编码的正确性。 |
 
 ---
 

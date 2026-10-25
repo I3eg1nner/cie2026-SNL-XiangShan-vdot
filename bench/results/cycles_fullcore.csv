@@ -1,0 +1,75 @@
+group,name,N_int8,cold_cycles_raw_rep0,warm_cycles_raw_median,warm_cycles_raw_min,warm_cycles_raw_max,reps,overhead_calibration,overhead_cycles,net_cycles_warm,net_instr_warm,kind,evidence
+cal,empty_window,0,35,35.0,35,35,5,-,,,,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:9-13
+cal,nop_call,0,71,38.0,37,38,5,-,,,,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:14-18
+single,base_body,16,66,66.0,66,66,5,empty_window,35.0,31,6,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:19-23
+single,base_body_x,16,73,73.0,73,74,5,empty_window,35.0,38,8,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:29-33
+single,baseline_vdot_single,16,154,90.0,90,91,5,nop_call,38.0,52,10,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:39-43
+single,vdot_body,16,41,41.0,41,41,5,empty_window,35.0,6,2,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:24-28
+single,vdot_body_x,16,48,48.5,48,49,5,empty_window,35.0,13.5,4,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:34-38
+single,vdot_single,16,83,68.5,68,69,5,nop_call,38.0,30.5,5,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:44-48
+chain,indep_vdot,16,51,51.0,51,51,5,empty_window,35.0,16,16,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:89-93
+chain,indep_vdot,48,83,83.0,83,83,5,empty_window,35.0,48,48,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:94-98
+chain,vadd,16,125,125.0,125,125,5,empty_window,35.0,90,16,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:79-83
+chain,vadd,48,317,317.0,317,317,5,empty_window,35.0,282,48,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:84-88
+chain,vdotacc,16,141,141.0,141,141,5,empty_window,35.0,106,16,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:49-53
+chain,vdotacc,48,365,365.0,365,365,5,empty_window,35.0,330,48,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:54-58
+chain,vsetadd,16,130,130.0,130,130,5,empty_window,35.0,95,32,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:99-103
+chain,vsetadd,48,322,322.0,322,322,5,empty_window,35.0,287,96,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:104-108
+chain,vwaddwv,16,126,126.0,126,126,5,empty_window,35.0,91,16,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:59-63
+chain,vwaddwv,48,318,318.0,318,318,5,empty_window,35.0,283,48,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:64-68
+chain,vwredsum,16,156,156.0,156,156,5,empty_window,35.0,121,16,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:69-73
+chain,vwredsum,48,380,380.0,380,380,5,empty_window,35.0,345,48,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:74-78
+loop,seqA,16,109,94.0,94,94,5,nop_call,38.0,56,14,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:134-138
+loop,seqA,64,182,139.0,127,151,5,nop_call,38.0,101,44,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:139-143
+loop,seqA,256,353,328.5,326,330,5,nop_call,38.0,290.5,164,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:144-148
+loop,seqA,1024,1144,1136.5,1131,1152,5,nop_call,38.0,1098.5,644,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:149-153
+loop,seqA,4096,4376,4379.5,4363,4391,5,nop_call,38.0,4341.5,2564,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:154-158
+loop,seqB,16,118,103.0,103,103,5,nop_call,38.0,65,17,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:159-163
+loop,seqB,64,194,153.5,144,162,5,nop_call,38.0,115.5,50,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:164-168
+loop,seqB,256,370,312.0,312,312,5,nop_call,38.0,274,182,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:169-173
+loop,seqB,1024,984,984.0,984,985,5,nop_call,38.0,946,710,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:174-178
+loop,seqB,4096,3672,3682.0,3672,3683,5,nop_call,38.0,3644,2822,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:179-183
+loop,seqD,16,132,100.0,100,101,5,nop_call,38.0,62,16,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:109-113
+loop,seqD,64,186,138.5,123,154,5,nop_call,38.0,100.5,46,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:114-118
+loop,seqD,256,346,281.0,280,282,5,nop_call,38.0,243,166,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:119-123
+loop,seqD,1024,902,886.0,886,888,5,nop_call,38.0,848,646,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:124-128
+loop,seqD,4096,3326,3312.5,3312,3315,5,nop_call,38.0,3274.5,2566,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:129-133
+loop,vdot4a,16,94,79.0,79,79,5,nop_call,38.0,41,16,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:234-238
+loop,vdot4a,64,160,116.5,115,145,5,nop_call,38.0,78.5,43,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:239-243
+loop,vdot4a,256,288,184.0,184,184,5,nop_call,38.0,146,151,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:244-248
+loop,vdot4a,1024,568,536.0,535,536,5,nop_call,38.0,498,583,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:249-253
+loop,vdot4a,4096,1880,1868.5,1864,1872,5,nop_call,38.0,1830.5,2311,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:254-258
+loop,vdotacc,16,102,72.0,72,72,5,nop_call,38.0,34,12,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:184-188
+loop,vdotacc,64,155,93.0,93,122,5,nop_call,38.0,55,36,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:189-193
+loop,vdotacc,256,248,177.0,177,178,5,nop_call,38.0,139,132,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:194-198
+loop,vdotacc,1024,544,514.0,514,514,5,nop_call,38.0,476,516,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:199-203
+loop,vdotacc,4096,1858,1857.5,1857,1866,5,nop_call,38.0,1819.5,2052,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:204-208
+loop,vdotacc_acc2,16,96,77.0,77,77,5,nop_call,38.0,39,15,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:209-213
+loop,vdotacc_acc2,64,144,94.0,94,112,5,nop_call,38.0,56,39,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:214-218
+loop,vdotacc_acc2,256,209,164.0,163,193,5,nop_call,38.0,126,135,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:219-223
+loop,vdotacc_acc2,1024,433,433.0,432,448,5,nop_call,38.0,395,519,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:224-228
+loop,vdotacc_acc2,4096,1513,1514.0,1513,1526,5,nop_call,38.0,1476,2055,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:229-233
+skel,skel_seqD,16,68,53.5,53,54,5,nop_call,38.0,15.5,9,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:264-268
+skel,skel_seqD,64,152,75.5,73,76,5,nop_call,38.0,37.5,33,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:274-278
+skel,skel_seqD,256,208,149.5,148,151,5,nop_call,38.0,111.5,129,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:284-288
+skel,skel_seqD,1024,479,455.0,455,457,5,nop_call,38.0,417,513,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:294-298
+skel,skel_seqD,4096,1696,1671.0,1671,1671,5,nop_call,38.0,1633,2049,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:304-308
+skel,skel_vdotacc,16,69,53.5,53,54,5,nop_call,38.0,15.5,8,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:259-263
+skel,skel_vdotacc,64,148,71.0,69,108,5,nop_call,38.0,33,29,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:269-273
+skel,skel_vdotacc,256,233,137.0,137,139,5,nop_call,38.0,99,113,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:279-283
+skel,skel_vdotacc,1024,462,401.5,401,417,5,nop_call,38.0,363.5,449,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:289-293
+skel,skel_vdotacc,4096,1482,1457.5,1457,1459,5,nop_call,38.0,1419.5,1793,"实测(全核 MinimalConfig, mcycle/minstret)",logs/stage3/fullcore/perf_cycles.log:299-303
+chain_slope,indep_vdot,16->48,,,,,,-,,1.000,,"实测(全核 MinimalConfig, 两档长度之差 / 32)",logs/stage3/fullcore/perf_cycles.log:89-93 ; logs/stage3/fullcore/perf_cycles.log:94-98
+chain_slope,vadd,16->48,,,,,,-,,6.000,,"实测(全核 MinimalConfig, 两档长度之差 / 32)",logs/stage3/fullcore/perf_cycles.log:79-83 ; logs/stage3/fullcore/perf_cycles.log:84-88
+chain_slope,vdotacc,16->48,,,,,,-,,7.000,,"实测(全核 MinimalConfig, 两档长度之差 / 32)",logs/stage3/fullcore/perf_cycles.log:49-53 ; logs/stage3/fullcore/perf_cycles.log:54-58
+chain_slope,vsetadd,16->48,,,,,,-,,6.000,,"实测(全核 MinimalConfig, 两档长度之差 / 32)",logs/stage3/fullcore/perf_cycles.log:99-103 ; logs/stage3/fullcore/perf_cycles.log:104-108
+chain_slope,vwaddwv,16->48,,,,,,-,,6.000,,"实测(全核 MinimalConfig, 两档长度之差 / 32)",logs/stage3/fullcore/perf_cycles.log:59-63 ; logs/stage3/fullcore/perf_cycles.log:64-68
+chain_slope,vwredsum,16->48,,,,,,-,,7.000,,"实测(全核 MinimalConfig, 两档长度之差 / 32)",logs/stage3/fullcore/perf_cycles.log:69-73 ; logs/stage3/fullcore/perf_cycles.log:74-78
+loop_slope,seqA,1024->4096,,,,,,-,,16.891,10.000,"实测(全核 MinimalConfig, 两点之差 / 192 次迭代)",logs/stage3/fullcore/perf_cycles.log:149-153 ; logs/stage3/fullcore/perf_cycles.log:154-158
+loop_slope,seqB,1024->4096,,,,,,-,,14.052,11.000,"实测(全核 MinimalConfig, 两点之差 / 192 次迭代)",logs/stage3/fullcore/perf_cycles.log:174-178 ; logs/stage3/fullcore/perf_cycles.log:179-183
+loop_slope,seqD,1024->4096,,,,,,-,,12.638,10.000,"实测(全核 MinimalConfig, 两点之差 / 192 次迭代)",logs/stage3/fullcore/perf_cycles.log:124-128 ; logs/stage3/fullcore/perf_cycles.log:129-133
+loop_slope,vdot4a,1024->4096,,,,,,-,,6.940,9.000,"实测(全核 MinimalConfig, 两点之差 / 192 次迭代)",logs/stage3/fullcore/perf_cycles.log:249-253 ; logs/stage3/fullcore/perf_cycles.log:254-258
+loop_slope,vdotacc,1024->4096,,,,,,-,,6.997,8.000,"实测(全核 MinimalConfig, 两点之差 / 192 次迭代)",logs/stage3/fullcore/perf_cycles.log:199-203 ; logs/stage3/fullcore/perf_cycles.log:204-208
+loop_slope,vdotacc_acc2,1024->4096,,,,,,-,,5.630,8.000,"实测(全核 MinimalConfig, 两点之差 / 192 次迭代)",logs/stage3/fullcore/perf_cycles.log:224-228 ; logs/stage3/fullcore/perf_cycles.log:229-233
+skel_slope,skel_seqD,1024->4096,,,,,,-,,6.333,8.000,"实测(全核 MinimalConfig, 两点之差 / 192 次迭代)",logs/stage3/fullcore/perf_cycles.log:294-298 ; logs/stage3/fullcore/perf_cycles.log:304-308
+skel_slope,skel_vdotacc,1024->4096,,,,,,-,,5.500,7.000,"实测(全核 MinimalConfig, 两点之差 / 192 次迭代)",logs/stage3/fullcore/perf_cycles.log:289-293 ; logs/stage3/fullcore/perf_cycles.log:299-303

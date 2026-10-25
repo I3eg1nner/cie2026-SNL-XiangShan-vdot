@@ -627,7 +627,7 @@ LMUL>1 的方案（新增 `UopSplitType.VEC_VDOT`）见设计文档 §8.3，**�
    验证：新增 `VecExceptionGenHarness` + `tests/unit/vecexcgen_tb.cpp`，51 条定向用例全 PASS（日志 `logs/stage2/p5_decode_illegal.log`）；撤掉该守卫后 13 条立即变红（`PROVE_FAIL=1 bash scripts/tools/run_decode_tb.sh`，由 `scripts/20_run_func_tests.sh` 5.6 步自动执行，日志 `logs/stage2/p5_decode_prove_fail.log`）。
    **仍然不支持 LMUL>1 的正确执行**，只是从「静默算错」变成「明确报非法」。
 
-9. **`.insn` 汇编宏未验证**。本机无 RISC-V 工具链，三条指令的机器码只由位域拼接算得（设计文档 §1.2 已标注 UNVERIFIED），P4/P5 需用 `objdump -d` 回读确认。
+9. **`.insn` 汇编宏未验证**。本机无 RISC-V 工具链，三条指令的机器码只由位域拼接算得（设计文档 §1.2 已标注 UNVERIFIED），P4/P5 需用 `objdump -d` 回读确认。 **后续已闭合（阶段三）**：交叉工具链 `riscv64-linux-gnu-gcc` 13 已就位，P5 语料用它把 `.word` 形式的机器码汇编进镜像，`objdump -d` 回读出 6 个编码（`logs/stage3/p5_vdot_tests.log:42-49`），并在打了补丁的 NEMU 上 30758 条全部通过（同文件 `:87`）；全核 difftest 中香山译码单元把 `.4byte` 宏生成的编码译为 `vdot.vv` / `vdotacc.vv` / `vdot4a.vv`（`logs/stage3/fullcore/wave_trace.txt:159,162,170`）。`.insn r` 宏本身始终没有被任何测试程序使用，仍未实测，但已不影响编码的正确性。
 
 ---
 

@@ -256,8 +256,12 @@ fi
 # [5] 汇总成 CSV
 # ---------------------------------------------------------------------------
 step "5/6 从日志抽取原始数据 -> $(relpath "${RES_DIR}")/*.csv"
+# 全核周期实测日志（scripts/50_run_fullcore_difftest.sh perf 产生）存在时一并解析，生成 cycles_fullcore.csv
+FC_PERF_LOG="${FC_PERF_LOG:-${LOG_ROOT}/stage3/fullcore/perf_cycles.log}"
+FC_ARGS=()
+[ -f "${FC_PERF_LOG}" ] && FC_ARGS=(--fullcore-perf-log "${FC_PERF_LOG}")
 python3 "${REPO_ROOT}/bench/collect_results.py" \
-  --equiv-log "${EQUIV_LOG}" --latency-log "${LAT_LOG}" --out "${RES_DIR}"
+  --equiv-log "${EQUIV_LOG}" --latency-log "${LAT_LOG}" --out "${RES_DIR}" ${FC_ARGS[@]+"${FC_ARGS[@]}"}
 ls -l "${RES_DIR}"
 
 # ---------------------------------------------------------------------------
