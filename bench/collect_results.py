@@ -54,17 +54,18 @@ FU_PORTS = {
 
 # 译码级 uop 条数（LMUL 按各指令在基线序列里实际使用的值）
 # 全部来自 UopInfoGen.scala:197-235 的 numOfUop MuxLookup + VecDecoder.scala 的 UopSplitType
+# VecDecoder 行号：先给上游 pristine 树，括号内为打了 rtl/patch/0001 的实现树（补丁插入 vdot 三行导致后移）
 UOPS = [
     # instruction, 场景, UopSplitType, vlmul, uops, 出处
     ("vsetvli",     "任意",            "VSET",      "-",   2, "UopInfoGen.scala:199"),
-    ("vmv.s.x",     "e32/m1",          "VEC_0XV",   "m1",  2, "UopInfoGen.scala:200 + VecDecoder.scala:466"),
-    ("vwmul.vv",    "e8/m1 -> e16/m2", "VEC_VVW",   "m1",  2, "UopInfoGen.scala:214 (numOfUopWV, vlmul=000 -> 2) + VecDecoder.scala:436"),
-    ("vwadd.wv",    "e16/m2 -> e32/m4","VEC_WVW",   "m2",  4, "UopInfoGen.scala:215 (numOfUopWV, vlmul=001 -> 4) + VecDecoder.scala:430"),
-    ("vwredsum.vs", "e16/m2",          "VEC_VWW",   "m2",  4, "UopInfoGen.scala:229 (Cat(lmul,0) = 2*lmul = 4) + VecDecoder.scala:244"),
-    ("vredsum.vs",  "e32/m4",          "VEC_VRED",  "m4",  4, "UopInfoGen.scala:224 (lmul = 4) + VecDecoder.scala:419"),
-    ("vdot.vv",     "e8/m1",           "VEC_VVV",   "m1",  1, "UopInfoGen.scala:201 (lmul = 1) + VecDecoder.scala:256"),
-    ("vdotacc.vv",  "e8/m1",           "VEC_VVV",   "m1",  1, "UopInfoGen.scala:201 (lmul = 1) + VecDecoder.scala:257"),
-    ("vdot4a.vv",   "e32/m1",          "VEC_VVV",   "m1",  1, "UopInfoGen.scala:201 (lmul = 1) + VecDecoder.scala:258"),
+    ("vmv.s.x",     "e32/m1",          "VEC_0XV",   "m1",  2, "UopInfoGen.scala:200 + VecDecoder.scala:457 (实现树 :466)"),
+    ("vwmul.vv",    "e8/m1 -> e16/m2", "VEC_VVW",   "m1",  2, "UopInfoGen.scala:214 (numOfUopWV, vlmul=000 -> 2) + VecDecoder.scala:427 (实现树 :436)"),
+    ("vwadd.wv",    "e16/m2 -> e32/m4","VEC_WVW",   "m2",  4, "UopInfoGen.scala:215 (numOfUopWV, vlmul=001 -> 4) + VecDecoder.scala:421 (实现树 :430)"),
+    ("vwredsum.vs", "e16/m2",          "VEC_VWW",   "m2",  4, "UopInfoGen.scala:229 (Cat(lmul,0) = 2*lmul = 4) + VecDecoder.scala:243 (实现树 :244)"),
+    ("vredsum.vs",  "e32/m4",          "VEC_VRED",  "m4",  4, "UopInfoGen.scala:224 (lmul = 4) + VecDecoder.scala:410 (实现树 :419)"),
+    ("vdot.vv",     "e8/m1",           "VEC_VVV",   "m1",  1, "UopInfoGen.scala:201 (lmul = 1) + VecDecoder.scala:256 (仅实现树)"),
+    ("vdotacc.vv",  "e8/m1",           "VEC_VVV",   "m1",  1, "UopInfoGen.scala:201 (lmul = 1) + VecDecoder.scala:257 (仅实现树)"),
+    ("vdot4a.vv",   "e32/m1",          "VEC_VVV",   "m1",  1, "UopInfoGen.scala:201 (lmul = 1) + VecDecoder.scala:258 (仅实现树)"),
 ]
 
 
@@ -155,15 +156,23 @@ def parse_latency(path):
                 out["vcd"][cur]["cyc"][c] = out["vcd"][cur]["cyc"].get(c, 0) + 1
                 out["vcd"][cur]["n"] += 1
 
-    # 三个 harness 的 CSVROW
+    # 三个 harness 的 CSVROW；VIMacU 另有 CSVSETTLE（数据成形拍的可判定性统计）
+    settle_detail = {}
+    for line in txt.splitlines():
+        if line.startswith("CSVSETTLE,"):
+            f = [x.strip() for x in line.split(",")]
+            # instr, 可判定, 其中扰动重测后可判定, 第1拍未成形, 第1拍已成形, 不可判定, 固定第2拍一致
+            settle_detail[f[1]] = dict(zip(
+                ["dec", "dec_retry", "not1", "at1", "undec", "fix2"], [int(x) for x in f[2:8]]))
+    out["settle_detail"] = settle_detail
     for line in txt.splitlines():
         if not line.startswith("CSVROW,"):
             continue
         f = [x.strip() for x in line.split(",")]
-        if len(f) == 6:      # vimacu: instr,fu,lat,txn,checked
+        if len(f) == 6:      # 旧版 vimacu: instr,fu,lat,txn,checked
             out["fu"].append({"instr": f[1], "harness": f[2], "lat": int(f[3]),
                               "settle": "", "txn": int(f[4]), "checked": int(f[5])})
-        elif len(f) == 7:    # vecfu: instr,fu,lat,settle,txn,checked
+        elif len(f) == 7:    # vecfu / 新版 vimacu: instr,fu,lat,settle,txn,checked
             out["fu"].append({"instr": f[1], "harness": f[2], "lat": int(f[3]),
                               "settle": int(f[4]), "txn": int(f[5]), "checked": int(f[6])})
     return out
@@ -238,10 +247,26 @@ def main():
         if m:
             kind = "实测"
             mval = m["lat"]
-            ev = "%s harness, %d 笔事务全部 %d 拍，数值比对 %d 笔一致" % (
-                m["harness"], m["txn"], m["lat"], m["checked"])
-            if m["settle"] != "":
-                ev += "；数据成形同样在第 %s 拍" % m["settle"]
+            sd = lat["settle_detail"].get(ins)
+            if sd is not None:
+                # 新版 VIMacU tb：out.valid 是 harness 构造值，独立证据是数据成形拍
+                ev = ("%s harness：out.valid %d 笔全部 %d 拍（harness 按 %s.latency 构造，非独立证据）；"
+                      "独立观测：第 1 拍数据未成形 %d/%d 笔（可判定 %d/%d，其中经扰动前驱重测 %d，"
+                      "不可判定 %d），固定第 2 拍数据与参考一致 %d/%d；" % (
+                          m["harness"], m["txn"], m["lat"], cfgname,
+                          sd["not1"], sd["dec"], sd["dec"], m["txn"], sd["dec_retry"],
+                          sd["undec"], sd["fix2"], m["txn"]))
+            elif m["settle"] != "":
+                # VecFuLatHarness：out.valid 同样来自按 cfg.latency 搭的寄存器链
+                ev = ("%s harness：out.valid %d 笔全部 %d 拍（harness 按 %s.latency 构造，非独立证据）；"
+                      "独立观测：数据成形在第 %s 拍（下界型）；" % (
+                          m["harness"], m["txn"], m["lat"], cfgname, m["settle"]))
+            else:
+                ev = "%s harness, %d 笔事务全部 %d 拍，" % (m["harness"], m["txn"], m["lat"])
+            if m["checked"] > 0:
+                ev += "数值比对 %d 笔一致" % m["checked"]
+            else:
+                ev += "数值未建模（未做数值比对）"
             if ins in vcd_note:
                 ev += "；另有 " + vcd_note[ins]
         else:

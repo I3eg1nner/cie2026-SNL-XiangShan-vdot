@@ -35,22 +35,22 @@ NEMU↔RTL 协同仿真、RVV 1.0 基线实现与延迟加速比分析。所有�
 | 3.1.1 NEMU 指令扩展 | **30758 条语料 0 失配**；4834 条必须 trap 的用例全部以 `mcause=2` trap；difftest 参考共享库上同一语料 `trap code:0` | 实测 | `logs/stage3/p5_vdot_tests.log:87-90,116,126` |
 | 　NEMU 补丁干净应用 / 故障注入 | 干净副本上重跑 30758/30758；故障注入 5/5 被检出（另 1 个经论证的等价变异体） | 实测 | `logs/stage3/p5_patch_verify.log:47,51`、`p5_fault_injection.log:165-169` |
 | 3.1.2 协同仿真（**Level 1**：真实 NEMU `.so` ↔ Verilated 译码单元 + vdot 功能单元） | 72758 条激励；值比对 **55924/55924，0 失配**；非法判定 **分歧 0**（首轮 6415 条分歧经 G5a 补守卫 + 裁定 S-7' 后归零） | 实测 | `logs/stage3/cosim/p6_cosim_run.log:45-52`；首轮记录见 `docs/stage3/21_协同仿真验证报告.md` §7.4 |
-| 　协同仿真故障注入 | 5/5 被检出（RTL 侧 2、NEMU 侧 3，其中一项专门守护 S-7'） | 实测 | `logs/stage3/cosim/p6_fault_injection.log:111` |
+| 　协同仿真故障注入 | 5/5 被检出（RTL 侧 2、NEMU 侧 3，其中一项专门守护 S-7'）；其中 T3-RTL-1 实为输出格式选择取反，另补跑真正的 `io_vd` bit0 翻转，6378/6378 失配被检出 | 实测 | `logs/stage3/cosim/p6_fault_injection.log:111`；`logs/stage3/cosim/p6_fault_rtl1_rerun.log:41-58` |
 | 3.2 基线等价性 | RVV 1.0 基线序列与 vdot 指令族在 NEMU 上 **25924 条实跑用例逐位相同，0 失配**；长向量循环 24 个长度 0 失配 | 实测 | `logs/stage3/p7_baseline_equiv.log:112-114,144` |
 
 ### 1.2 延迟与加速比（赛题 3.3）
 
 | 项目 | 基线 | vdot | 结果 | 标注 | 证据 |
 |---|---:|---:|---:|---|---|
-| vdot 三条指令的 FU 延迟 | — | 2 拍 | `VIMacU` 直驱 178/178/190 笔全部 2 拍且数据逐位正确；L1 波形 12×3 笔全部 2 拍 | 实测（FU 级） | `logs/stage3/p7_latency_measure.log:221-223`；`logs/stage3/waveform/p7_*.vcd` |
-| 基线核心指令 FU 延迟 | `vmv.s.x` 1 拍、`vwmul.vv` 2 拍、`vwredsum.vs` 2 拍 | — | 与 `FuConfig` 声明值一致 | 实测（FU 级） | `bench/results/latency_fu.csv`；`p7_latency_measure.log:227,277,291` |
+| vdot 三条指令的 FU 延迟 | — | 2 拍 | 按**数据成形拍**判定（逐拍采 `io_vd` 与参考模型比较，不读 `out.valid`）：`VIMacU` 直驱 178/178/190 笔全部「第 1 拍未成形、第 2 拍逐位正确」；L1 `VDotTop` 波形 12×3 笔 DUT 内部 S2 寄存器与 `io_vd` 均在第 2 拍成形。两个平台的 `out.valid` 都由测试平台按声明延迟构造，不作证据 | 实测（FU 级） | `logs/stage3/p7_latency_measure.log:238-252`；`logs/stage3/waveform/p7_*.vcd` |
+| 基线核心指令 FU 延迟 | `vmv.s.x` 1 拍、`vwmul.vv` 2 拍、`vwredsum.vs` 2 拍 | — | 与 `FuConfig` 声明值一致（同样按数据成形拍判定；`vwredsum.vs` 未做数值比对） | 实测（FU 级） | `bench/results/latency_fu.csv`；`p7_latency_measure.log:260-264,325,339` |
 | `vsetvli` 延迟 | 0 拍 | 0 拍 | 未实测（落在整数侧 BJU2，不在向量 FU 平台内） | 声明值 | `docs/stage3/22_基线实现与延迟加速分析.md` §4.5 |
 | 单次 16 元素点积：架构指令条数 | 6 | 2 | **3.00×** | 实测（反汇编） | `bench/results/speedup.csv` |
 | 单次点积：向量算术指令条数 | 3 | 1 | **3.00×** | 实测 | 同上 |
 | 单次点积：译码级 uop 条数 | 14 | 3 | **4.67×** | 源码推导 | 同上；`UopInfoGen.scala:197-235` |
 | 单次点积：FU 延迟关键路径 | 4 拍 | 2 拍 | **2.00×** | **建模**（实测 FU 延迟按依赖链相加，假设完美前递、无端口冲突） | `bench/results/critical_path.csv`、`sensitivity.csv` |
 | 长向量循环 N=4096：动态指令数 | 2575 | 2061 | **1.249×**（渐近 1.250×） | 实测（NEMU `minstret`，是指令数不是周期数） | `bench/results/instr_count_loop.csv`；`p7_baseline_equiv.log:160-167` |
-| 长向量稳态吞吐 | 3 拍/迭代 | 2 拍/迭代 | **1.50×**（2 路累加器展开时 3.00×） | **建模**（FU 级平台测不到） | `docs/stage3/22_基线实现与延迟加速分析.md` §5.3 |
+| 长向量稳态吞吐 | 3 拍/迭代 | 2 拍/迭代 | **1.50×**（2 路累加器展开时 3.00×） | **建模**（FU 级平台测不到）。2 路累加器内核 `vdot_dot_i8_acc2` 已交付并在 NEMU 上实测：24 个长度 0 失配、每 16 个 int8 8.00 条指令；其周期数仍是建模值 | `docs/stage3/22_基线实现与延迟加速分析.md` §5.3；`logs/stage3/p7_baseline_gcc15_supplement.log:142,170-173` |
 
 > 上表各行**量纲不同、不可互相替代**，不能挑最大的一个当作「加速比」。2.00× 的敏感性区间为
 > 1.00×–5.00×（`bench/results/sensitivity.csv`）。`vdotacc` 的循环携带依赖为 2 拍，长于基线的 1 拍：
@@ -65,16 +65,17 @@ NEMU↔RTL 协同仿真、RVV 1.0 基线实现与延迟加速比分析。所有�
    * 加法树全部例化 YunSuan 既有原语 `CSA4to2` / `CSA3to2`（生成网表实测 12 + 4 个实例）；
    * `Mgu`、`ByteMaskTailGen`、`VecPipedFuncUnit`、`VecDataSplitModule` 零改动复用；
    * **`FuConfig` / `FuType` / `Parameters` / Dispatch / IQ / WbArbiter 一行未改**——vdot 挂在既有 `VimacCfg`（`latency = CertainLatency(2)` 不变）上，调度、唤醒与写回网络完全不受影响；
-   * 零回归有三重证据：既有 FU 输出逐字相同、163/164 module 网表去注释后逐字节相同、`vmul`/`vwmul`/`vmacc` 实测延迟仍为 2 拍（`docs/stage2/11_RTL实现说明.md` §7、`docs/stage3/22` §7.2）。
+   * 零回归有三重证据：既有 FU 输出逐字相同、163/164 module 网表去注释后逐字节相同、`vmul`/`vwmul`/`vmacc` 的数据成形拍实测仍为 2 拍（第 1 拍未成形、第 2 拍与参考逐位一致；`docs/stage2/11_RTL实现说明.md` §7、`docs/stage3/22` §7.2）。
    * 新增算术逻辑约 13.7%（全加器等价**结构计数上界**，非综合结果；`docs/stage2/10_vdot指令设计文档.md` §5.3）。
 2. **XOR 蝶形折叠加法树**（`docs/stage2/10` §4.4）：同一组 12 个 `CSA4to2(32)` 由 2 bit `foldLevels` 控制，伙伴 lane 取 `g XOR Δ`，
    一棵树同时覆盖「16 路全归约」与「4 组×4 路」两种形态；结果路径上零选择器，模式切换只作用在加数输入端的 AND 门上，
    全折叠时每个 lane 都持有总和、元素 0 定位无需额外逻辑，向更大 VLEN 扩展只需增加折叠级数。
 3. **三条指令共享一条数据通路**：`vdot.vv` / `vdotacc.vv` / `vdot4a.vv` 共用同一乘法阵列与同一棵可重构加法树，
-   区别只在 `foldLevels` 与累加操作数注入；三者实测同为 2 拍。
-4. **协同仿真抓到了自写黄金模型永远抓不到的冲突（裁定 S-7'）**：原裁定 S-7 允许 `vdot4a` 在 `vstart != 0` 时正常执行；
-   参考模型、NEMU、RTL 数据通路都按 S-7 实现，彼此「一致地正确」。只有在 Level 1 协同仿真里，NEMU 被拿去和香山
-   **上游未改动的**译码判据 `vstartIllegal = isVArith && vstart =/= 0` 比对时，才暴露出 1946 条确定性分歧——
+   区别只在 `foldLevels` 与累加操作数注入；三者的数据成形拍实测同为 2 拍。
+4. **把设计阶段已识别、但被判为不可达的冲突量化为确定性分歧（裁定 S-7'）**：原裁定 S-7 允许 `vdot4a` 在 `vstart != 0` 时正常执行；
+   参考模型、NEMU、RTL 数据通路都按 S-7 实现，彼此「一致地正确」。设计文档 R-06 曾识别该风险但判为全核不可达；
+   Level 1 协同仿真把 NEMU 与香山**上游原有、未被本项目修改的判据** `vstartIllegal = isVArith && vstart =/= 0`
+   （所在的 `VecExceptionGen.scala` 本身打了补丁）直接比对，将其量化为 1946 条确定性分歧，迫使裁定修订——
    错的不是实现，而是 ISA 裁定比目标微架构更宽。按「平台约束优先原则」修订为 S-7'（`vdot4a` 在 `vstart != 0` 时同样非法），
    RTL 一行未改即收敛（`docs/stage3/21_协同仿真验证报告.md` §7.3–§7.5、`docs/_plan/MASTER_PLAN.md` D2.3）。
 
@@ -155,7 +156,7 @@ bash scripts/40_run_bench.sh             # 3.2/3.3：基线等价性、FU 延迟
 2. **`latency = 2` 由静态逻辑级估算 + FU 级实测支撑，没有综合。** FU 级实测证明 RTL 在第 2 拍给出正确结果；
    能否在目标频率下时序收敛未经综合与静态时序分析验证。面积 13.7% 是结构计数上界，功耗未量化。
 3. **LMUL 固定为 1**（裁定 S-6）：`LMUL != 1` 的 vdot 一律判非法；多 uop 累加链方案已在设计文档 §8.3 论证但未实现。
-4. **吞吐加速比是建模值。** 1.50× / 3.00× 来自端口与依赖下界模型；单次点积的 2.00× 也是把实测 FU 延迟按依赖链相加的模型值。
+4. **吞吐加速比是建模值。** 1.50× / 3.00× 来自端口与依赖下界模型（3.00× 对应的 2 路累加器内核已交付，但只实测了指令数与等价性）；单次点积的 2.00× 也是把实测 FU 延迟按依赖链相加的模型值。
    实测的只有 FU 延迟、指令条数与功能等价性。`vsetvli` 延迟为声明值；uop 条数为源码推导。
 5. **提交物未完成**：赛题要求的三段录屏、答辩 PPT（`docs/ppt/` 为空）与加密提交流程均**未做**。
 6. 阶段二波形以 VCD + 文本轨迹交付，未另附截图；`tests/unit/VectorSimTop.scala` 等上游派生文件中保留了上游原有的

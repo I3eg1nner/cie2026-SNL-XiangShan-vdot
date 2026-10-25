@@ -196,6 +196,48 @@ vdot_dot_i8:
     .size vdot_dot_i8, .-vdot_dot_i8
 
 /* ================================================================== *
+ * vdot 版本，2 路累加器轮转（v8 / v9）
+ *
+ * 与 vdot_dot_i8 的唯一区别：相邻两块 16 字节分别累加进 v8[0] 与 v9[0]，
+ * 循环结束后再把两个 32 位部分和相加。每个累加器的循环携带依赖链
+ * 因此每 2 块才走一次，用来缓解 §5.4 所述「vdotacc 携带依赖 2 拍」问题。
+ * 每 16 个 int8 的指令数与单累加器版相同（向量 4 / 标量 4）：
+ *   1  vsetvli t0,a2,e8,m1,tu,mu   2-3 vle8.v ×2   4 vdotacc.vv v8|v9
+ *   5-7 add/add/sub                8  beqz（前半块）/ bnez（后半块）
+ * 对任意 n（含 n 非 16、非 32 的整数倍）结果与单累加器版逐位相同
+ * （32 位回绕加法满足结合律）。
+ * ================================================================== */
+    .globl vdot_dot_i8_acc2
+    .type  vdot_dot_i8_acc2, @function
+vdot_dot_i8_acc2:
+    vsetvli     t1, x0, e32, m1, ta, ma
+    vmv.s.x     v8, x0                  /* 累加器 0：v8[0] = 0 */
+    vmv.s.x     v9, x0                  /* 累加器 1：v9[0] = 0 */
+    beqz        a2, 3f
+1:  vsetvli     t0, a2, e8,  m1, tu, mu
+    vle8.v      v1, (a0)
+    vle8.v      v2, (a1)
+    VDOTACC_VV  8, 2, 1                 /* vdotacc.vv v8, v2, v1 */
+    add         a0, a0, t0
+    add         a1, a1, t0
+    sub         a2, a2, t0
+    beqz        a2, 3f
+    vsetvli     t0, a2, e8,  m1, tu, mu
+    vle8.v      v3, (a0)
+    vle8.v      v4, (a1)
+    VDOTACC_VV  9, 4, 3                 /* vdotacc.vv v9, v4, v3 */
+    add         a0, a0, t0
+    add         a1, a1, t0
+    sub         a2, a2, t0
+    bnez        a2, 1b
+3:  vsetvli     t1, x0, e32, m1, ta, ma
+    vmv.x.s     a0, v8
+    vmv.x.s     t2, v9
+    addw        a0, a0, t2              /* 两个 32 位部分和相加（回绕） */
+    ret
+    .size vdot_dot_i8_acc2, .-vdot_dot_i8_acc2
+
+/* ================================================================== *
  * vdot4a 版本（SEW=32 模式）—— 要求 n 为 4 的倍数
  *
  * 循环体指令表（向量 4 / 标量 5）：

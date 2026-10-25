@@ -1,13 +1,13 @@
 instruction,fu_type,fu_config,declared_latency_cycles,declared_source,measured_latency_cycles,kind,issue_ports,num_issue_ports,port_source,evidence
 vsetvli,vsetiwi/vsetiwf,VSetRiWiCfg / VSetRiWvfCfg,0,FuConfig.scala:415 / FuConfig.scala:402,,声明值,BJU2,1,Parameters.scala:409,本机无可驱动该功能单元的测试平台
-vmv.s.x,vialuF,VialuCfg,1,FuConfig.scala:544,1,实测,"VFEX0, VFEX2",2,"Parameters.scala:449,453","VIAluFixHarness harness, 64 笔事务全部 1 拍，数值比对 64 笔一致；数据成形同样在第 1 拍"
-vwmul.vv,vimac,VimacCfg,2,FuConfig.scala:563,2,实测,VFEX0,1,Parameters.scala:449,"VIMacU harness, 64 笔事务全部 2 拍，数值比对 64 笔一致"
-vwadd.wv,vialuF,VialuCfg,1,FuConfig.scala:544,1,实测,"VFEX0, VFEX2",2,"Parameters.scala:449,453","VIAluFixHarness harness, 64 笔事务全部 1 拍，数值比对 64 笔一致；数据成形同样在第 1 拍"
-vwredsum.vs,vipu,VipuCfg,2,FuConfig.scala:615,2,实测,VFEX1,1,Parameters.scala:450,"VIPUHarness harness, 64 笔事务全部 2 拍，数值比对 0 笔一致；数据成形同样在第 2 拍"
-vredsum.vs,vipu,VipuCfg,2,FuConfig.scala:615,2,实测,VFEX1,1,Parameters.scala:450,"VIPUHarness harness, 64 笔事务全部 2 拍，数值比对 0 笔一致；数据成形同样在第 2 拍"
-vadd.vv,vialuF,VialuCfg,1,FuConfig.scala:544,1,实测,"VFEX0, VFEX2",2,"Parameters.scala:449,453","VIAluFixHarness harness, 64 笔事务全部 1 拍，数值比对 64 笔一致；数据成形同样在第 1 拍"
-vmul.vv,vimac,VimacCfg,2,FuConfig.scala:563,2,实测,VFEX0,1,Parameters.scala:449,"VIMacU harness, 64 笔事务全部 2 拍，数值比对 0 笔一致"
-vmacc.vv,vimac,VimacCfg,2,FuConfig.scala:563,2,实测,VFEX0,1,Parameters.scala:449,"VIMacU harness, 64 笔事务全部 2 拍，数值比对 0 笔一致"
-vdot.vv,vimac,VimacCfg,2,FuConfig.scala:563,2,实测,VFEX0,1,Parameters.scala:449,"VIMacU harness, 178 笔事务全部 2 拍，数值比对 178 笔一致；另有 L1 VCD logs/stage3/waveform/p7_vdotvv_vdottop_fuType10_seed1.vcd (12 笔: 2拍x12)"
-vdotacc.vv,vimac,VimacCfg,2,FuConfig.scala:563,2,实测,VFEX0,1,Parameters.scala:449,"VIMacU harness, 178 笔事务全部 2 拍，数值比对 178 笔一致；另有 L1 VCD logs/stage3/waveform/p7_vdotaccvv_vdottop_fuType10_seed1.vcd (12 笔: 2拍x12)"
-vdot4a.vv,vimac,VimacCfg,2,FuConfig.scala:563,2,实测,VFEX0,1,Parameters.scala:449,"VIMacU harness, 190 笔事务全部 2 拍，数值比对 190 笔一致；另有 L1 VCD logs/stage3/waveform/p7_vdot4avv_vdottop_fuType10_seed1.vcd (12 笔: 2拍x12)"
+vmv.s.x,vialuF,VialuCfg,1,FuConfig.scala:544,1,实测,"VFEX0, VFEX2",2,"Parameters.scala:449,453",VIAluFixHarness harness：out.valid 64 笔全部 1 拍（harness 按 VialuCfg.latency 构造，非独立证据）；独立观测：数据成形在第 1 拍（下界型）；数值比对 64 笔一致
+vwmul.vv,vimac,VimacCfg,2,FuConfig.scala:563,2,实测,VFEX0,1,Parameters.scala:449,VIMacU harness：out.valid 64 笔全部 2 拍（harness 按 VimacCfg.latency 构造，非独立证据）；独立观测：第 1 拍数据未成形 64/64 笔（可判定 64/64，其中经扰动前驱重测 0，不可判定 0），固定第 2 拍数据与参考一致 64/64；数值比对 64 笔一致
+vwadd.wv,vialuF,VialuCfg,1,FuConfig.scala:544,1,实测,"VFEX0, VFEX2",2,"Parameters.scala:449,453",VIAluFixHarness harness：out.valid 64 笔全部 1 拍（harness 按 VialuCfg.latency 构造，非独立证据）；独立观测：数据成形在第 1 拍（下界型）；数值比对 64 笔一致
+vwredsum.vs,vipu,VipuCfg,2,FuConfig.scala:615,2,实测,VFEX1,1,Parameters.scala:450,VIPUHarness harness：out.valid 64 笔全部 2 拍（harness 按 VipuCfg.latency 构造，非独立证据）；独立观测：数据成形在第 2 拍（下界型）；数值未建模（未做数值比对）
+vredsum.vs,vipu,VipuCfg,2,FuConfig.scala:615,2,实测,VFEX1,1,Parameters.scala:450,VIPUHarness harness：out.valid 64 笔全部 2 拍（harness 按 VipuCfg.latency 构造，非独立证据）；独立观测：数据成形在第 2 拍（下界型）；数值未建模（未做数值比对）
+vadd.vv,vialuF,VialuCfg,1,FuConfig.scala:544,1,实测,"VFEX0, VFEX2",2,"Parameters.scala:449,453",VIAluFixHarness harness：out.valid 64 笔全部 1 拍（harness 按 VialuCfg.latency 构造，非独立证据）；独立观测：数据成形在第 1 拍（下界型）；数值比对 64 笔一致
+vmul.vv,vimac,VimacCfg,2,FuConfig.scala:563,2,实测,VFEX0,1,Parameters.scala:449,VIMacU harness：out.valid 64 笔全部 2 拍（harness 按 VimacCfg.latency 构造，非独立证据）；独立观测：第 1 拍数据未成形 64/64 笔（可判定 64/64，其中经扰动前驱重测 0，不可判定 0），固定第 2 拍数据与参考一致 64/64；数值比对 64 笔一致
+vmacc.vv,vimac,VimacCfg,2,FuConfig.scala:563,2,实测,VFEX0,1,Parameters.scala:449,VIMacU harness：out.valid 64 笔全部 2 拍（harness 按 VimacCfg.latency 构造，非独立证据）；独立观测：第 1 拍数据未成形 64/64 笔（可判定 64/64，其中经扰动前驱重测 0，不可判定 0），固定第 2 拍数据与参考一致 64/64；数值比对 64 笔一致
+vdot.vv,vimac,VimacCfg,2,FuConfig.scala:563,2,实测,VFEX0,1,Parameters.scala:449,VIMacU harness：out.valid 178 笔全部 2 拍（harness 按 VimacCfg.latency 构造，非独立证据）；独立观测：第 1 拍数据未成形 178/178 笔（可判定 178/178，其中经扰动前驱重测 31，不可判定 0），固定第 2 拍数据与参考一致 178/178；数值比对 178 笔一致；另有 L1 VCD logs/stage3/waveform/p7_vdotvv_vdottop_fuType10_seed1.vcd (12 笔: 2拍x12)
+vdotacc.vv,vimac,VimacCfg,2,FuConfig.scala:563,2,实测,VFEX0,1,Parameters.scala:449,VIMacU harness：out.valid 178 笔全部 2 拍（harness 按 VimacCfg.latency 构造，非独立证据）；独立观测：第 1 拍数据未成形 178/178 笔（可判定 178/178，其中经扰动前驱重测 31，不可判定 0），固定第 2 拍数据与参考一致 178/178；数值比对 178 笔一致；另有 L1 VCD logs/stage3/waveform/p7_vdotaccvv_vdottop_fuType10_seed1.vcd (12 笔: 2拍x12)
+vdot4a.vv,vimac,VimacCfg,2,FuConfig.scala:563,2,实测,VFEX0,1,Parameters.scala:449,VIMacU harness：out.valid 190 笔全部 2 拍（harness 按 VimacCfg.latency 构造，非独立证据）；独立观测：第 1 拍数据未成形 190/190 笔（可判定 190/190，其中经扰动前驱重测 35，不可判定 0），固定第 2 拍数据与参考一致 190/190；数值比对 190 笔一致；另有 L1 VCD logs/stage3/waveform/p7_vdot4avv_vdottop_fuType10_seed1.vcd (12 笔: 2拍x12)

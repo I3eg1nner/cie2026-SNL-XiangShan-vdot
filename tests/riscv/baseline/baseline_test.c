@@ -301,6 +301,7 @@ extern i32 baseline_dot_i8_seqB(const i8 *a, const i8 *b, u64 n);
 extern i32 baseline_dot_i8_seqD(const i8 *a, const i8 *b, u64 n);
 extern i32 vdot_dot_i8        (const i8 *a, const i8 *b, u64 n);
 extern i32 vdot4a_dot_i8      (const i8 *a, const i8 *b, u64 n);
+extern i32 vdot_dot_i8_acc2   (const i8 *a, const i8 *b, u64 n);
 extern i32 baseline_vdot_single(const i8 *a, const i8 *b, u64 n);
 extern i32 vdot_single         (const i8 *a, const i8 *b, u64 n);
 
@@ -339,12 +340,33 @@ static void measure_overhead(void) {
 typedef i32 (*kern_t)(const i8 *, const i8 *, u64);
 typedef struct { const char *name; kern_t fn; } kern_ent_t;
 
+/* 静态指令条数：从函数入口逐条解码到第一条 ret（含）为止。
+ * 只用于 baseline_vdot_single / vdot_single 这类无分支的直线型函数。
+ * RVC：低 2 位 != 0b11 为 16 位指令，c.jr ra = 0x8082；否则为 32 位指令，
+ * jalr x0, 0(ra) = 0x00008067。上限 256 条，超出返回 0（视为测量失败）。 */
+static u64 count_static_until_ret(kern_t fn) {
+    const volatile unsigned short *p = (const volatile unsigned short *)(unsigned long)fn;
+    for (u64 n = 1; n <= 256; n++) {
+        unsigned short lo = p[0];
+        if ((lo & 3u) != 3u) {
+            if (lo == 0x8082u) return n;
+            p += 1;
+        } else {
+            unsigned int w = (unsigned int)lo | ((unsigned int)p[1] << 16);
+            if (w == 0x00008067u) return n;
+            p += 2;
+        }
+    }
+    return 0;
+}
+
 static const kern_ent_t KERNS[] = {
     { "baseline_A",  baseline_dot_i8_seqA },
     { "baseline_B",  baseline_dot_i8_seqB },
     { "baseline_D",  baseline_dot_i8_seqD },
     { "vdotacc",     vdot_dot_i8          },
     { "vdot4a",      vdot4a_dot_i8        },
+    { "vdotacc_acc2", vdot_dot_i8_acc2    },   /* 2 路累加器轮转（排在最后，不影响前五行的输出顺序） */
 };
 #define NKERN (int)(sizeof(KERNS) / sizeof(KERNS[0]))
 
@@ -557,7 +579,7 @@ int main(void) {
     put_str("--- [B] long-vector loop: baseline_rvv.S kernels vs scalar C reference ---\n\n");
     gen_vectors();
     u32 n_long_fail = 0, n_long_chk = 0;
-    put_str("      N   scalar_ref   base_A   base_B   base_D  vdotacc   vdot4a  verdict\n");
+    put_str("      N   scalar_ref   base_A   base_B   base_D  vdotacc   vdot4a  vdacc2  verdict\n");
     for (int k = 0; k < NEQ; k++) {
         u64 n = N_EQ[k];
         i32 r0 = naive_dot(g_a, g_b, n);
@@ -566,7 +588,8 @@ int main(void) {
         i32 rD = baseline_dot_i8_seqD(g_a, g_b, n);
         i32 rV = vdot_dot_i8(g_a, g_b, n);
         i32 r4 = vdot4a_dot_i8(g_a, g_b, n);
-        int bad = (r0 != rA) || (r0 != rB) || (r0 != rD) || (r0 != rV) || (r0 != r4);
+        i32 rW = vdot_dot_i8_acc2(g_a, g_b, n);
+        int bad = (r0 != rA) || (r0 != rB) || (r0 != rD) || (r0 != rV) || (r0 != r4) || (r0 != rW);
         n_long_chk++;
         if (bad) n_long_fail++;
         put_decw(n, 7); put_str("  "); put_decw((u64)(u32)r0, 11);
@@ -575,6 +598,7 @@ int main(void) {
         put_str("  "); put_decw((u64)(u32)rD, 7);
         put_str("  "); put_decw((u64)(u32)rV, 7);
         put_str("  "); put_decw((u64)(u32)r4, 7);
+        put_str("  "); put_decw((u64)(u32)rW, 7);
         put_str("  "); put_str(bad ? "FAIL" : "OK"); putch('\n');
     }
     /* 非 4 的倍数：vdot4a kernel 按定义只处理 floor(n/4)*4 个元素，不参与比对 */
@@ -585,7 +609,8 @@ int main(void) {
         i32 rB = baseline_dot_i8_seqB(g_a, g_b, n);
         i32 rD = baseline_dot_i8_seqD(g_a, g_b, n);
         i32 rV = vdot_dot_i8(g_a, g_b, n);
-        int bad = (r0 != rA) || (r0 != rB) || (r0 != rD) || (r0 != rV);
+        i32 rW = vdot_dot_i8_acc2(g_a, g_b, n);
+        int bad = (r0 != rA) || (r0 != rB) || (r0 != rD) || (r0 != rV) || (r0 != rW);
         n_long_chk++;
         if (bad) n_long_fail++;
         put_decw(n, 7); put_str("  "); put_decw((u64)(u32)r0, 11);
@@ -593,7 +618,8 @@ int main(void) {
         put_str("  "); put_decw((u64)(u32)rB, 7);
         put_str("  "); put_decw((u64)(u32)rD, 7);
         put_str("  "); put_decw((u64)(u32)rV, 7);
-        put_str("        -  "); put_str(bad ? "FAIL" : "OK"); putch('\n');
+        put_str("        -  "); put_decw((u64)(u32)rW, 7);
+        put_str("  "); put_str(bad ? "FAIL" : "OK"); putch('\n');
     }
     put_str("[B] long-vector sizes checked = "); put_dec(n_long_chk);
     put_str(" , mismatches = "); put_dec(n_long_fail); putch('\n');
@@ -642,16 +668,23 @@ int main(void) {
             res3[w] = acc;
         }
         i32 rr = naive_dot(g_a, g_b, 16);
+        u64 st_nop  = count_static_until_ret(bench_nop_kernel);
+        u64 st_base = count_static_until_ret(baseline_vdot_single);
+        u64 st_vdot = count_static_until_ret(vdot_single);
         put_str("CSVROW,single16,call_loop_overhead,"); put_dec(slope[0]);
-        put_str(",0,1\n");
+        put_str(",0,"); put_dec(st_nop); putch('\n');
         put_str("CSVROW,single16,baseline,"); put_dec(slope[1]); putch(',');
-        put_dec(slope[1] - slope[0] + 1); put_str(",12   result=");
-        put_i32(res3[1]); putch('\n');
+        put_dec(slope[1] - slope[0] + 1); putch(','); put_dec(st_base);
+        put_str("   result="); put_i32(res3[1]); putch('\n');
         put_str("CSVROW,single16,vdot,");     put_dec(slope[2]); putch(',');
-        put_dec(slope[2] - slope[0] + 1); put_str(",7   result=");
-        put_i32(res3[2]); putch('\n');
+        put_dec(slope[2] - slope[0] + 1); putch(','); put_dec(st_vdot);
+        put_str("   result="); put_i32(res3[2]); putch('\n');
         put_str("CSVROW,single16,scalar_ref,0,0,0   result="); put_i32(rr); putch('\n');
-        put_str("    (static_instr 来自 build/baseline_test.dis 中两个函数的反汇编，含 ret)\n");
+        put_str("    (static_instr 由本程序运行时从函数入口逐条解码到第一条 ret（含）计数；"
+                "与 build/baseline_test.dis 的反汇编计数互为对照)\n");
+        if (st_base == 0 || st_vdot == 0 || st_nop == 0) {
+            n_long_fail++; put_str("FAIL: static_instr scan did not find ret\n");
+        }
         if (res3[1] != rr || res3[2] != rr) { n_long_fail++; put_str("FAIL: single16 mismatch\n"); }
 #undef K_REP
     }

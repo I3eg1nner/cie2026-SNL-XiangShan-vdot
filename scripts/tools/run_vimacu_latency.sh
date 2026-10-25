@@ -4,11 +4,16 @@
 #
 # 与 run_vimacu_tb.sh 的分工：
 #   run_vimacu_tb.sh      证明 **功能** 一致（VIMacU 与参考模型逐位相同）
-#   run_vimacu_latency.sh 证明 **时序**：in.fire -> out.valid 的实测周期数，
+#   run_vimacu_latency.sh 测 **时序**：
+#                         * out.valid 延迟 —— harness 按 VimacCfg.latency 搭的寄存器链
+#                           产生，属平台构造值，只作与声明值的对照；
+#                         * 数据成形拍 —— 逐拍采 io_vd 与参考模型比较（不读 out.valid），
+#                           是独立观测（下界型，判读规则见 tb 文件头注释）。
 #                         同时覆盖上游既有的 vmul / vwmul / vmacc，用来回答
 #                         「新增 vdot 有没有把既有 vimac 指令变慢」
 #
-# 工作树：work/XiangShan-cosim（P7 专用；不触碰 work/XiangShan-vdot）
+# 工作树：默认 work/XiangShan-cosim（P7 专用；不触碰 work/XiangShan-vdot）；
+#         可用 XS_DIR=<路径> 指向一份私有副本
 #
 # 用法： bash scripts/tools/run_vimacu_latency.sh
 #        SKIP_ELAB=1 跳过 mill 精化（沿用已有的 build/vdot/VIMacUHarness.v）
@@ -16,16 +21,19 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-XS_DIR="${REPO_ROOT}/work/XiangShan-cosim"
+XS_DIR="${XS_DIR:-${REPO_ROOT}/work/XiangShan-cosim}"
 VEC_DIR="${REPO_ROOT}/tests/vectors"
 GOLDEN="${REPO_ROOT}/tests/golden"
 OBJ_DIR="${XS_DIR}/build/vimacu-lat-tb"
 SKIP_ELAB="${SKIP_ELAB:-0}"
 
 # shellcheck disable=SC1091
-source "${REPO_ROOT}/scripts/env_host.sh"
+[ -f "${REPO_ROOT}/scripts/env_host.sh" ] && source "${REPO_ROOT}/scripts/env_host.sh"
+# env_host.sh 由生成它的那台机器决定；JAVA_HOME 指向不存在的目录时回退到 PATH 上的 java
+if [ -n "${JAVA_HOME:-}" ] && [ ! -x "${JAVA_HOME}/bin/java" ]; then unset JAVA_HOME; fi
 
-echo "=== VIMacU 延迟实测  $(date '+%Y-%m-%d %H:%M:%S %Z') ==="
+echo "=== VIMacU 延迟测量  $(date '+%Y-%m-%d %H:%M:%S %Z') ==="
+echo "    主机: $(uname -sm)   $(verilator --version 2>/dev/null | head -1)"
 echo ""
 echo "--- (0) 把交付仓库里的 harness 源码同步进工作树 ---"
 HARNESS_DST="${XS_DIR}/src/test/scala/xiangshan/backend/fu"
@@ -45,9 +53,13 @@ else
     2>&1 | grep -vE "^\s+at " | tail -3
 fi
 echo "    VIMacUHarness.v : $(wc -l < "${XS_DIR}/build/vdot/VIMacUHarness.v" | tr -d ' ') 行"
-echo "    声明值来源      : src/main/scala/xiangshan/backend/fu/FuConfig.scala:563"
-grep -n "latency = CertainLatency(2)" "${XS_DIR}/src/main/scala/xiangshan/backend/fu/FuConfig.scala" \
-  | sed -n '2p' | sed 's/^/      FuConfig.scala:/' || true
+# 声明值出处：在 FuConfig.scala 里定位 `val VimacCfg` 定义块内的第一行 latency，
+# 打印其真实行号与内容（不按全文件第 N 个匹配取，避免取到 MulCfg 等其它 FU 的配置）
+FUCFG="${XS_DIR}/src/main/scala/xiangshan/backend/fu/FuConfig.scala"
+echo "    声明值来源（VimacCfg 定义块内的 latency 行）："
+awk '/^[[:space:]]*val VimacCfg[[:space:]:=]/ {inblk=1; start=NR}
+     inblk && /latency[[:space:]]*=/ {printf "      FuConfig.scala:%d:%s   （VimacCfg 定义始于 :%d）\n", NR, $0, start; exit}' \
+  "${FUCFG}" || true
 
 echo ""
 echo "--- (2) Verilator 构建 ---"

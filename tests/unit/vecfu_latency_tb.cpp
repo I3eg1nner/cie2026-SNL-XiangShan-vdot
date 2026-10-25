@@ -9,13 +9,17 @@
 //       vwredsum.vs         -> FuType.vipu   -> VIPU     (VipuCfg,  latency=2)
 //   YunSuan 的 L1 平台只例化了 YunSuan 自己的 VIAluFWrapper，既没有 VIMacU 也
 //   没有 VIPU；而且它的 io_out_valid 由平台计数器按常量产生。本 tb 通过
-//   VecFuLatHarness 直接驱动**真正被集成进香山的**功能单元，io_outValid 来自
-//   FU 自己的 io.out.valid（经与 ExeUnit.scala:228-241 完全一致的 pipelineReg 链）。
+//   VecFuLatHarness 直接驱动**真正被集成进香山的**功能单元，io_outValid 是
+//   FU 自己的 io.out.valid，但它 = validPipe(latency) & ...，而 validPipe 是
+//   harness 按 cfg.latency 搭的寄存器链（与 ExeUnit.scala:228-241 一致）——
+//   因此 out.valid 延迟按构造等于声明值，**不是独立证据**。
 //
 // 测什么
-//   1) in.fire -> out.valid 的周期数（延迟）
-//   2) 结果数据真正出现在第几拍（settle cycle）——证明不只是 valid 位在打拍，
-//      数据通路深度也是同一个值
+//   1) in.fire -> out.valid 的周期数：平台构造值，只作与声明值的对照
+//   2) 结果数据真正出现在第几拍（settle cycle）——独立观测，判定数据通路深度。
+//      settle = io_vd 第一次等于 out.valid 那拍的值的拍数，属下界型证据：
+//      输出端残留的前一笔结果恰好等于本笔结果时会偏小（本 tb 用随机操作数，
+//      未做残留值排除；vimacu_latency_tb.cpp 做了排除与扰动重测）
 //   3) 对能用几行 C 写清语义的指令（vadd.vv / vwadd.wv / vmv.s.x）再做逐位数值
 //      比对，使延迟数字不是空洞的握手观测
 //

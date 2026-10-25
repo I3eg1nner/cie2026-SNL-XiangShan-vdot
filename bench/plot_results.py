@@ -21,9 +21,12 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 
-# macOS 自带的中日韩字体（python3 -c "import matplotlib.font_manager" 可查）
+# 中日韩字体候选：前四个为 macOS 自带，后三个为常见 Linux 发行版字体
+# （python3 -c "import matplotlib.font_manager" 可查）
 plt.rcParams["font.sans-serif"] = ["Arial Unicode MS", "Hiragino Sans GB",
-                                   "STHeiti", "Songti SC", "DejaVu Sans"]
+                                   "STHeiti", "Songti SC",
+                                   "Noto Sans CJK SC", "WenQuanYi Zen Hei",
+                                   "Droid Sans Fallback", "DejaVu Sans"]
 plt.rcParams["axes.unicode_minus"] = False
 plt.rcParams["figure.dpi"] = 150
 plt.rcParams["savefig.dpi"] = 150
@@ -64,7 +67,8 @@ def fig_instr_count(res, out):
              "baseline_B": "基线 B (vsext.vf4 x2 + vmacc)",
              "baseline_D": "基线 D (vwmul+vwadd.wv) ← 选定基线",
              "vdotacc":    "vdotacc.vv (本方案)",
-             "vdot4a":     "vdot4a.vv (本方案)"}
+             "vdot4a":     "vdot4a.vv (本方案)",
+             "vdotacc_acc2": "vdotacc.vv 2 路累加器 (本方案)"}
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13.5, 5.2),
                                    gridspec_kw={"width_ratios": [1.45, 1]})
@@ -143,7 +147,7 @@ def fig_speedup(res, out):
         ax1.axhline(asym, color="black", linestyle="--", linewidth=1.2,
                     label="稳态渐近值 %.3f（建模：斜率之比）" % asym)
     ax1.axhline(1.0, color="black", linestyle=":", linewidth=1.0)
-    ax1.text(len(Ns) - 1.4, 1.01, "1.0 = 没有加速", fontsize=7.5, va="bottom")
+    ax1.text(0.35, 0.97, "1.0 = 没有加速", fontsize=7.5, va="top")
     ax1.set_xticks(list(xs))
     ax1.set_xticklabels([str(n) for n in Ns])
     ax1.set_xlabel("向量长度 N（int8 元素个数）")
@@ -173,7 +177,7 @@ def fig_speedup(res, out):
     ax2.legend(handles=[Patch(facecolor="#9a9a9a", edgecolor="black", label="实测"),
                         Patch(facecolor="#ffffff", hatch="///", edgecolor="black",
                               label="建模/源码推导")],
-               fontsize=8, loc="lower right")
+               fontsize=8, loc="upper right")
 
     fig.suptitle("图 2  加速比：实测口径与建模口径分开呈现", fontsize=12, y=0.99)
     fig.tight_layout(rect=(0, 0, 1, 0.95))
@@ -199,7 +203,7 @@ def fig_latency(res, out):
     mx = [x + 0.2 for x, m in zip(xs, mea) if m is not None]
     mv = [m for m in mea if m is not None]
     ax.bar(mx, mv, 0.38, color="#5f5f5f", edgecolor="black", linewidth=0.8,
-           label="实测值（Verilator，in.fire → out.valid）")
+           label="实测值（Verilator FU 直驱：按数据成形拍判定，非 out.valid）")
     for x, d in zip(xs, dec):
         ax.text(x - 0.2, d + 0.06, str(d), ha="center", fontsize=8)
     for x, m in zip(xs, mea):
@@ -212,7 +216,7 @@ def fig_latency(res, out):
     ax.set_ylabel("功能单元延迟（时钟周期）")
     ax.set_ylim(0, 2.9)
     ax.set_title("图 3  功能单元延迟：声明值 vs 实测值\n"
-                 "vdot 三条指令与既有 vmul/vwmul/vmacc 同为 2 拍 —— 新增指令没有拖慢既有指令",
+                 "vdot 三条指令与既有 vmul/vwmul/vmacc 的数据均在第 2 拍成形（第 1 拍未成形、第 2 拍正确）",
                  fontsize=11)
     ax.legend(fontsize=8.5, loc="upper left")
     fig.tight_layout()
