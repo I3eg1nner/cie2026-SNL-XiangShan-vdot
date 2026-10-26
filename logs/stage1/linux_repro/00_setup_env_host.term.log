@@ -1,0 +1,645 @@
+### 开始时间 : 2026-10-26 14:33:18 UTC
+### 主机     : f3f1baf57000 / Linux 6.8.0-124-generic x86_64
+### 环境变量 : WORK_DIR=/data/my/cie-stage1-repro/work LOG_ROOT=/data/my/cie-stage1-repro/logs RESULTS_DIR=/data/my/cie-stage1-repro/results FIG_DIR=/data/my/cie-stage1-repro/figures LOCAL_SYSROOT=1
+### 交付仓库 : 6d2089462e09dde020d18e29e932ad1a307709c2
+### 命令行   : script -q -e -c "cd /data/my/cie2026-vdot-xiangshan && bash scripts/00_setup_env_host.sh" <本文件>
+### ---------------- 以下为 script 记录的终端原始输出 ----------------
+Script started on 2026-10-26 14:33:18+00:00 [<not executed on terminal>]
+
+[1;34m==> [14:33:18] 0/7 检查运行环境[0m
+    uname    : Linux 6.8.0-124-generic x86_64
+    WORK_DIR : /data/my/cie-stage1-repro/work
+    发行版   : Ubuntu 22.04.5 LTS
+    CPU 核数 : 128
+    物理内存 : 1007 GB
+
+[1;34m==> [14:33:18] 1/7 系统依赖[0m
+    基础命令齐全：git curl rsync file make gcc g++ bison flex python3 verilator
+    java     : openjdk version "17.0.20" 2026-07-21  (JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64)
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+    verilator: Verilator 5.024 2024-04-05 rev v5.024
+    apt-get download → dpkg -x /data/my/cie-stage1-repro/work/sysroot：libreadline-dev libsdl2-dev libasyncns0 libdecor-0-0 libflac8 libpulse0 libsdl2-2.0-0 libsndfile1
+0% [Working]            Get:1 https://mirrors.aliyun.com/ubuntu jammy/main amd64 libasyncns0 amd64 0.8-6build2 [12.8 kB]
+0% [1 libasyncns0 12.8 kB/12.8 kB 100%]                                       3% [Working]            Get:2 https://mirrors.aliyun.com/ubuntu jammy/main amd64 libdecor-0-0 amd64 0.1.0-3build1 [15.1 kB]
+3% [2 libdecor-0-0 15.1 kB/15.1 kB 100%]                                        6% [Waiting for headers]                        Get:3 https://mirrors.aliyun.com/ubuntu jammy/main amd64 libreadline-dev amd64 8.1.2-1 [166 kB]
+6% [3 libreadline-dev 15.6 kB/166 kB 9%]                                        12% [Waiting for headers]                         Get:4 https://mirrors.aliyun.com/ubuntu jammy-updates/main amd64 libflac8 amd64 1.3.3-2ubuntu0.2 [111 kB]
+13% [4 libflac8 24.6 kB/111 kB 22%]                                   18% [Waiting for headers]                         Get:5 https://mirrors.aliyun.com/ubuntu jammy-updates/main amd64 libpulse0 amd64 1:15.99.1+dfsg1-1ubuntu2.2 [298 kB]
+18% [5 libpulse0 12.3 kB/298 kB 4%]                                   28% [Waiting for headers]                         Get:6 https://mirrors.aliyun.com/ubuntu jammy-updates/main amd64 libsdl2-2.0-0 amd64 2.0.20+dfsg-2ubuntu1.22.04.1 [582 kB]
+28% [6 libsdl2-2.0-0 15.6 kB/582 kB 3%]38% [6 libsdl2-2.0-0 395 kB/582 kB 68%]                                       45% [Waiting for headers]                         Get:7 https://mirrors.aliyun.com/ubuntu jammy-updates/main amd64 libsndfile1 amd64 1.0.31-2ubuntu0.2 [196 kB]
+45% [7 libsndfile1 15.6 kB/196 kB 8%]                                     53% [Waiting for headers]                         Get:8 https://mirrors.aliyun.com/ubuntu jammy-updates/universe amd64 libsdl2-dev amd64 2.0.20+dfsg-2ubuntu1.22.04.1 [1767 kB]
+53% [8 libsdl2-dev 15.6 kB/1767 kB 1%]63% [8 libsdl2-dev 395 kB/1767 kB 22%]69% [8 libsdl2-dev 658 kB/1767 kB 37%]79% [8 libsdl2-dev 1054 kB/1767 kB 60%]81% [8 libsdl2-dev 1098 kB/1767 kB 62%]87% [8 libsdl2-dev 1373 kB/1767 kB 78%]91% [8 libsdl2-dev 1511 kB/1767 kB 86%]                                       100% [Working]              Fetched 3147 kB in 5s (578 kB/s)
+    已解包到 /data/my/cie-stage1-repro/work/sysroot
+    NEMU 开发包：readline / SDL2 / zlib / zstd 头文件均可用（经 /data/my/cie-stage1-repro/work/sysroot）
+    CROSS    : /opt/riscv/bin/riscv64-unknown-elf-  (riscv64-unknown-elf-gcc () 15.2.0)
+[1;33mWARNING: python3 缺 matplotlib：40_run_bench.sh 的绘图步骤会跳过。安装：pip install matplotlib（或 python3 -m venv 后安装，并用 PYTHON=<venv>/bin/python 指定）[0m
+
+[1;34m==> [14:33:27] 2/7 安装 mill 启动脚本（实际版本由各仓库 .mill-version 决定）[0m
+    下载 mill 启动脚本 0.11.1
+    下载 mill 启动脚本 0.12.3
+
+[1;34m==> [14:33:30] 3/7 克隆并校验上游仓库（XiangShan-kmhv2 / NEMU）[0m
+    XiangShan-kmhv2: 克隆 https://github.com/OpenXiangShan/XiangShan.git (kunminghu-v2) -> /data/my/cie-stage1-repro/work/XiangShan-kmhv2
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2'...
+remote: Enumerating objects: 232636[Kremote: Enumerating objects: 235861, done.[K
+remote: Counting objects:   0% (1/3225)[Kremote: Counting objects:   1% (33/3225)[Kremote: Counting objects:   2% (65/3225)[Kremote: Counting objects:   3% (97/3225)[Kremote: Counting objects:   4% (129/3225)[Kremote: Counting objects:   5% (162/3225)[Kremote: Counting objects:   6% (194/3225)[Kremote: Counting objects:   7% (226/3225)[Kremote: Counting objects:   8% (258/3225)[Kremote: Counting objects:   9% (291/3225)[Kremote: Counting objects:  10% (323/3225)[Kremote: Counting objects:  11% (355/3225)[Kremote: Counting objects:  12% (387/3225)[Kremote: Counting objects:  13% (420/3225)[Kremote: Counting objects:  14% (452/3225)[Kremote: Counting objects:  15% (484/3225)[Kremote: Counting objects:  16% (516/3225)[Kremote: Counting objects:  17% (549/3225)[Kremote: Counting objects:  18% (581/3225)[Kremote: Counting objects:  19% (613/3225)[Kremote: Counting objects:  20% (645/3225)[Kremote: Counting objects:  21% (678/3225)[Kremote: Counting objects:  22% (710/3225)[Kremote: Counting objects:  23% (742/3225)[Kremote: Counting objects:  24% (774/3225)[Kremote: Counting objects:  25% (807/3225)[Kremote: Counting objects:  26% (839/3225)[Kremote: Counting objects:  27% (871/3225)[Kremote: Counting objects:  28% (903/3225)[Kremote: Counting objects:  29% (936/3225)[Kremote: Counting objects:  30% (968/3225)[Kremote: Counting objects:  31% (1000/3225)[Kremote: Counting objects:  32% (1032/3225)[Kremote: Counting objects:  33% (1065/3225)[Kremote: Counting objects:  34% (1097/3225)[Kremote: Counting objects:  35% (1129/3225)[Kremote: Counting objects:  36% (1161/3225)[Kremote: Counting objects:  37% (1194/3225)[Kremote: Counting objects:  38% (1226/3225)[Kremote: Counting objects:  39% (1258/3225)[Kremote: Counting objects:  40% (1290/3225)[Kremote: Counting objects:  41% (1323/3225)[Kremote: Counting objects:  42% (1355/3225)[Kremote: Counting objects:  43% (1387/3225)[Kremote: Counting objects:  44% (1419/3225)[Kremote: Counting objects:  45% (1452/3225)[Kremote: Counting objects:  46% (1484/3225)[Kremote: Counting objects:  47% (1516/3225)[Kremote: Counting objects:  48% (1548/3225)[Kremote: Counting objects:  49% (1581/3225)[Kremote: Counting objects:  50% (1613/3225)[Kremote: Counting objects:  51% (1645/3225)[Kremote: Counting objects:  52% (1677/3225)[Kremote: Counting objects:  53% (1710/3225)[Kremote: Counting objects:  54% (1742/3225)[Kremote: Counting objects:  55% (1774/3225)[Kremote: Counting objects:  56% (1806/3225)[Kremote: Counting objects:  57% (1839/3225)[Kremote: Counting objects:  58% (1871/3225)[Kremote: Counting objects:  59% (1903/3225)[Kremote: Counting objects:  60% (1935/3225)[Kremote: Counting objects:  61% (1968/3225)[Kremote: Counting objects:  62% (2000/3225)[Kremote: Counting objects:  63% (2032/3225)[Kremote: Counting objects:  64% (2064/3225)[Kremote: Counting objects:  65% (2097/3225)[Kremote: Counting objects:  66% (2129/3225)[Kremote: Counting objects:  67% (2161/3225)[Kremote: Counting objects:  68% (2193/3225)[Kremote: Counting objects:  69% (2226/3225)[Kremote: Counting objects:  70% (2258/3225)[Kremote: Counting objects:  71% (2290/3225)[Kremote: Counting objects:  72% (2322/3225)[Kremote: Counting objects:  73% (2355/3225)[Kremote: Counting objects:  74% (2387/3225)[Kremote: Counting objects:  75% (2419/3225)[Kremote: Counting objects:  76% (2451/3225)[Kremote: Counting objects:  77% (2484/3225)[Kremote: Counting objects:  78% (2516/3225)[Kremote: Counting objects:  79% (2548/3225)[Kremote: Counting objects:  80% (2580/3225)[Kremote: Counting objects:  81% (2613/3225)[Kremote: Counting objects:  82% (2645/3225)[Kremote: Counting objects:  83% (2677/3225)[Kremote: Counting objects:  84% (2709/3225)[Kremote: Counting objects:  85% (2742/3225)[Kremote: Counting objects:  86% (2774/3225)[Kremote: Counting objects:  87% (2806/3225)[Kremote: Counting objects:  88% (2838/3225)[Kremote: Counting objects:  89% (2871/3225)[Kremote: Counting objects:  90% (2903/3225)[Kremote: Counting objects:  91% (2935/3225)[Kremote: Counting objects:  92% (2967/3225)[Kremote: Counting objects:  93% (3000/3225)[Kremote: Counting objects:  94% (3032/3225)[Kremote: Counting objects:  95% (3064/3225)[Kremote: Counting objects:  96% (3096/3225)[Kremote: Counting objects:  97% (3129/3225)[Kremote: Counting objects:  98% (3161/3225)[Kremote: Counting objects:  99% (3193/3225)[Kremote: Counting objects: 100% (3225/3225)[Kremote: Counting objects: 100% (3225/3225), done.[K
+remote: Compressing objects:   0% (1/1229)[Kremote: Compressing objects:   1% (13/1229)[Kremote: Compressing objects:   2% (25/1229)[Kremote: Compressing objects:   3% (37/1229)[Kremote: Compressing objects:   4% (50/1229)[Kremote: Compressing objects:   5% (62/1229)[Kremote: Compressing objects:   6% (74/1229)[Kremote: Compressing objects:   7% (87/1229)[Kremote: Compressing objects:   8% (99/1229)[Kremote: Compressing objects:   9% (111/1229)[Kremote: Compressing objects:  10% (123/1229)[Kremote: Compressing objects:  11% (136/1229)[Kremote: Compressing objects:  12% (148/1229)[Kremote: Compressing objects:  13% (160/1229)[Kremote: Compressing objects:  14% (173/1229)[Kremote: Compressing objects:  15% (185/1229)[Kremote: Compressing objects:  16% (197/1229)[Kremote: Compressing objects:  17% (209/1229)[Kremote: Compressing objects:  18% (222/1229)[Kremote: Compressing objects:  19% (234/1229)[Kremote: Compressing objects:  20% (246/1229)[Kremote: Compressing objects:  21% (259/1229)[Kremote: Compressing objects:  22% (271/1229)[Kremote: Compressing objects:  23% (283/1229)[Kremote: Compressing objects:  24% (295/1229)[Kremote: Compressing objects:  25% (308/1229)[Kremote: Compressing objects:  26% (320/1229)[Kremote: Compressing objects:  27% (332/1229)[Kremote: Compressing objects:  28% (345/1229)[Kremote: Compressing objects:  29% (357/1229)[Kremote: Compressing objects:  30% (369/1229)[Kremote: Compressing objects:  31% (381/1229)[Kremote: Compressing objects:  32% (394/1229)[Kremote: Compressing objects:  33% (406/1229)[Kremote: Compressing objects:  34% (418/1229)[Kremote: Compressing objects:  35% (431/1229)[Kremote: Compressing objects:  36% (443/1229)[Kremote: Compressing objects:  37% (455/1229)[Kremote: Compressing objects:  38% (468/1229)[Kremote: Compressing objects:  39% (480/1229)[Kremote: Compressing objects:  40% (492/1229)[Kremote: Compressing objects:  41% (504/1229)[Kremote: Compressing objects:  42% (517/1229)[Kremote: Compressing objects:  43% (529/1229)[Kremote: Compressing objects:  44% (541/1229)[Kremote: Compressing objects:  45% (554/1229)[Kremote: Compressing objects:  46% (566/1229)[Kremote: Compressing objects:  47% (578/1229)[Kremote: Compressing objects:  48% (590/1229)[Kremote: Compressing objects:  49% (603/1229)[Kremote: Compressing objects:  50% (615/1229)[Kremote: Compressing objects:  51% (627/1229)[Kremote: Compressing objects:  52% (640/1229)[Kremote: Compressing objects:  53% (652/1229)[Kremote: Compressing objects:  54% (664/1229)[Kremote: Compressing objects:  55% (676/1229)[Kremote: Compressing objects:  56% (689/1229)[Kremote: Compressing objects:  57% (701/1229)[Kremote: Compressing objects:  58% (713/1229)[Kremote: Compressing objects:  59% (726/1229)[Kremote: Compressing objects:  60% (738/1229)[Kremote: Compressing objects:  61% (750/1229)[Kremote: Compressing objects:  62% (762/1229)[Kremote: Compressing objects:  63% (775/1229)[Kremote: Compressing objects:  64% (787/1229)[Kremote: Compressing objects:  65% (799/1229)[Kremote: Compressing objects:  66% (812/1229)[Kremote: Compressing objects:  67% (824/1229)[Kremote: Compressing objects:  68% (836/1229)[Kremote: Compressing objects:  69% (849/1229)[Kremote: Compressing objects:  70% (861/1229)[Kremote: Compressing objects:  71% (873/1229)[Kremote: Compressing objects:  72% (885/1229)[Kremote: Compressing objects:  73% (898/1229)[Kremote: Compressing objects:  74% (910/1229)[Kremote: Compressing objects:  75% (922/1229)[Kremote: Compressing objects:  76% (935/1229)[Kremote: Compressing objects:  77% (947/1229)[Kremote: Compressing objects:  78% (959/1229)[Kremote: Compressing objects:  79% (971/1229)[Kremote: Compressing objects:  80% (984/1229)[Kremote: Compressing objects:  81% (996/1229)[Kremote: Compressing objects:  82% (1008/1229)[Kremote: Compressing objects:  83% (1021/1229)[Kremote: Compressing objects:  84% (1033/1229)[Kremote: Compressing objects:  85% (1045/1229)[Kremote: Compressing objects:  86% (1057/1229)[Kremote: Compressing objects:  87% (1070/1229)[Kremote: Compressing objects:  88% (1082/1229)[Kremote: Compressing objects:  89% (1094/1229)[Kremote: Compressing objects:  90% (1107/1229)[Kremote: Compressing objects:  91% (1119/1229)[Kremote: Compressing objects:  92% (1131/1229)[Kremote: Compressing objects:  93% (1143/1229)[Kremote: Compressing objects:  94% (1156/1229)[Kremote: Compressing objects:  95% (1168/1229)[Kremote: Compressing objects:  96% (1180/1229)[Kremote: Compressing objects:  97% (1193/1229)[Kremote: Compressing objects:  98% (1205/1229)[Kremote: Compressing objects:  99% (1217/1229)[Kremote: Compressing objects: 100% (1229/1229)[Kremote: Compressing objects: 100% (1229/1229), done.[K
+Receiving objects:   0% (1/235861)Receiving objects:   1% (2359/235861)Receiving objects:   2% (4718/235861)Receiving objects:   3% (7076/235861)Receiving objects:   4% (9435/235861)Receiving objects:   5% (11794/235861), 3.53 MiB | 7.05 MiB/sReceiving objects:   6% (14152/235861), 3.53 MiB | 7.05 MiB/sReceiving objects:   7% (16511/235861), 3.53 MiB | 7.05 MiB/sReceiving objects:   8% (18869/235861), 3.53 MiB | 7.05 MiB/sReceiving objects:   9% (21228/235861), 3.53 MiB | 7.05 MiB/sReceiving objects:  10% (23587/235861), 3.53 MiB | 7.05 MiB/sReceiving objects:  11% (25945/235861), 3.53 MiB | 7.05 MiB/sReceiving objects:  12% (28304/235861), 3.53 MiB | 7.05 MiB/sReceiving objects:  13% (30662/235861), 3.53 MiB | 7.05 MiB/sReceiving objects:  14% (33021/235861), 3.53 MiB | 7.05 MiB/sReceiving objects:  15% (35380/235861), 3.53 MiB | 7.05 MiB/sReceiving objects:  16% (37738/235861), 3.53 MiB | 7.05 MiB/sReceiving objects:  16% (39664/235861), 3.53 MiB | 7.05 MiB/sReceiving objects:  17% (40097/235861), 24.50 MiB | 24.54 MiB/sReceiving objects:  18% (42455/235861), 24.50 MiB | 24.54 MiB/sReceiving objects:  19% (44814/235861), 24.50 MiB | 24.54 MiB/sReceiving objects:  20% (47173/235861), 24.50 MiB | 24.54 MiB/sReceiving objects:  21% (49531/235861), 24.50 MiB | 24.54 MiB/sReceiving objects:  22% (51890/235861), 24.50 MiB | 24.54 MiB/sReceiving objects:  23% (54249/235861), 24.50 MiB | 24.54 MiB/sReceiving objects:  24% (56607/235861), 24.50 MiB | 24.54 MiB/sReceiving objects:  24% (58481/235861), 52.32 MiB | 26.18 MiB/sReceiving objects:  25% (58966/235861), 52.32 MiB | 26.18 MiB/sReceiving objects:  26% (61324/235861), 52.32 MiB | 26.18 MiB/sReceiving objects:  27% (63683/235861), 52.32 MiB | 26.18 MiB/sReceiving objects:  28% (66042/235861), 52.32 MiB | 26.18 MiB/sReceiving objects:  29% (68400/235861), 52.32 MiB | 26.18 MiB/sReceiving objects:  30% (70759/235861), 52.32 MiB | 26.18 MiB/sReceiving objects:  31% (73117/235861), 52.32 MiB | 26.18 MiB/sReceiving objects:  32% (75476/235861), 52.32 MiB | 26.18 MiB/sReceiving objects:  33% (77835/235861), 52.32 MiB | 26.18 MiB/sReceiving objects:  34% (80193/235861), 52.32 MiB | 26.18 MiB/sReceiving objects:  35% (82552/235861), 52.32 MiB | 26.18 MiB/sReceiving objects:  36% (84910/235861), 52.32 MiB | 26.18 MiB/sReceiving objects:  37% (87269/235861), 52.32 MiB | 26.18 MiB/sReceiving objects:  38% (89628/235861), 52.32 MiB | 26.18 MiB/sReceiving objects:  39% (91986/235861), 67.26 MiB | 26.65 MiB/sReceiving objects:  40% (94345/235861), 67.26 MiB | 26.65 MiB/sReceiving objects:  41% (96704/235861), 67.26 MiB | 26.65 MiB/sReceiving objects:  42% (99062/235861), 67.26 MiB | 26.65 MiB/sReceiving objects:  43% (101421/235861), 67.26 MiB | 26.65 MiB/sReceiving objects:  44% (103779/235861), 67.26 MiB | 26.65 MiB/sReceiving objects:  45% (106138/235861), 67.26 MiB | 26.65 MiB/sReceiving objects:  46% (108497/235861), 67.26 MiB | 26.65 MiB/sReceiving objects:  47% (110855/235861), 67.26 MiB | 26.65 MiB/sReceiving objects:  48% (113214/235861), 67.26 MiB | 26.65 MiB/sReceiving objects:  49% (115572/235861), 67.26 MiB | 26.65 MiB/sReceiving objects:  50% (117931/235861), 67.26 MiB | 26.65 MiB/sReceiving objects:  51% (120290/235861), 67.26 MiB | 26.65 MiB/sReceiving objects:  52% (122648/235861), 67.26 MiB | 26.65 MiB/sReceiving objects:  53% (125007/235861), 67.26 MiB | 26.65 MiB/sReceiving objects:  54% (127365/235861), 67.26 MiB | 26.65 MiB/sReceiving objects:  55% (129724/235861), 67.26 MiB | 26.65 MiB/sReceiving objects:  56% (132083/235861), 67.26 MiB | 26.65 MiB/sReceiving objects:  57% (134441/235861), 67.26 MiB | 26.65 MiB/sReceiving objects:  58% (136800/235861), 67.26 MiB | 26.65 MiB/sReceiving objects:  59% (139158/235861), 67.26 MiB | 26.65 MiB/sReceiving objects:  59% (140662/235861), 67.26 MiB | 26.65 MiB/sReceiving objects:  60% (141517/235861), 67.26 MiB | 26.65 MiB/sReceiving objects:  61% (143876/235861), 67.26 MiB | 26.65 MiB/sReceiving objects:  62% (146234/235861), 82.61 MiB | 27.32 MiB/sReceiving objects:  63% (148593/235861), 82.61 MiB | 27.32 MiB/sReceiving objects:  64% (150952/235861), 82.61 MiB | 27.32 MiB/sReceiving objects:  65% (153310/235861), 82.61 MiB | 27.32 MiB/sReceiving objects:  66% (155669/235861), 82.61 MiB | 27.32 MiB/sReceiving objects:  67% (158027/235861), 82.61 MiB | 27.32 MiB/sReceiving objects:  68% (160386/235861), 82.61 MiB | 27.32 MiB/sReceiving objects:  69% (162745/235861), 82.61 MiB | 27.32 MiB/sReceiving objects:  70% (165103/235861), 82.61 MiB | 27.32 MiB/sReceiving objects:  71% (167462/235861), 82.61 MiB | 27.32 MiB/sReceiving objects:  72% (169820/235861), 82.61 MiB | 27.32 MiB/sReceiving objects:  73% (172179/235861), 82.61 MiB | 27.32 MiB/sReceiving objects:  74% (174538/235861), 82.61 MiB | 27.32 MiB/sReceiving objects:  75% (176896/235861), 82.61 MiB | 27.32 MiB/sReceiving objects:  76% (179255/235861), 82.61 MiB | 27.32 MiB/sReceiving objects:  77% (181613/235861), 82.61 MiB | 27.32 MiB/sReceiving objects:  78% (183972/235861), 82.61 MiB | 27.32 MiB/sReceiving objects:  79% (186331/235861), 82.61 MiB | 27.32 MiB/sReceiving objects:  80% (188689/235861), 82.61 MiB | 27.32 MiB/sReceiving objects:  81% (191048/235861), 82.61 MiB | 27.32 MiB/sReceiving objects:  82% (193407/235861), 82.61 MiB | 27.32 MiB/sReceiving objects:  83% (195765/235861), 82.61 MiB | 27.32 MiB/sReceiving objects:  84% (198124/235861), 82.61 MiB | 27.32 MiB/sReceiving objects:  84% (200279/235861), 113.28 MiB | 27.88 MiB/sReceiving objects:  85% (200482/235861), 113.28 MiB | 27.88 MiB/sReceiving objects:  86% (202841/235861), 113.28 MiB | 27.88 MiB/sReceiving objects:  87% (205200/235861), 113.28 MiB | 27.88 MiB/sReceiving objects:  88% (207558/235861), 113.28 MiB | 27.88 MiB/sReceiving objects:  89% (209917/235861), 113.28 MiB | 27.88 MiB/sReceiving objects:  90% (212275/235861), 113.28 MiB | 27.88 MiB/sReceiving objects:  91% (214634/235861), 113.28 MiB | 27.88 MiB/sReceiving objects:  92% (216993/235861), 113.28 MiB | 27.88 MiB/sReceiving objects:  93% (219351/235861), 113.28 MiB | 27.88 MiB/sReceiving objects:  94% (221710/235861), 113.28 MiB | 27.88 MiB/sReceiving objects:  95% (224068/235861), 113.28 MiB | 27.88 MiB/sReceiving objects:  96% (226427/235861), 113.28 MiB | 27.88 MiB/sReceiving objects:  97% (228786/235861), 113.28 MiB | 27.88 MiB/sReceiving objects:  98% (231144/235861), 113.28 MiB | 27.88 MiB/sReceiving objects:  99% (233503/235861), 113.28 MiB | 27.88 MiB/sremote: Total 235861 (delta 2694), reused 2044 (delta 1993), pack-reused 232636 (from 2)[K
+Receiving objects: 100% (235861/235861), 113.28 MiB | 27.88 MiB/sReceiving objects: 100% (235861/235861), 128.58 MiB | 28.22 MiB/s, done.
+Resolving deltas:   0% (0/154083)Resolving deltas:   1% (1541/154083)Resolving deltas:   2% (3082/154083)Resolving deltas:   3% (4623/154083)Resolving deltas:   4% (6165/154083)Resolving deltas:   5% (7705/154083)Resolving deltas:   6% (9245/154083)Resolving deltas:   7% (10788/154083)Resolving deltas:   8% (12327/154083)Resolving deltas:   9% (13868/154083)Resolving deltas:  10% (15409/154083)Resolving deltas:  11% (16950/154083)Resolving deltas:  12% (18490/154083)Resolving deltas:  13% (20031/154083)Resolving deltas:  14% (21572/154083)Resolving deltas:  15% (23113/154083)Resolving deltas:  16% (24654/154083)Resolving deltas:  17% (26195/154083)Resolving deltas:  18% (27735/154083)Resolving deltas:  19% (29276/154083)Resolving deltas:  20% (30817/154083)Resolving deltas:  21% (32358/154083)Resolving deltas:  22% (33899/154083)Resolving deltas:  23% (35440/154083)Resolving deltas:  24% (36980/154083)Resolving deltas:  25% (38521/154083)Resolving deltas:  26% (40062/154083)Resolving deltas:  27% (41603/154083)Resolving deltas:  28% (43145/154083)Resolving deltas:  29% (44687/154083)Resolving deltas:  30% (46225/154083)Resolving deltas:  31% (47766/154083)Resolving deltas:  32% (49307/154083)Resolving deltas:  33% (50848/154083)Resolving deltas:  34% (52389/154083)Resolving deltas:  35% (53930/154083)Resolving deltas:  36% (55471/154083)Resolving deltas:  37% (57011/154083)Resolving deltas:  38% (58552/154083)Resolving deltas:  39% (60093/154083)Resolving deltas:  40% (61634/154083)Resolving deltas:  41% (63175/154083)Resolving deltas:  42% (64715/154083)Resolving deltas:  43% (66256/154083)Resolving deltas:  44% (67797/154083)Resolving deltas:  45% (69338/154083)Resolving deltas:  46% (70880/154083)Resolving deltas:  47% (72420/154083)Resolving deltas:  48% (73960/154083)Resolving deltas:  49% (75501/154083)Resolving deltas:  50% (77042/154083)Resolving deltas:  51% (78584/154083)Resolving deltas:  52% (80124/154083)Resolving deltas:  53% (81664/154083)Resolving deltas:  54% (83205/154083)Resolving deltas:  55% (84746/154083)Resolving deltas:  56% (86287/154083)Resolving deltas:  57% (87828/154083)Resolving deltas:  58% (89369/154083)Resolving deltas:  59% (90909/154083)Resolving deltas:  60% (92450/154083)Resolving deltas:  61% (93991/154083)Resolving deltas:  62% (95532/154083)Resolving deltas:  63% (97073/154083)Resolving deltas:  64% (98614/154083)Resolving deltas:  65% (100155/154083)Resolving deltas:  66% (101695/154083)Resolving deltas:  67% (103236/154083)Resolving deltas:  68% (104777/154083)Resolving deltas:  69% (106318/154083)Resolving deltas:  70% (107859/154083)Resolving deltas:  71% (109399/154083)Resolving deltas:  72% (110940/154083)Resolving deltas:  72% (111440/154083)Resolving deltas:  73% (112482/154083)Resolving deltas:  74% (114022/154083)Resolving deltas:  75% (115563/154083)Resolving deltas:  76% (117104/154083)Resolving deltas:  77% (118644/154083)Resolving deltas:  78% (120185/154083)Resolving deltas:  79% (121726/154083)Resolving deltas:  80% (123267/154083)Resolving deltas:  81% (124808/154083)Resolving deltas:  82% (126349/154083)Resolving deltas:  83% (127889/154083)Resolving deltas:  84% (129430/154083)Resolving deltas:  85% (130971/154083)Resolving deltas:  86% (132512/154083)Resolving deltas:  87% (134053/154083)Resolving deltas:  88% (135594/154083)Resolving deltas:  89% (137134/154083)Resolving deltas:  90% (138675/154083)Resolving deltas:  91% (140216/154083)Resolving deltas:  92% (141757/154083)Resolving deltas:  93% (143298/154083)Resolving deltas:  94% (144839/154083)Resolving deltas:  95% (146379/154083)Resolving deltas:  96% (147920/154083)Resolving deltas:  97% (149461/154083)Resolving deltas:  98% (151003/154083)Resolving deltas:  99% (152543/154083)Resolving deltas: 100% (154083/154083)Resolving deltas: 100% (154083/154083), done.
+    XiangShan-kmhv2: HEAD=a4eeaabb4c12349259094a8b55f3ba1c03a9d993
+    NEMU: 克隆 https://github.com/OpenXiangShan/NEMU.git (master) -> /data/my/cie-stage1-repro/work/NEMU
+Cloning into '/data/my/cie-stage1-repro/work/NEMU'...
+remote: Enumerating objects: 40671, done.[K
+remote: Counting objects:   0% (1/2686)[Kremote: Counting objects:   1% (27/2686)[Kremote: Counting objects:   2% (54/2686)[Kremote: Counting objects:   3% (81/2686)[Kremote: Counting objects:   4% (108/2686)[Kremote: Counting objects:   5% (135/2686)[Kremote: Counting objects:   6% (162/2686)[Kremote: Counting objects:   7% (189/2686)[Kremote: Counting objects:   8% (215/2686)[Kremote: Counting objects:   9% (242/2686)[Kremote: Counting objects:  10% (269/2686)[Kremote: Counting objects:  11% (296/2686)[Kremote: Counting objects:  12% (323/2686)[Kremote: Counting objects:  13% (350/2686)[Kremote: Counting objects:  14% (377/2686)[Kremote: Counting objects:  15% (403/2686)[Kremote: Counting objects:  16% (430/2686)[Kremote: Counting objects:  17% (457/2686)[Kremote: Counting objects:  18% (484/2686)[Kremote: Counting objects:  19% (511/2686)[Kremote: Counting objects:  20% (538/2686)[Kremote: Counting objects:  21% (565/2686)[Kremote: Counting objects:  22% (591/2686)[Kremote: Counting objects:  23% (618/2686)[Kremote: Counting objects:  24% (645/2686)[Kremote: Counting objects:  25% (672/2686)[Kremote: Counting objects:  26% (699/2686)[Kremote: Counting objects:  27% (726/2686)[Kremote: Counting objects:  28% (753/2686)[Kremote: Counting objects:  29% (779/2686)[Kremote: Counting objects:  30% (806/2686)[Kremote: Counting objects:  31% (833/2686)[Kremote: Counting objects:  32% (860/2686)[Kremote: Counting objects:  33% (887/2686)[Kremote: Counting objects:  34% (914/2686)[Kremote: Counting objects:  35% (941/2686)[Kremote: Counting objects:  36% (967/2686)[Kremote: Counting objects:  37% (994/2686)[Kremote: Counting objects:  38% (1021/2686)[Kremote: Counting objects:  39% (1048/2686)[Kremote: Counting objects:  40% (1075/2686)[Kremote: Counting objects:  41% (1102/2686)[Kremote: Counting objects:  42% (1129/2686)[Kremote: Counting objects:  43% (1155/2686)[Kremote: Counting objects:  44% (1182/2686)[Kremote: Counting objects:  45% (1209/2686)[Kremote: Counting objects:  46% (1236/2686)[Kremote: Counting objects:  47% (1263/2686)[Kremote: Counting objects:  48% (1290/2686)[Kremote: Counting objects:  49% (1317/2686)[Kremote: Counting objects:  50% (1343/2686)[Kremote: Counting objects:  51% (1370/2686)[Kremote: Counting objects:  52% (1397/2686)[Kremote: Counting objects:  53% (1424/2686)[Kremote: Counting objects:  54% (1451/2686)[Kremote: Counting objects:  55% (1478/2686)[Kremote: Counting objects:  56% (1505/2686)[Kremote: Counting objects:  57% (1532/2686)[Kremote: Counting objects:  58% (1558/2686)[Kremote: Counting objects:  59% (1585/2686)[Kremote: Counting objects:  60% (1612/2686)[Kremote: Counting objects:  61% (1639/2686)[Kremote: Counting objects:  62% (1666/2686)[Kremote: Counting objects:  63% (1693/2686)[Kremote: Counting objects:  64% (1720/2686)[Kremote: Counting objects:  65% (1746/2686)[Kremote: Counting objects:  66% (1773/2686)[Kremote: Counting objects:  67% (1800/2686)[Kremote: Counting objects:  68% (1827/2686)[Kremote: Counting objects:  69% (1854/2686)[Kremote: Counting objects:  70% (1881/2686)[Kremote: Counting objects:  71% (1908/2686)[Kremote: Counting objects:  72% (1934/2686)[Kremote: Counting objects:  73% (1961/2686)[Kremote: Counting objects:  74% (1988/2686)[Kremote: Counting objects:  75% (2015/2686)[Kremote: Counting objects:  76% (2042/2686)[Kremote: Counting objects:  77% (2069/2686)[Kremote: Counting objects:  78% (2096/2686)[Kremote: Counting objects:  79% (2122/2686)[Kremote: Counting objects:  80% (2149/2686)[Kremote: Counting objects:  81% (2176/2686)[Kremote: Counting objects:  82% (2203/2686)[Kremote: Counting objects:  83% (2230/2686)[Kremote: Counting objects:  84% (2257/2686)[Kremote: Counting objects:  85% (2284/2686)[Kremote: Counting objects:  86% (2310/2686)[Kremote: Counting objects:  87% (2337/2686)[Kremote: Counting objects:  88% (2364/2686)[Kremote: Counting objects:  89% (2391/2686)[Kremote: Counting objects:  90% (2418/2686)[Kremote: Counting objects:  91% (2445/2686)[Kremote: Counting objects:  92% (2472/2686)[Kremote: Counting objects:  93% (2498/2686)[Kremote: Counting objects:  94% (2525/2686)[Kremote: Counting objects:  95% (2552/2686)[Kremote: Counting objects:  96% (2579/2686)[Kremote: Counting objects:  97% (2606/2686)[Kremote: Counting objects:  98% (2633/2686)[Kremote: Counting objects:  99% (2660/2686)[Kremote: Counting objects: 100% (2686/2686)[Kremote: Counting objects: 100% (2686/2686), done.[K
+remote: Compressing objects:   0% (1/1037)[Kremote: Compressing objects:   1% (11/1037)[Kremote: Compressing objects:   2% (21/1037)[Kremote: Compressing objects:   3% (32/1037)[Kremote: Compressing objects:   4% (42/1037)[Kremote: Compressing objects:   5% (52/1037)[Kremote: Compressing objects:   6% (63/1037)[Kremote: Compressing objects:   7% (73/1037)[Kremote: Compressing objects:   8% (83/1037)[Kremote: Compressing objects:   9% (94/1037)[Kremote: Compressing objects:  10% (104/1037)[Kremote: Compressing objects:  11% (115/1037)[Kremote: Compressing objects:  12% (125/1037)[Kremote: Compressing objects:  13% (135/1037)[Kremote: Compressing objects:  14% (146/1037)[Kremote: Compressing objects:  15% (156/1037)[Kremote: Compressing objects:  16% (166/1037)[Kremote: Compressing objects:  17% (177/1037)[Kremote: Compressing objects:  18% (187/1037)[Kremote: Compressing objects:  19% (198/1037)[Kremote: Compressing objects:  20% (208/1037)[Kremote: Compressing objects:  21% (218/1037)[Kremote: Compressing objects:  22% (229/1037)[Kremote: Compressing objects:  23% (239/1037)[Kremote: Compressing objects:  24% (249/1037)[Kremote: Compressing objects:  25% (260/1037)[Kremote: Compressing objects:  26% (270/1037)[Kremote: Compressing objects:  27% (280/1037)[Kremote: Compressing objects:  28% (291/1037)[Kremote: Compressing objects:  29% (301/1037)[Kremote: Compressing objects:  30% (312/1037)[Kremote: Compressing objects:  31% (322/1037)[Kremote: Compressing objects:  32% (332/1037)[Kremote: Compressing objects:  33% (343/1037)[Kremote: Compressing objects:  34% (353/1037)[Kremote: Compressing objects:  35% (363/1037)[Kremote: Compressing objects:  36% (374/1037)[Kremote: Compressing objects:  37% (384/1037)[Kremote: Compressing objects:  38% (395/1037)[Kremote: Compressing objects:  39% (405/1037)[Kremote: Compressing objects:  40% (415/1037)[Kremote: Compressing objects:  41% (426/1037)[Kremote: Compressing objects:  42% (436/1037)[Kremote: Compressing objects:  43% (446/1037)[Kremote: Compressing objects:  44% (457/1037)[Kremote: Compressing objects:  45% (467/1037)[Kremote: Compressing objects:  46% (478/1037)[Kremote: Compressing objects:  47% (488/1037)[Kremote: Compressing objects:  48% (498/1037)[Kremote: Compressing objects:  49% (509/1037)[Kremote: Compressing objects:  50% (519/1037)[Kremote: Compressing objects:  51% (529/1037)[Kremote: Compressing objects:  52% (540/1037)[Kremote: Compressing objects:  53% (550/1037)[Kremote: Compressing objects:  54% (560/1037)[Kremote: Compressing objects:  55% (571/1037)[Kremote: Compressing objects:  56% (581/1037)[Kremote: Compressing objects:  57% (592/1037)[Kremote: Compressing objects:  58% (602/1037)[Kremote: Compressing objects:  59% (612/1037)[Kremote: Compressing objects:  60% (623/1037)[Kremote: Compressing objects:  61% (633/1037)[Kremote: Compressing objects:  62% (643/1037)[Kremote: Compressing objects:  63% (654/1037)[Kremote: Compressing objects:  64% (664/1037)[Kremote: Compressing objects:  65% (675/1037)[Kremote: Compressing objects:  66% (685/1037)[Kremote: Compressing objects:  67% (695/1037)[Kremote: Compressing objects:  68% (706/1037)[Kremote: Compressing objects:  69% (716/1037)[Kremote: Compressing objects:  70% (726/1037)[Kremote: Compressing objects:  71% (737/1037)[Kremote: Compressing objects:  72% (747/1037)[Kremote: Compressing objects:  73% (758/1037)[Kremote: Compressing objects:  74% (768/1037)[Kremote: Compressing objects:  75% (778/1037)[Kremote: Compressing objects:  76% (789/1037)[Kremote: Compressing objects:  77% (799/1037)[Kremote: Compressing objects:  78% (809/1037)[Kremote: Compressing objects:  79% (820/1037)[Kremote: Compressing objects:  80% (830/1037)[Kremote: Compressing objects:  81% (840/1037)[Kremote: Compressing objects:  82% (851/1037)[Kremote: Compressing objects:  83% (861/1037)[Kremote: Compressing objects:  84% (872/1037)[Kremote: Compressing objects:  85% (882/1037)[Kremote: Compressing objects:  86% (892/1037)[Kremote: Compressing objects:  87% (903/1037)[Kremote: Compressing objects:  88% (913/1037)[Kremote: Compressing objects:  89% (923/1037)[Kremote: Compressing objects:  90% (934/1037)[Kremote: Compressing objects:  91% (944/1037)[Kremote: Compressing objects:  92% (955/1037)[Kremote: Compressing objects:  93% (965/1037)[Kremote: Compressing objects:  94% (975/1037)[Kremote: Compressing objects:  95% (986/1037)[Kremote: Compressing objects:  96% (996/1037)[Kremote: Compressing objects:  97% (1006/1037)[Kremote: Compressing objects:  98% (1017/1037)[Kremote: Compressing objects:  99% (1027/1037)[Kremote: Compressing objects: 100% (1037/1037)[Kremote: Compressing objects: 100% (1037/1037), done.[K
+Receiving objects:   0% (1/40671)Receiving objects:   1% (407/40671)Receiving objects:   2% (814/40671)Receiving objects:   3% (1221/40671)Receiving objects:   4% (1627/40671)Receiving objects:   5% (2034/40671)Receiving objects:   6% (2441/40671)Receiving objects:   7% (2847/40671)Receiving objects:   8% (3254/40671)Receiving objects:   9% (3661/40671)Receiving objects:  10% (4068/40671)Receiving objects:  11% (4474/40671)Receiving objects:  12% (4881/40671)Receiving objects:  13% (5288/40671)Receiving objects:  14% (5694/40671)Receiving objects:  15% (6101/40671)Receiving objects:  16% (6508/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  17% (6915/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  18% (7321/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  19% (7728/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  20% (8135/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  21% (8541/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  22% (8948/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  23% (9355/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  24% (9762/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  25% (10168/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  26% (10575/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  27% (10982/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  28% (11388/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  29% (11795/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  30% (12202/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  31% (12609/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  32% (13015/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  33% (13422/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  34% (13829/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  35% (14235/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  36% (14642/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  37% (15049/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  38% (15455/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  39% (15862/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  40% (16269/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  41% (16676/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  42% (17082/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  43% (17489/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  44% (17896/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  45% (18302/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  46% (18709/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  47% (19116/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  48% (19523/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  49% (19929/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  50% (20336/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  51% (20743/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  52% (21149/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  53% (21556/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  54% (21963/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  55% (22370/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  56% (22776/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  57% (23183/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  58% (23590/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  59% (23996/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  60% (24403/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  61% (24810/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  62% (25217/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  63% (25623/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  64% (26030/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  65% (26437/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  66% (26843/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  67% (27250/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  68% (27657/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  69% (28063/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  70% (28470/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  71% (28877/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  72% (29284/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  73% (29690/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  74% (30097/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  75% (30504/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  76% (30910/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  77% (31317/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  78% (31724/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  79% (32131/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  80% (32537/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  81% (32944/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  82% (33351/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  83% (33757/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  84% (34164/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  85% (34571/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  86% (34978/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  87% (35384/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  88% (35791/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  89% (36198/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  90% (36604/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  91% (37011/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  92% (37418/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  93% (37825/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  94% (38231/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  95% (38638/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  96% (39045/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  97% (39451/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  98% (39858/40671), 2.30 MiB | 4.59 MiB/sReceiving objects:  99% (40265/40671), 2.30 MiB | 4.59 MiB/sremote: Total 40671 (delta 2306), reused 1734 (delta 1644), pack-reused 37985 (from 2)[K
+Receiving objects: 100% (40671/40671), 2.30 MiB | 4.59 MiB/sReceiving objects: 100% (40671/40671), 11.22 MiB | 14.56 MiB/s, done.
+Resolving deltas:   0% (0/28219)Resolving deltas:   1% (283/28219)Resolving deltas:   2% (567/28219)Resolving deltas:   3% (848/28219)Resolving deltas:   4% (1129/28219)Resolving deltas:   5% (1413/28219)Resolving deltas:   6% (1695/28219)Resolving deltas:   7% (1979/28219)Resolving deltas:   8% (2258/28219)Resolving deltas:   9% (2540/28219)Resolving deltas:  10% (2822/28219)Resolving deltas:  11% (3105/28219)Resolving deltas:  12% (3388/28219)Resolving deltas:  13% (3673/28219)Resolving deltas:  14% (3957/28219)Resolving deltas:  15% (4233/28219)Resolving deltas:  16% (4517/28219)Resolving deltas:  17% (4799/28219)Resolving deltas:  18% (5080/28219)Resolving deltas:  19% (5362/28219)Resolving deltas:  20% (5644/28219)Resolving deltas:  21% (5926/28219)Resolving deltas:  22% (6209/28219)Resolving deltas:  23% (6491/28219)Resolving deltas:  24% (6773/28219)Resolving deltas:  25% (7055/28219)Resolving deltas:  26% (7337/28219)Resolving deltas:  27% (7620/28219)Resolving deltas:  28% (7902/28219)Resolving deltas:  29% (8184/28219)Resolving deltas:  30% (8467/28219)Resolving deltas:  31% (8748/28219)Resolving deltas:  32% (9031/28219)Resolving deltas:  33% (9313/28219)Resolving deltas:  34% (9595/28219)Resolving deltas:  35% (9877/28219)Resolving deltas:  36% (10163/28219)Resolving deltas:  37% (10442/28219)Resolving deltas:  38% (10724/28219)Resolving deltas:  39% (11006/28219)Resolving deltas:  40% (11289/28219)Resolving deltas:  41% (11570/28219)Resolving deltas:  42% (11853/28219)Resolving deltas:  43% (12135/28219)Resolving deltas:  44% (12417/28219)Resolving deltas:  45% (12700/28219)Resolving deltas:  46% (12981/28219)Resolving deltas:  47% (13263/28219)Resolving deltas:  48% (13546/28219)Resolving deltas:  49% (13828/28219)Resolving deltas:  50% (14111/28219)Resolving deltas:  51% (14392/28219)Resolving deltas:  52% (14674/28219)Resolving deltas:  53% (14957/28219)Resolving deltas:  54% (15239/28219)Resolving deltas:  55% (15522/28219)Resolving deltas:  56% (15803/28219)Resolving deltas:  57% (16085/28219)Resolving deltas:  58% (16368/28219)Resolving deltas:  59% (16650/28219)Resolving deltas:  60% (16932/28219)Resolving deltas:  61% (17214/28219)Resolving deltas:  62% (17496/28219)Resolving deltas:  63% (17778/28219)Resolving deltas:  64% (18061/28219)Resolving deltas:  65% (18343/28219)Resolving deltas:  66% (18625/28219)Resolving deltas:  67% (18911/28219)Resolving deltas:  68% (19189/28219)Resolving deltas:  69% (19472/28219)Resolving deltas:  70% (19754/28219)Resolving deltas:  71% (20036/28219)Resolving deltas:  72% (20318/28219)Resolving deltas:  73% (20600/28219)Resolving deltas:  74% (20883/28219)Resolving deltas:  75% (21165/28219)Resolving deltas:  76% (21447/28219)Resolving deltas:  77% (21730/28219)Resolving deltas:  78% (22011/28219)Resolving deltas:  79% (22294/28219)Resolving deltas:  80% (22576/28219)Resolving deltas:  81% (22858/28219)Resolving deltas:  82% (23140/28219)Resolving deltas:  83% (23423/28219)Resolving deltas:  84% (23708/28219)Resolving deltas:  85% (23987/28219)Resolving deltas:  86% (24269/28219)Resolving deltas:  87% (24551/28219)Resolving deltas:  88% (24833/28219)Resolving deltas:  89% (25116/28219)Resolving deltas:  90% (25398/28219)Resolving deltas:  91% (25681/28219)Resolving deltas:  92% (25963/28219)Resolving deltas:  93% (26244/28219)Resolving deltas:  94% (26526/28219)Resolving deltas:  95% (26809/28219)Resolving deltas:  96% (27092/28219)Resolving deltas:  97% (27375/28219)Resolving deltas:  98% (27655/28219)Resolving deltas:  99% (27937/28219)Resolving deltas: 100% (28219/28219)Resolving deltas: 100% (28219/28219), done.
+    NEMU: HEAD=90908390002fb7da885e5d880bba3bef2a225b2a
+    检出缺失子模块（--recursive）：ChiselAIA ChiselIOPMP coupledL2 difftest fudian huancun openLLC ready-to-run rocket-chip utility yunsuan
+Submodule 'ChiselAIA' (https://github.com/OpenXiangShan/ChiselAIA.git) registered for path 'ChiselAIA'
+Submodule 'ChiselIOPMP' (https://github.com/OpenXiangShan/ChiselIOPMP.git) registered for path 'ChiselIOPMP'
+Submodule 'coupledL2' (https://github.com/OpenXiangShan/CoupledL2.git) registered for path 'coupledL2'
+Submodule 'difftest' (https://github.com/OpenXiangShan/difftest.git) registered for path 'difftest'
+Submodule 'fudian' (https://github.com/OpenXiangShan/fudian.git) registered for path 'fudian'
+Submodule 'huancun' (https://github.com/OpenXiangShan/HuanCun.git) registered for path 'huancun'
+Submodule 'openLLC' (https://github.com/OpenXiangShan/OpenLLC.git) registered for path 'openLLC'
+Submodule 'ready-to-run' (https://github.com/OpenXiangShan/ready-to-run.git) registered for path 'ready-to-run'
+Submodule 'rocket-chip' (https://github.com/OpenXiangShan/rocket-chip.git) registered for path 'rocket-chip'
+Submodule 'utility' (https://github.com/OpenXiangShan/Utility.git) registered for path 'utility'
+Submodule 'yunsuan' (https://github.com/OpenXiangShan/YunSuan.git) registered for path 'yunsuan'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/ChiselAIA'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/ChiselIOPMP'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/fudian'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/rocket-chip'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/huancun'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/coupledL2'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/utility'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/difftest'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/yunsuan'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/ready-to-run'...
+Submodule path 'ChiselAIA': checked out '13fddf2f435f69c96cdb4e6771730c61c67fbc45'
+Submodule 'Utility' (https://github.com/OpenXiangShan/Utility.git) registered for path 'ChiselAIA/Utility'
+Submodule 'rocket-chip' (https://github.com/OpenXiangShan/rocket-chip.git) registered for path 'ChiselAIA/rocket-chip'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/ChiselAIA/Utility'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/ChiselAIA/rocket-chip'...
+Submodule path 'ChiselAIA/Utility': checked out 'b943a200635b6e0b06e96517aa086f4bf754c10d'
+Submodule 'rocket-chip' (https://github.com/OpenXiangShan/rocket-chip.git) registered for path 'ChiselAIA/Utility/rocket-chip'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/ChiselAIA/Utility/rocket-chip'...
+Submodule path 'ChiselAIA/Utility/rocket-chip': checked out 'dc2d83f5511232a228e3cb90a3aeba474d8ee702'
+Submodule 'cde' (https://github.com/chipsalliance/cde.git) registered for path 'ChiselAIA/Utility/rocket-chip/cde'
+Submodule 'hardfloat' (https://github.com/ucb-bar/berkeley-hardfloat.git) registered for path 'ChiselAIA/Utility/rocket-chip/hardfloat'
+Submodule 'torture' (https://github.com/ucb-bar/riscv-torture.git) registered for path 'ChiselAIA/Utility/rocket-chip/torture'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/ChiselAIA/Utility/rocket-chip/cde'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/ChiselAIA/Utility/rocket-chip/hardfloat'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/ChiselAIA/Utility/rocket-chip/torture'...
+Submodule path 'ChiselAIA/Utility/rocket-chip/cde': checked out '52768c97a27b254c0cc0ac9401feb55b29e18c28'
+Submodule path 'ChiselAIA/Utility/rocket-chip/hardfloat': checked out 'd93aa570806013dea479a92ba9bb33d1f2d4f69f'
+Submodule 'berkeley-softfloat-3' (https://github.com/ucb-bar/berkeley-softfloat-3.git) registered for path 'ChiselAIA/Utility/rocket-chip/hardfloat/berkeley-softfloat-3'
+Submodule 'berkeley-testfloat-3' (https://github.com/ucb-bar/berkeley-testfloat-3.git) registered for path 'ChiselAIA/Utility/rocket-chip/hardfloat/berkeley-testfloat-3'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/ChiselAIA/Utility/rocket-chip/hardfloat/berkeley-softfloat-3'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/ChiselAIA/Utility/rocket-chip/hardfloat/berkeley-testfloat-3'...
+Submodule path 'ChiselAIA/Utility/rocket-chip/hardfloat/berkeley-softfloat-3': checked out '5c06db33fc1e2130f67c045327b0ec949032df1d'
+Submodule path 'ChiselAIA/Utility/rocket-chip/hardfloat/berkeley-testfloat-3': checked out '06b20075dd3c1a5d0dd007a93643282832221612'
+Submodule path 'ChiselAIA/Utility/rocket-chip/torture': checked out '99d8b2b441ecaa18b852505bb7718ee04e2753f5'
+Submodule 'env' (https://github.com/riscv/riscv-test-env.git) registered for path 'ChiselAIA/Utility/rocket-chip/torture/env'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/ChiselAIA/Utility/rocket-chip/torture/env'...
+Submodule path 'ChiselAIA/Utility/rocket-chip/torture/env': checked out 'ce70afbf50a203be04bc326326cfa75831fe7f5d'
+Submodule path 'ChiselAIA/rocket-chip': checked out 'dc2d83f5511232a228e3cb90a3aeba474d8ee702'
+Submodule 'cde' (https://github.com/chipsalliance/cde.git) registered for path 'ChiselAIA/rocket-chip/cde'
+Submodule 'hardfloat' (https://github.com/ucb-bar/berkeley-hardfloat.git) registered for path 'ChiselAIA/rocket-chip/hardfloat'
+Submodule 'torture' (https://github.com/ucb-bar/riscv-torture.git) registered for path 'ChiselAIA/rocket-chip/torture'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/ChiselAIA/rocket-chip/cde'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/ChiselAIA/rocket-chip/hardfloat'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/ChiselAIA/rocket-chip/torture'...
+Submodule path 'ChiselAIA/rocket-chip/cde': checked out '52768c97a27b254c0cc0ac9401feb55b29e18c28'
+Submodule path 'ChiselAIA/rocket-chip/hardfloat': checked out 'd93aa570806013dea479a92ba9bb33d1f2d4f69f'
+Submodule 'berkeley-softfloat-3' (https://github.com/ucb-bar/berkeley-softfloat-3.git) registered for path 'ChiselAIA/rocket-chip/hardfloat/berkeley-softfloat-3'
+Submodule 'berkeley-testfloat-3' (https://github.com/ucb-bar/berkeley-testfloat-3.git) registered for path 'ChiselAIA/rocket-chip/hardfloat/berkeley-testfloat-3'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/ChiselAIA/rocket-chip/hardfloat/berkeley-softfloat-3'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/ChiselAIA/rocket-chip/hardfloat/berkeley-testfloat-3'...
+Submodule path 'ChiselAIA/rocket-chip/hardfloat/berkeley-softfloat-3': checked out '5c06db33fc1e2130f67c045327b0ec949032df1d'
+Submodule path 'ChiselAIA/rocket-chip/hardfloat/berkeley-testfloat-3': checked out '06b20075dd3c1a5d0dd007a93643282832221612'
+Submodule path 'ChiselAIA/rocket-chip/torture': checked out '99d8b2b441ecaa18b852505bb7718ee04e2753f5'
+Submodule 'env' (https://github.com/riscv/riscv-test-env.git) registered for path 'ChiselAIA/rocket-chip/torture/env'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/ChiselAIA/rocket-chip/torture/env'...
+Submodule path 'ChiselAIA/rocket-chip/torture/env': checked out 'ce70afbf50a203be04bc326326cfa75831fe7f5d'
+Submodule path 'ChiselIOPMP': checked out '09def1a7efa4707a74b7f31fe0a1c254b0940b78'
+Submodule 'rocket-chip' (https://github.com/OpenXiangShan/rocket-chip.git) registered for path 'ChiselIOPMP/rocket-chip'
+Submodule 'utility' (https://github.com/OpenXiangShan/Utility.git) registered for path 'ChiselIOPMP/utility'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/ChiselIOPMP/rocket-chip'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/ChiselIOPMP/utility'...
+Submodule path 'ChiselIOPMP/rocket-chip': checked out '46f1efefa1ff431bffe3262e4830bc50316842f4'
+Submodule 'cde' (https://github.com/chipsalliance/cde.git) registered for path 'ChiselIOPMP/rocket-chip/cde'
+Submodule 'hardfloat' (https://github.com/ucb-bar/berkeley-hardfloat.git) registered for path 'ChiselIOPMP/rocket-chip/hardfloat'
+Submodule 'torture' (https://github.com/ucb-bar/riscv-torture.git) registered for path 'ChiselIOPMP/rocket-chip/torture'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/ChiselIOPMP/rocket-chip/cde'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/ChiselIOPMP/rocket-chip/hardfloat'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/ChiselIOPMP/rocket-chip/torture'...
+Submodule path 'ChiselIOPMP/rocket-chip/cde': checked out '52768c97a27b254c0cc0ac9401feb55b29e18c28'
+Submodule path 'ChiselIOPMP/rocket-chip/hardfloat': checked out 'd93aa570806013dea479a92ba9bb33d1f2d4f69f'
+Submodule 'berkeley-softfloat-3' (https://github.com/ucb-bar/berkeley-softfloat-3.git) registered for path 'ChiselIOPMP/rocket-chip/hardfloat/berkeley-softfloat-3'
+Submodule 'berkeley-testfloat-3' (https://github.com/ucb-bar/berkeley-testfloat-3.git) registered for path 'ChiselIOPMP/rocket-chip/hardfloat/berkeley-testfloat-3'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/ChiselIOPMP/rocket-chip/hardfloat/berkeley-softfloat-3'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/ChiselIOPMP/rocket-chip/hardfloat/berkeley-testfloat-3'...
+Submodule path 'ChiselIOPMP/rocket-chip/hardfloat/berkeley-softfloat-3': checked out '5c06db33fc1e2130f67c045327b0ec949032df1d'
+Submodule path 'ChiselIOPMP/rocket-chip/hardfloat/berkeley-testfloat-3': checked out '06b20075dd3c1a5d0dd007a93643282832221612'
+Submodule path 'ChiselIOPMP/rocket-chip/torture': checked out '99d8b2b441ecaa18b852505bb7718ee04e2753f5'
+Submodule 'env' (https://github.com/riscv/riscv-test-env.git) registered for path 'ChiselIOPMP/rocket-chip/torture/env'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/ChiselIOPMP/rocket-chip/torture/env'...
+Submodule path 'ChiselIOPMP/rocket-chip/torture/env': checked out 'ce70afbf50a203be04bc326326cfa75831fe7f5d'
+Submodule path 'ChiselIOPMP/utility': checked out 'b51bd326daf46826df19b743794a021c05360461'
+Submodule 'rocket-chip' (https://github.com/OpenXiangShan/rocket-chip.git) registered for path 'ChiselIOPMP/utility/rocket-chip'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/ChiselIOPMP/utility/rocket-chip'...
+Submodule path 'ChiselIOPMP/utility/rocket-chip': checked out '46f1efefa1ff431bffe3262e4830bc50316842f4'
+Submodule 'cde' (https://github.com/chipsalliance/cde.git) registered for path 'ChiselIOPMP/utility/rocket-chip/cde'
+Submodule 'hardfloat' (https://github.com/ucb-bar/berkeley-hardfloat.git) registered for path 'ChiselIOPMP/utility/rocket-chip/hardfloat'
+Submodule 'torture' (https://github.com/ucb-bar/riscv-torture.git) registered for path 'ChiselIOPMP/utility/rocket-chip/torture'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/ChiselIOPMP/utility/rocket-chip/cde'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/ChiselIOPMP/utility/rocket-chip/hardfloat'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/ChiselIOPMP/utility/rocket-chip/torture'...
+Submodule path 'ChiselIOPMP/utility/rocket-chip/cde': checked out '52768c97a27b254c0cc0ac9401feb55b29e18c28'
+Submodule path 'ChiselIOPMP/utility/rocket-chip/hardfloat': checked out 'd93aa570806013dea479a92ba9bb33d1f2d4f69f'
+Submodule 'berkeley-softfloat-3' (https://github.com/ucb-bar/berkeley-softfloat-3.git) registered for path 'ChiselIOPMP/utility/rocket-chip/hardfloat/berkeley-softfloat-3'
+Submodule 'berkeley-testfloat-3' (https://github.com/ucb-bar/berkeley-testfloat-3.git) registered for path 'ChiselIOPMP/utility/rocket-chip/hardfloat/berkeley-testfloat-3'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/ChiselIOPMP/utility/rocket-chip/hardfloat/berkeley-softfloat-3'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/ChiselIOPMP/utility/rocket-chip/hardfloat/berkeley-testfloat-3'...
+Submodule path 'ChiselIOPMP/utility/rocket-chip/hardfloat/berkeley-softfloat-3': checked out '5c06db33fc1e2130f67c045327b0ec949032df1d'
+Submodule path 'ChiselIOPMP/utility/rocket-chip/hardfloat/berkeley-testfloat-3': checked out '06b20075dd3c1a5d0dd007a93643282832221612'
+Submodule path 'ChiselIOPMP/utility/rocket-chip/torture': checked out '99d8b2b441ecaa18b852505bb7718ee04e2753f5'
+Submodule 'env' (https://github.com/riscv/riscv-test-env.git) registered for path 'ChiselIOPMP/utility/rocket-chip/torture/env'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/ChiselIOPMP/utility/rocket-chip/torture/env'...
+Submodule path 'ChiselIOPMP/utility/rocket-chip/torture/env': checked out 'ce70afbf50a203be04bc326326cfa75831fe7f5d'
+Submodule path 'coupledL2': checked out '55d8e69c690690dbc786e9ca2f3839a95555df95'
+Submodule 'HuanCun' (https://github.com/OpenXiangShan/HuanCun.git) registered for path 'coupledL2/HuanCun'
+Submodule 'rocket-chip' (https://github.com/OpenXiangShan/rocket-chip.git) registered for path 'coupledL2/rocket-chip'
+Submodule 'utility' (https://github.com/OpenXiangShan/utility) registered for path 'coupledL2/utility'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/coupledL2/HuanCun'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/coupledL2/utility'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/coupledL2/rocket-chip'...
+Submodule path 'coupledL2/HuanCun': checked out '65ef077373ecf398b4cecdea06b65ef9b8d79044'
+Submodule 'Utility' (https://github.com/OpenXiangShan/Utility) registered for path 'coupledL2/HuanCun/Utility'
+Submodule 'rocket-chip' (https://github.com/OpenXiangShan/rocket-chip.git) registered for path 'coupledL2/HuanCun/rocket-chip'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/coupledL2/HuanCun/Utility'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/coupledL2/HuanCun/rocket-chip'...
+Submodule path 'coupledL2/HuanCun/Utility': checked out 'c8d424348b0a058753116558c3d7066dba375f17'
+Submodule 'rocket-chip' (https://github.com/OpenXiangShan/rocket-chip.git) registered for path 'coupledL2/HuanCun/Utility/rocket-chip'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/coupledL2/HuanCun/Utility/rocket-chip'...
+Submodule path 'coupledL2/HuanCun/Utility/rocket-chip': checked out '46f1efefa1ff431bffe3262e4830bc50316842f4'
+Submodule 'cde' (https://github.com/chipsalliance/cde.git) registered for path 'coupledL2/HuanCun/Utility/rocket-chip/cde'
+Submodule 'hardfloat' (https://github.com/ucb-bar/berkeley-hardfloat.git) registered for path 'coupledL2/HuanCun/Utility/rocket-chip/hardfloat'
+Submodule 'torture' (https://github.com/ucb-bar/riscv-torture.git) registered for path 'coupledL2/HuanCun/Utility/rocket-chip/torture'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/coupledL2/HuanCun/Utility/rocket-chip/cde'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/coupledL2/HuanCun/Utility/rocket-chip/hardfloat'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/coupledL2/HuanCun/Utility/rocket-chip/torture'...
+Submodule path 'coupledL2/HuanCun/Utility/rocket-chip/cde': checked out '52768c97a27b254c0cc0ac9401feb55b29e18c28'
+Submodule path 'coupledL2/HuanCun/Utility/rocket-chip/hardfloat': checked out 'd93aa570806013dea479a92ba9bb33d1f2d4f69f'
+Submodule 'berkeley-softfloat-3' (https://github.com/ucb-bar/berkeley-softfloat-3.git) registered for path 'coupledL2/HuanCun/Utility/rocket-chip/hardfloat/berkeley-softfloat-3'
+Submodule 'berkeley-testfloat-3' (https://github.com/ucb-bar/berkeley-testfloat-3.git) registered for path 'coupledL2/HuanCun/Utility/rocket-chip/hardfloat/berkeley-testfloat-3'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/coupledL2/HuanCun/Utility/rocket-chip/hardfloat/berkeley-softfloat-3'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/coupledL2/HuanCun/Utility/rocket-chip/hardfloat/berkeley-testfloat-3'...
+Submodule path 'coupledL2/HuanCun/Utility/rocket-chip/hardfloat/berkeley-softfloat-3': checked out '5c06db33fc1e2130f67c045327b0ec949032df1d'
+Submodule path 'coupledL2/HuanCun/Utility/rocket-chip/hardfloat/berkeley-testfloat-3': checked out '06b20075dd3c1a5d0dd007a93643282832221612'
+Submodule path 'coupledL2/HuanCun/Utility/rocket-chip/torture': checked out '99d8b2b441ecaa18b852505bb7718ee04e2753f5'
+Submodule 'env' (https://github.com/riscv/riscv-test-env.git) registered for path 'coupledL2/HuanCun/Utility/rocket-chip/torture/env'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/coupledL2/HuanCun/Utility/rocket-chip/torture/env'...
+Submodule path 'coupledL2/HuanCun/Utility/rocket-chip/torture/env': checked out 'ce70afbf50a203be04bc326326cfa75831fe7f5d'
+Submodule path 'coupledL2/HuanCun/rocket-chip': checked out '46f1efefa1ff431bffe3262e4830bc50316842f4'
+Submodule 'cde' (https://github.com/chipsalliance/cde.git) registered for path 'coupledL2/HuanCun/rocket-chip/cde'
+Submodule 'hardfloat' (https://github.com/ucb-bar/berkeley-hardfloat.git) registered for path 'coupledL2/HuanCun/rocket-chip/hardfloat'
+Submodule 'torture' (https://github.com/ucb-bar/riscv-torture.git) registered for path 'coupledL2/HuanCun/rocket-chip/torture'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/coupledL2/HuanCun/rocket-chip/cde'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/coupledL2/HuanCun/rocket-chip/hardfloat'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/coupledL2/HuanCun/rocket-chip/torture'...
+Submodule path 'coupledL2/HuanCun/rocket-chip/cde': checked out '52768c97a27b254c0cc0ac9401feb55b29e18c28'
+Submodule path 'coupledL2/HuanCun/rocket-chip/hardfloat': checked out 'd93aa570806013dea479a92ba9bb33d1f2d4f69f'
+Submodule 'berkeley-softfloat-3' (https://github.com/ucb-bar/berkeley-softfloat-3.git) registered for path 'coupledL2/HuanCun/rocket-chip/hardfloat/berkeley-softfloat-3'
+Submodule 'berkeley-testfloat-3' (https://github.com/ucb-bar/berkeley-testfloat-3.git) registered for path 'coupledL2/HuanCun/rocket-chip/hardfloat/berkeley-testfloat-3'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/coupledL2/HuanCun/rocket-chip/hardfloat/berkeley-softfloat-3'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/coupledL2/HuanCun/rocket-chip/hardfloat/berkeley-testfloat-3'...
+Submodule path 'coupledL2/HuanCun/rocket-chip/hardfloat/berkeley-softfloat-3': checked out '5c06db33fc1e2130f67c045327b0ec949032df1d'
+Submodule path 'coupledL2/HuanCun/rocket-chip/hardfloat/berkeley-testfloat-3': checked out '06b20075dd3c1a5d0dd007a93643282832221612'
+Submodule path 'coupledL2/HuanCun/rocket-chip/torture': checked out '99d8b2b441ecaa18b852505bb7718ee04e2753f5'
+Submodule 'env' (https://github.com/riscv/riscv-test-env.git) registered for path 'coupledL2/HuanCun/rocket-chip/torture/env'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/coupledL2/HuanCun/rocket-chip/torture/env'...
+Submodule path 'coupledL2/HuanCun/rocket-chip/torture/env': checked out 'ce70afbf50a203be04bc326326cfa75831fe7f5d'
+Submodule path 'coupledL2/rocket-chip': checked out '46f1efefa1ff431bffe3262e4830bc50316842f4'
+Submodule 'cde' (https://github.com/chipsalliance/cde.git) registered for path 'coupledL2/rocket-chip/cde'
+Submodule 'hardfloat' (https://github.com/ucb-bar/berkeley-hardfloat.git) registered for path 'coupledL2/rocket-chip/hardfloat'
+Submodule 'torture' (https://github.com/ucb-bar/riscv-torture.git) registered for path 'coupledL2/rocket-chip/torture'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/coupledL2/rocket-chip/cde'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/coupledL2/rocket-chip/hardfloat'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/coupledL2/rocket-chip/torture'...
+Submodule path 'coupledL2/rocket-chip/cde': checked out '52768c97a27b254c0cc0ac9401feb55b29e18c28'
+Submodule path 'coupledL2/rocket-chip/hardfloat': checked out 'd93aa570806013dea479a92ba9bb33d1f2d4f69f'
+Submodule 'berkeley-softfloat-3' (https://github.com/ucb-bar/berkeley-softfloat-3.git) registered for path 'coupledL2/rocket-chip/hardfloat/berkeley-softfloat-3'
+Submodule 'berkeley-testfloat-3' (https://github.com/ucb-bar/berkeley-testfloat-3.git) registered for path 'coupledL2/rocket-chip/hardfloat/berkeley-testfloat-3'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/coupledL2/rocket-chip/hardfloat/berkeley-softfloat-3'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/coupledL2/rocket-chip/hardfloat/berkeley-testfloat-3'...
+Submodule path 'coupledL2/rocket-chip/hardfloat/berkeley-softfloat-3': checked out '5c06db33fc1e2130f67c045327b0ec949032df1d'
+Submodule path 'coupledL2/rocket-chip/hardfloat/berkeley-testfloat-3': checked out '06b20075dd3c1a5d0dd007a93643282832221612'
+Submodule path 'coupledL2/rocket-chip/torture': checked out '99d8b2b441ecaa18b852505bb7718ee04e2753f5'
+Submodule 'env' (https://github.com/riscv/riscv-test-env.git) registered for path 'coupledL2/rocket-chip/torture/env'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/coupledL2/rocket-chip/torture/env'...
+Submodule path 'coupledL2/rocket-chip/torture/env': checked out 'ce70afbf50a203be04bc326326cfa75831fe7f5d'
+Submodule path 'coupledL2/utility': checked out 'f6932e64a300526a27ac440ec0fc5c09adcc006e'
+Submodule 'rocket-chip' (https://github.com/OpenXiangShan/rocket-chip.git) registered for path 'coupledL2/utility/rocket-chip'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/coupledL2/utility/rocket-chip'...
+Submodule path 'coupledL2/utility/rocket-chip': checked out '46f1efefa1ff431bffe3262e4830bc50316842f4'
+Submodule 'cde' (https://github.com/chipsalliance/cde.git) registered for path 'coupledL2/utility/rocket-chip/cde'
+Submodule 'hardfloat' (https://github.com/ucb-bar/berkeley-hardfloat.git) registered for path 'coupledL2/utility/rocket-chip/hardfloat'
+Submodule 'torture' (https://github.com/ucb-bar/riscv-torture.git) registered for path 'coupledL2/utility/rocket-chip/torture'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/coupledL2/utility/rocket-chip/cde'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/coupledL2/utility/rocket-chip/hardfloat'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/coupledL2/utility/rocket-chip/torture'...
+Submodule path 'coupledL2/utility/rocket-chip/cde': checked out '52768c97a27b254c0cc0ac9401feb55b29e18c28'
+Submodule path 'coupledL2/utility/rocket-chip/hardfloat': checked out 'd93aa570806013dea479a92ba9bb33d1f2d4f69f'
+Submodule 'berkeley-softfloat-3' (https://github.com/ucb-bar/berkeley-softfloat-3.git) registered for path 'coupledL2/utility/rocket-chip/hardfloat/berkeley-softfloat-3'
+Submodule 'berkeley-testfloat-3' (https://github.com/ucb-bar/berkeley-testfloat-3.git) registered for path 'coupledL2/utility/rocket-chip/hardfloat/berkeley-testfloat-3'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/coupledL2/utility/rocket-chip/hardfloat/berkeley-softfloat-3'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/coupledL2/utility/rocket-chip/hardfloat/berkeley-testfloat-3'...
+Submodule path 'coupledL2/utility/rocket-chip/hardfloat/berkeley-softfloat-3': checked out '5c06db33fc1e2130f67c045327b0ec949032df1d'
+Submodule path 'coupledL2/utility/rocket-chip/hardfloat/berkeley-testfloat-3': checked out '06b20075dd3c1a5d0dd007a93643282832221612'
+Submodule path 'coupledL2/utility/rocket-chip/torture': checked out '99d8b2b441ecaa18b852505bb7718ee04e2753f5'
+Submodule 'env' (https://github.com/riscv/riscv-test-env.git) registered for path 'coupledL2/utility/rocket-chip/torture/env'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/coupledL2/utility/rocket-chip/torture/env'...
+Submodule path 'coupledL2/utility/rocket-chip/torture/env': checked out 'ce70afbf50a203be04bc326326cfa75831fe7f5d'
+Submodule path 'difftest': checked out '3729300ae233816d332d057f170472ebe35147b0'
+Submodule path 'fudian': checked out 'e1bd4695ca7beb36a5ce7357e9527ad9e95b9ec1'
+Submodule 'berkeley-softfloat-3' (https://github.com/ucb-bar/berkeley-softfloat-3.git) registered for path 'fudian/berkeley-softfloat-3'
+Submodule 'berkeley-testfloat-3' (https://github.com/ucb-bar/berkeley-testfloat-3.git) registered for path 'fudian/berkeley-testfloat-3'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/fudian/berkeley-softfloat-3'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/fudian/berkeley-testfloat-3'...
+Submodule path 'fudian/berkeley-softfloat-3': checked out 'b64af41c3276f97f0e181920400ee056b9c88037'
+Submodule path 'fudian/berkeley-testfloat-3': checked out '06b20075dd3c1a5d0dd007a93643282832221612'
+Submodule path 'huancun': checked out '65ef077373ecf398b4cecdea06b65ef9b8d79044'
+Submodule 'Utility' (https://github.com/OpenXiangShan/Utility) registered for path 'huancun/Utility'
+Submodule 'rocket-chip' (https://github.com/OpenXiangShan/rocket-chip.git) registered for path 'huancun/rocket-chip'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/huancun/Utility'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/huancun/rocket-chip'...
+Submodule path 'huancun/Utility': checked out 'c8d424348b0a058753116558c3d7066dba375f17'
+Submodule 'rocket-chip' (https://github.com/OpenXiangShan/rocket-chip.git) registered for path 'huancun/Utility/rocket-chip'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/huancun/Utility/rocket-chip'...
+Submodule path 'huancun/Utility/rocket-chip': checked out '46f1efefa1ff431bffe3262e4830bc50316842f4'
+Submodule 'cde' (https://github.com/chipsalliance/cde.git) registered for path 'huancun/Utility/rocket-chip/cde'
+Submodule 'hardfloat' (https://github.com/ucb-bar/berkeley-hardfloat.git) registered for path 'huancun/Utility/rocket-chip/hardfloat'
+Submodule 'torture' (https://github.com/ucb-bar/riscv-torture.git) registered for path 'huancun/Utility/rocket-chip/torture'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/huancun/Utility/rocket-chip/cde'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/huancun/Utility/rocket-chip/hardfloat'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/huancun/Utility/rocket-chip/torture'...
+Submodule path 'huancun/Utility/rocket-chip/cde': checked out '52768c97a27b254c0cc0ac9401feb55b29e18c28'
+Submodule path 'huancun/Utility/rocket-chip/hardfloat': checked out 'd93aa570806013dea479a92ba9bb33d1f2d4f69f'
+Submodule 'berkeley-softfloat-3' (https://github.com/ucb-bar/berkeley-softfloat-3.git) registered for path 'huancun/Utility/rocket-chip/hardfloat/berkeley-softfloat-3'
+Submodule 'berkeley-testfloat-3' (https://github.com/ucb-bar/berkeley-testfloat-3.git) registered for path 'huancun/Utility/rocket-chip/hardfloat/berkeley-testfloat-3'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/huancun/Utility/rocket-chip/hardfloat/berkeley-softfloat-3'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/huancun/Utility/rocket-chip/hardfloat/berkeley-testfloat-3'...
+Submodule path 'huancun/Utility/rocket-chip/hardfloat/berkeley-softfloat-3': checked out '5c06db33fc1e2130f67c045327b0ec949032df1d'
+Submodule path 'huancun/Utility/rocket-chip/hardfloat/berkeley-testfloat-3': checked out '06b20075dd3c1a5d0dd007a93643282832221612'
+Submodule path 'huancun/Utility/rocket-chip/torture': checked out '99d8b2b441ecaa18b852505bb7718ee04e2753f5'
+Submodule 'env' (https://github.com/riscv/riscv-test-env.git) registered for path 'huancun/Utility/rocket-chip/torture/env'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/huancun/Utility/rocket-chip/torture/env'...
+Submodule path 'huancun/Utility/rocket-chip/torture/env': checked out 'ce70afbf50a203be04bc326326cfa75831fe7f5d'
+Submodule path 'huancun/rocket-chip': checked out '46f1efefa1ff431bffe3262e4830bc50316842f4'
+Submodule 'cde' (https://github.com/chipsalliance/cde.git) registered for path 'huancun/rocket-chip/cde'
+Submodule 'hardfloat' (https://github.com/ucb-bar/berkeley-hardfloat.git) registered for path 'huancun/rocket-chip/hardfloat'
+Submodule 'torture' (https://github.com/ucb-bar/riscv-torture.git) registered for path 'huancun/rocket-chip/torture'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/huancun/rocket-chip/cde'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/huancun/rocket-chip/hardfloat'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/huancun/rocket-chip/torture'...
+Submodule path 'huancun/rocket-chip/cde': checked out '52768c97a27b254c0cc0ac9401feb55b29e18c28'
+Submodule path 'huancun/rocket-chip/hardfloat': checked out 'd93aa570806013dea479a92ba9bb33d1f2d4f69f'
+Submodule 'berkeley-softfloat-3' (https://github.com/ucb-bar/berkeley-softfloat-3.git) registered for path 'huancun/rocket-chip/hardfloat/berkeley-softfloat-3'
+Submodule 'berkeley-testfloat-3' (https://github.com/ucb-bar/berkeley-testfloat-3.git) registered for path 'huancun/rocket-chip/hardfloat/berkeley-testfloat-3'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/huancun/rocket-chip/hardfloat/berkeley-softfloat-3'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/huancun/rocket-chip/hardfloat/berkeley-testfloat-3'...
+Submodule path 'huancun/rocket-chip/hardfloat/berkeley-softfloat-3': checked out '5c06db33fc1e2130f67c045327b0ec949032df1d'
+Submodule path 'huancun/rocket-chip/hardfloat/berkeley-testfloat-3': checked out '06b20075dd3c1a5d0dd007a93643282832221612'
+Submodule path 'huancun/rocket-chip/torture': checked out '99d8b2b441ecaa18b852505bb7718ee04e2753f5'
+Submodule 'env' (https://github.com/riscv/riscv-test-env.git) registered for path 'huancun/rocket-chip/torture/env'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/huancun/rocket-chip/torture/env'...
+Submodule path 'huancun/rocket-chip/torture/env': checked out 'ce70afbf50a203be04bc326326cfa75831fe7f5d'
+Submodule path 'openLLC': checked out '9e6f78209b2f215fb9f6a8f0de250995ff3ab63d'
+Submodule 'coupledL2' (https://github.com/OpenXiangShan/CoupledL2) registered for path 'openLLC/coupledL2'
+Submodule 'openNCB' (https://github.com/OpenXiangShan/OpenNCB) registered for path 'openLLC/openNCB'
+Submodule 'rocket-chip' (https://github.com/OpenXiangShan/rocket-chip) registered for path 'openLLC/rocket-chip'
+Submodule 'utility' (https://github.com/OpenXiangShan/Utility) registered for path 'openLLC/utility'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/coupledL2'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/openNCB'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/utility'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/rocket-chip'...
+Submodule path 'openLLC/coupledL2': checked out 'cd4ed5fc47f268882ed6b8bb99d10f4bd96c6ec5'
+Submodule 'HuanCun' (https://github.com/OpenXiangShan/HuanCun.git) registered for path 'openLLC/coupledL2/HuanCun'
+Submodule 'rocket-chip' (https://github.com/OpenXiangShan/rocket-chip.git) registered for path 'openLLC/coupledL2/rocket-chip'
+Submodule 'utility' (https://github.com/OpenXiangShan/utility) registered for path 'openLLC/coupledL2/utility'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/coupledL2/HuanCun'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/coupledL2/utility'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/coupledL2/rocket-chip'...
+Submodule path 'openLLC/coupledL2/HuanCun': checked out '8faa17c9f7115782da1bd1665bd95587fba525ec'
+Submodule 'Utility' (https://github.com/OpenXiangShan/Utility) registered for path 'openLLC/coupledL2/HuanCun/Utility'
+Submodule 'rocket-chip' (https://github.com/OpenXiangShan/rocket-chip.git) registered for path 'openLLC/coupledL2/HuanCun/rocket-chip'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/coupledL2/HuanCun/Utility'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/coupledL2/HuanCun/rocket-chip'...
+Submodule path 'openLLC/coupledL2/HuanCun/Utility': checked out 'de50694f6ffb48780a4b4665907442b3e4dd0d6d'
+Submodule 'rocket-chip' (https://github.com/OpenXiangShan/rocket-chip.git) registered for path 'openLLC/coupledL2/HuanCun/Utility/rocket-chip'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/coupledL2/HuanCun/Utility/rocket-chip'...
+Submodule path 'openLLC/coupledL2/HuanCun/Utility/rocket-chip': checked out '175dfe096e3b7c630f93ef328df1cf0b2ed55de1'
+Submodule 'cde' (https://github.com/chipsalliance/cde.git) registered for path 'openLLC/coupledL2/HuanCun/Utility/rocket-chip/cde'
+Submodule 'hardfloat' (https://github.com/ucb-bar/berkeley-hardfloat.git) registered for path 'openLLC/coupledL2/HuanCun/Utility/rocket-chip/hardfloat'
+Submodule 'torture' (https://github.com/ucb-bar/riscv-torture.git) registered for path 'openLLC/coupledL2/HuanCun/Utility/rocket-chip/torture'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/coupledL2/HuanCun/Utility/rocket-chip/cde'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/coupledL2/HuanCun/Utility/rocket-chip/hardfloat'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/coupledL2/HuanCun/Utility/rocket-chip/torture'...
+Submodule path 'openLLC/coupledL2/HuanCun/Utility/rocket-chip/cde': checked out '52768c97a27b254c0cc0ac9401feb55b29e18c28'
+Submodule path 'openLLC/coupledL2/HuanCun/Utility/rocket-chip/hardfloat': checked out 'd93aa570806013dea479a92ba9bb33d1f2d4f69f'
+Submodule 'berkeley-softfloat-3' (https://github.com/ucb-bar/berkeley-softfloat-3.git) registered for path 'openLLC/coupledL2/HuanCun/Utility/rocket-chip/hardfloat/berkeley-softfloat-3'
+Submodule 'berkeley-testfloat-3' (https://github.com/ucb-bar/berkeley-testfloat-3.git) registered for path 'openLLC/coupledL2/HuanCun/Utility/rocket-chip/hardfloat/berkeley-testfloat-3'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/coupledL2/HuanCun/Utility/rocket-chip/hardfloat/berkeley-softfloat-3'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/coupledL2/HuanCun/Utility/rocket-chip/hardfloat/berkeley-testfloat-3'...
+Submodule path 'openLLC/coupledL2/HuanCun/Utility/rocket-chip/hardfloat/berkeley-softfloat-3': checked out '5c06db33fc1e2130f67c045327b0ec949032df1d'
+Submodule path 'openLLC/coupledL2/HuanCun/Utility/rocket-chip/hardfloat/berkeley-testfloat-3': checked out '06b20075dd3c1a5d0dd007a93643282832221612'
+Submodule path 'openLLC/coupledL2/HuanCun/Utility/rocket-chip/torture': checked out '99d8b2b441ecaa18b852505bb7718ee04e2753f5'
+Submodule 'env' (https://github.com/riscv/riscv-test-env.git) registered for path 'openLLC/coupledL2/HuanCun/Utility/rocket-chip/torture/env'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/coupledL2/HuanCun/Utility/rocket-chip/torture/env'...
+Submodule path 'openLLC/coupledL2/HuanCun/Utility/rocket-chip/torture/env': checked out 'ce70afbf50a203be04bc326326cfa75831fe7f5d'
+Submodule path 'openLLC/coupledL2/HuanCun/rocket-chip': checked out '90ae9a9314d444ade097fd5a471916869559b4fd'
+Submodule 'cde' (https://github.com/chipsalliance/cde.git) registered for path 'openLLC/coupledL2/HuanCun/rocket-chip/cde'
+Submodule 'hardfloat' (https://github.com/ucb-bar/berkeley-hardfloat.git) registered for path 'openLLC/coupledL2/HuanCun/rocket-chip/hardfloat'
+Submodule 'torture' (https://github.com/ucb-bar/riscv-torture.git) registered for path 'openLLC/coupledL2/HuanCun/rocket-chip/torture'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/coupledL2/HuanCun/rocket-chip/cde'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/coupledL2/HuanCun/rocket-chip/hardfloat'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/coupledL2/HuanCun/rocket-chip/torture'...
+Submodule path 'openLLC/coupledL2/HuanCun/rocket-chip/cde': checked out '52768c97a27b254c0cc0ac9401feb55b29e18c28'
+Submodule path 'openLLC/coupledL2/HuanCun/rocket-chip/hardfloat': checked out 'd93aa570806013dea479a92ba9bb33d1f2d4f69f'
+Submodule 'berkeley-softfloat-3' (https://github.com/ucb-bar/berkeley-softfloat-3.git) registered for path 'openLLC/coupledL2/HuanCun/rocket-chip/hardfloat/berkeley-softfloat-3'
+Submodule 'berkeley-testfloat-3' (https://github.com/ucb-bar/berkeley-testfloat-3.git) registered for path 'openLLC/coupledL2/HuanCun/rocket-chip/hardfloat/berkeley-testfloat-3'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/coupledL2/HuanCun/rocket-chip/hardfloat/berkeley-softfloat-3'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/coupledL2/HuanCun/rocket-chip/hardfloat/berkeley-testfloat-3'...
+Submodule path 'openLLC/coupledL2/HuanCun/rocket-chip/hardfloat/berkeley-softfloat-3': checked out '5c06db33fc1e2130f67c045327b0ec949032df1d'
+Submodule path 'openLLC/coupledL2/HuanCun/rocket-chip/hardfloat/berkeley-testfloat-3': checked out '06b20075dd3c1a5d0dd007a93643282832221612'
+Submodule path 'openLLC/coupledL2/HuanCun/rocket-chip/torture': checked out '99d8b2b441ecaa18b852505bb7718ee04e2753f5'
+Submodule 'env' (https://github.com/riscv/riscv-test-env.git) registered for path 'openLLC/coupledL2/HuanCun/rocket-chip/torture/env'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/coupledL2/HuanCun/rocket-chip/torture/env'...
+Submodule path 'openLLC/coupledL2/HuanCun/rocket-chip/torture/env': checked out 'ce70afbf50a203be04bc326326cfa75831fe7f5d'
+Submodule path 'openLLC/coupledL2/rocket-chip': checked out '90ae9a9314d444ade097fd5a471916869559b4fd'
+Submodule 'cde' (https://github.com/chipsalliance/cde.git) registered for path 'openLLC/coupledL2/rocket-chip/cde'
+Submodule 'hardfloat' (https://github.com/ucb-bar/berkeley-hardfloat.git) registered for path 'openLLC/coupledL2/rocket-chip/hardfloat'
+Submodule 'torture' (https://github.com/ucb-bar/riscv-torture.git) registered for path 'openLLC/coupledL2/rocket-chip/torture'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/coupledL2/rocket-chip/cde'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/coupledL2/rocket-chip/hardfloat'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/coupledL2/rocket-chip/torture'...
+Submodule path 'openLLC/coupledL2/rocket-chip/cde': checked out '52768c97a27b254c0cc0ac9401feb55b29e18c28'
+Submodule path 'openLLC/coupledL2/rocket-chip/hardfloat': checked out 'd93aa570806013dea479a92ba9bb33d1f2d4f69f'
+Submodule 'berkeley-softfloat-3' (https://github.com/ucb-bar/berkeley-softfloat-3.git) registered for path 'openLLC/coupledL2/rocket-chip/hardfloat/berkeley-softfloat-3'
+Submodule 'berkeley-testfloat-3' (https://github.com/ucb-bar/berkeley-testfloat-3.git) registered for path 'openLLC/coupledL2/rocket-chip/hardfloat/berkeley-testfloat-3'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/coupledL2/rocket-chip/hardfloat/berkeley-softfloat-3'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/coupledL2/rocket-chip/hardfloat/berkeley-testfloat-3'...
+Submodule path 'openLLC/coupledL2/rocket-chip/hardfloat/berkeley-softfloat-3': checked out '5c06db33fc1e2130f67c045327b0ec949032df1d'
+Submodule path 'openLLC/coupledL2/rocket-chip/hardfloat/berkeley-testfloat-3': checked out '06b20075dd3c1a5d0dd007a93643282832221612'
+Submodule path 'openLLC/coupledL2/rocket-chip/torture': checked out '99d8b2b441ecaa18b852505bb7718ee04e2753f5'
+Submodule 'env' (https://github.com/riscv/riscv-test-env.git) registered for path 'openLLC/coupledL2/rocket-chip/torture/env'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/coupledL2/rocket-chip/torture/env'...
+Submodule path 'openLLC/coupledL2/rocket-chip/torture/env': checked out 'ce70afbf50a203be04bc326326cfa75831fe7f5d'
+Submodule path 'openLLC/coupledL2/utility': checked out 'a0a7f9894ed9033db5f5f201bb48f13a7d1cbb41'
+Submodule 'rocket-chip' (https://github.com/OpenXiangShan/rocket-chip.git) registered for path 'openLLC/coupledL2/utility/rocket-chip'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/coupledL2/utility/rocket-chip'...
+Submodule path 'openLLC/coupledL2/utility/rocket-chip': checked out '175dfe096e3b7c630f93ef328df1cf0b2ed55de1'
+Submodule 'cde' (https://github.com/chipsalliance/cde.git) registered for path 'openLLC/coupledL2/utility/rocket-chip/cde'
+Submodule 'hardfloat' (https://github.com/ucb-bar/berkeley-hardfloat.git) registered for path 'openLLC/coupledL2/utility/rocket-chip/hardfloat'
+Submodule 'torture' (https://github.com/ucb-bar/riscv-torture.git) registered for path 'openLLC/coupledL2/utility/rocket-chip/torture'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/coupledL2/utility/rocket-chip/cde'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/coupledL2/utility/rocket-chip/hardfloat'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/coupledL2/utility/rocket-chip/torture'...
+Submodule path 'openLLC/coupledL2/utility/rocket-chip/cde': checked out '52768c97a27b254c0cc0ac9401feb55b29e18c28'
+Submodule path 'openLLC/coupledL2/utility/rocket-chip/hardfloat': checked out 'd93aa570806013dea479a92ba9bb33d1f2d4f69f'
+Submodule 'berkeley-softfloat-3' (https://github.com/ucb-bar/berkeley-softfloat-3.git) registered for path 'openLLC/coupledL2/utility/rocket-chip/hardfloat/berkeley-softfloat-3'
+Submodule 'berkeley-testfloat-3' (https://github.com/ucb-bar/berkeley-testfloat-3.git) registered for path 'openLLC/coupledL2/utility/rocket-chip/hardfloat/berkeley-testfloat-3'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/coupledL2/utility/rocket-chip/hardfloat/berkeley-softfloat-3'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/coupledL2/utility/rocket-chip/hardfloat/berkeley-testfloat-3'...
+Submodule path 'openLLC/coupledL2/utility/rocket-chip/hardfloat/berkeley-softfloat-3': checked out '5c06db33fc1e2130f67c045327b0ec949032df1d'
+Submodule path 'openLLC/coupledL2/utility/rocket-chip/hardfloat/berkeley-testfloat-3': checked out '06b20075dd3c1a5d0dd007a93643282832221612'
+Submodule path 'openLLC/coupledL2/utility/rocket-chip/torture': checked out '99d8b2b441ecaa18b852505bb7718ee04e2753f5'
+Submodule 'env' (https://github.com/riscv/riscv-test-env.git) registered for path 'openLLC/coupledL2/utility/rocket-chip/torture/env'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/coupledL2/utility/rocket-chip/torture/env'...
+Submodule path 'openLLC/coupledL2/utility/rocket-chip/torture/env': checked out 'ce70afbf50a203be04bc326326cfa75831fe7f5d'
+Submodule path 'openLLC/openNCB': checked out '5073e2c2efe19d71d11003df00425492067c4934'
+Submodule 'external/rocket-chip' (https://github.com/OpenXiangShan/rocket-chip) registered for path 'openLLC/openNCB/external/rocket-chip'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/openNCB/external/rocket-chip'...
+Submodule path 'openLLC/openNCB/external/rocket-chip': checked out '90ae9a9314d444ade097fd5a471916869559b4fd'
+Submodule 'cde' (https://github.com/chipsalliance/cde.git) registered for path 'openLLC/openNCB/external/rocket-chip/cde'
+Submodule 'hardfloat' (https://github.com/ucb-bar/berkeley-hardfloat.git) registered for path 'openLLC/openNCB/external/rocket-chip/hardfloat'
+Submodule 'torture' (https://github.com/ucb-bar/riscv-torture.git) registered for path 'openLLC/openNCB/external/rocket-chip/torture'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/openNCB/external/rocket-chip/cde'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/openNCB/external/rocket-chip/hardfloat'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/openNCB/external/rocket-chip/torture'...
+Submodule path 'openLLC/openNCB/external/rocket-chip/cde': checked out '52768c97a27b254c0cc0ac9401feb55b29e18c28'
+Submodule path 'openLLC/openNCB/external/rocket-chip/hardfloat': checked out 'd93aa570806013dea479a92ba9bb33d1f2d4f69f'
+Submodule 'berkeley-softfloat-3' (https://github.com/ucb-bar/berkeley-softfloat-3.git) registered for path 'openLLC/openNCB/external/rocket-chip/hardfloat/berkeley-softfloat-3'
+Submodule 'berkeley-testfloat-3' (https://github.com/ucb-bar/berkeley-testfloat-3.git) registered for path 'openLLC/openNCB/external/rocket-chip/hardfloat/berkeley-testfloat-3'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/openNCB/external/rocket-chip/hardfloat/berkeley-softfloat-3'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/openNCB/external/rocket-chip/hardfloat/berkeley-testfloat-3'...
+Submodule path 'openLLC/openNCB/external/rocket-chip/hardfloat/berkeley-softfloat-3': checked out '5c06db33fc1e2130f67c045327b0ec949032df1d'
+Submodule path 'openLLC/openNCB/external/rocket-chip/hardfloat/berkeley-testfloat-3': checked out '06b20075dd3c1a5d0dd007a93643282832221612'
+Submodule path 'openLLC/openNCB/external/rocket-chip/torture': checked out '99d8b2b441ecaa18b852505bb7718ee04e2753f5'
+Submodule 'env' (https://github.com/riscv/riscv-test-env.git) registered for path 'openLLC/openNCB/external/rocket-chip/torture/env'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/openNCB/external/rocket-chip/torture/env'...
+Submodule path 'openLLC/openNCB/external/rocket-chip/torture/env': checked out 'ce70afbf50a203be04bc326326cfa75831fe7f5d'
+Submodule path 'openLLC/rocket-chip': checked out '90ae9a9314d444ade097fd5a471916869559b4fd'
+Submodule 'cde' (https://github.com/chipsalliance/cde.git) registered for path 'openLLC/rocket-chip/cde'
+Submodule 'hardfloat' (https://github.com/ucb-bar/berkeley-hardfloat.git) registered for path 'openLLC/rocket-chip/hardfloat'
+Submodule 'torture' (https://github.com/ucb-bar/riscv-torture.git) registered for path 'openLLC/rocket-chip/torture'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/rocket-chip/cde'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/rocket-chip/hardfloat'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/rocket-chip/torture'...
+Submodule path 'openLLC/rocket-chip/cde': checked out '52768c97a27b254c0cc0ac9401feb55b29e18c28'
+Submodule path 'openLLC/rocket-chip/hardfloat': checked out 'd93aa570806013dea479a92ba9bb33d1f2d4f69f'
+Submodule 'berkeley-softfloat-3' (https://github.com/ucb-bar/berkeley-softfloat-3.git) registered for path 'openLLC/rocket-chip/hardfloat/berkeley-softfloat-3'
+Submodule 'berkeley-testfloat-3' (https://github.com/ucb-bar/berkeley-testfloat-3.git) registered for path 'openLLC/rocket-chip/hardfloat/berkeley-testfloat-3'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/rocket-chip/hardfloat/berkeley-softfloat-3'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/rocket-chip/hardfloat/berkeley-testfloat-3'...
+Submodule path 'openLLC/rocket-chip/hardfloat/berkeley-softfloat-3': checked out '5c06db33fc1e2130f67c045327b0ec949032df1d'
+Submodule path 'openLLC/rocket-chip/hardfloat/berkeley-testfloat-3': checked out '06b20075dd3c1a5d0dd007a93643282832221612'
+Submodule path 'openLLC/rocket-chip/torture': checked out '99d8b2b441ecaa18b852505bb7718ee04e2753f5'
+Submodule 'env' (https://github.com/riscv/riscv-test-env.git) registered for path 'openLLC/rocket-chip/torture/env'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/rocket-chip/torture/env'...
+Submodule path 'openLLC/rocket-chip/torture/env': checked out 'ce70afbf50a203be04bc326326cfa75831fe7f5d'
+Submodule path 'openLLC/utility': checked out 'eb69e4f7d4a254eeb5be115531475956de19c35a'
+Submodule 'rocket-chip' (https://github.com/OpenXiangShan/rocket-chip.git) registered for path 'openLLC/utility/rocket-chip'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/utility/rocket-chip'...
+Submodule path 'openLLC/utility/rocket-chip': checked out 'bea0af5d855a871699b907c1988961141bbf28e7'
+Submodule 'cde' (https://github.com/chipsalliance/cde.git) registered for path 'openLLC/utility/rocket-chip/cde'
+Submodule 'hardfloat' (https://github.com/ucb-bar/berkeley-hardfloat.git) registered for path 'openLLC/utility/rocket-chip/hardfloat'
+Submodule 'torture' (https://github.com/ucb-bar/riscv-torture.git) registered for path 'openLLC/utility/rocket-chip/torture'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/utility/rocket-chip/cde'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/utility/rocket-chip/hardfloat'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/utility/rocket-chip/torture'...
+Submodule path 'openLLC/utility/rocket-chip/cde': checked out '52768c97a27b254c0cc0ac9401feb55b29e18c28'
+Submodule path 'openLLC/utility/rocket-chip/hardfloat': checked out 'd93aa570806013dea479a92ba9bb33d1f2d4f69f'
+Submodule 'berkeley-softfloat-3' (https://github.com/ucb-bar/berkeley-softfloat-3.git) registered for path 'openLLC/utility/rocket-chip/hardfloat/berkeley-softfloat-3'
+Submodule 'berkeley-testfloat-3' (https://github.com/ucb-bar/berkeley-testfloat-3.git) registered for path 'openLLC/utility/rocket-chip/hardfloat/berkeley-testfloat-3'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/utility/rocket-chip/hardfloat/berkeley-softfloat-3'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/utility/rocket-chip/hardfloat/berkeley-testfloat-3'...
+Submodule path 'openLLC/utility/rocket-chip/hardfloat/berkeley-softfloat-3': checked out '5c06db33fc1e2130f67c045327b0ec949032df1d'
+Submodule path 'openLLC/utility/rocket-chip/hardfloat/berkeley-testfloat-3': checked out '06b20075dd3c1a5d0dd007a93643282832221612'
+Submodule path 'openLLC/utility/rocket-chip/torture': checked out '99d8b2b441ecaa18b852505bb7718ee04e2753f5'
+Submodule 'env' (https://github.com/riscv/riscv-test-env.git) registered for path 'openLLC/utility/rocket-chip/torture/env'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/openLLC/utility/rocket-chip/torture/env'...
+Submodule path 'openLLC/utility/rocket-chip/torture/env': checked out 'ce70afbf50a203be04bc326326cfa75831fe7f5d'
+Submodule path 'ready-to-run': checked out 'c4114ce3fffcd5c147c525014b40f1c841347238'
+Submodule path 'rocket-chip': checked out '46f1efefa1ff431bffe3262e4830bc50316842f4'
+Submodule 'cde' (https://github.com/chipsalliance/cde.git) registered for path 'rocket-chip/cde'
+Submodule 'hardfloat' (https://github.com/ucb-bar/berkeley-hardfloat.git) registered for path 'rocket-chip/hardfloat'
+Submodule 'torture' (https://github.com/ucb-bar/riscv-torture.git) registered for path 'rocket-chip/torture'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/rocket-chip/cde'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/rocket-chip/hardfloat'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/rocket-chip/torture'...
+Submodule path 'rocket-chip/cde': checked out '52768c97a27b254c0cc0ac9401feb55b29e18c28'
+Submodule path 'rocket-chip/hardfloat': checked out 'd93aa570806013dea479a92ba9bb33d1f2d4f69f'
+Submodule 'berkeley-softfloat-3' (https://github.com/ucb-bar/berkeley-softfloat-3.git) registered for path 'rocket-chip/hardfloat/berkeley-softfloat-3'
+Submodule 'berkeley-testfloat-3' (https://github.com/ucb-bar/berkeley-testfloat-3.git) registered for path 'rocket-chip/hardfloat/berkeley-testfloat-3'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/rocket-chip/hardfloat/berkeley-softfloat-3'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/rocket-chip/hardfloat/berkeley-testfloat-3'...
+Submodule path 'rocket-chip/hardfloat/berkeley-softfloat-3': checked out '5c06db33fc1e2130f67c045327b0ec949032df1d'
+Submodule path 'rocket-chip/hardfloat/berkeley-testfloat-3': checked out '06b20075dd3c1a5d0dd007a93643282832221612'
+Submodule path 'rocket-chip/torture': checked out '99d8b2b441ecaa18b852505bb7718ee04e2753f5'
+Submodule 'env' (https://github.com/riscv/riscv-test-env.git) registered for path 'rocket-chip/torture/env'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/rocket-chip/torture/env'...
+Submodule path 'rocket-chip/torture/env': checked out 'ce70afbf50a203be04bc326326cfa75831fe7f5d'
+Submodule path 'utility': checked out '2f0743f1f3ee1889049841926fa382cd0b32d8e2'
+Submodule 'rocket-chip' (https://github.com/OpenXiangShan/rocket-chip.git) registered for path 'utility/rocket-chip'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/utility/rocket-chip'...
+Submodule path 'utility/rocket-chip': checked out '46f1efefa1ff431bffe3262e4830bc50316842f4'
+Submodule 'cde' (https://github.com/chipsalliance/cde.git) registered for path 'utility/rocket-chip/cde'
+Submodule 'hardfloat' (https://github.com/ucb-bar/berkeley-hardfloat.git) registered for path 'utility/rocket-chip/hardfloat'
+Submodule 'torture' (https://github.com/ucb-bar/riscv-torture.git) registered for path 'utility/rocket-chip/torture'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/utility/rocket-chip/cde'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/utility/rocket-chip/hardfloat'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/utility/rocket-chip/torture'...
+Submodule path 'utility/rocket-chip/cde': checked out '52768c97a27b254c0cc0ac9401feb55b29e18c28'
+Submodule path 'utility/rocket-chip/hardfloat': checked out 'd93aa570806013dea479a92ba9bb33d1f2d4f69f'
+Submodule 'berkeley-softfloat-3' (https://github.com/ucb-bar/berkeley-softfloat-3.git) registered for path 'utility/rocket-chip/hardfloat/berkeley-softfloat-3'
+Submodule 'berkeley-testfloat-3' (https://github.com/ucb-bar/berkeley-testfloat-3.git) registered for path 'utility/rocket-chip/hardfloat/berkeley-testfloat-3'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/utility/rocket-chip/hardfloat/berkeley-softfloat-3'...
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/utility/rocket-chip/hardfloat/berkeley-testfloat-3'...
+Submodule path 'utility/rocket-chip/hardfloat/berkeley-softfloat-3': checked out '5c06db33fc1e2130f67c045327b0ec949032df1d'
+Submodule path 'utility/rocket-chip/hardfloat/berkeley-testfloat-3': checked out '06b20075dd3c1a5d0dd007a93643282832221612'
+Submodule path 'utility/rocket-chip/torture': checked out '99d8b2b441ecaa18b852505bb7718ee04e2753f5'
+Submodule 'env' (https://github.com/riscv/riscv-test-env.git) registered for path 'utility/rocket-chip/torture/env'
+Cloning into '/data/my/cie-stage1-repro/work/XiangShan-kmhv2/utility/rocket-chip/torture/env'...
+Submodule path 'utility/rocket-chip/torture/env': checked out 'ce70afbf50a203be04bc326326cfa75831fe7f5d'
+Submodule path 'yunsuan': checked out '955921186e34bb8915806582a238181a6dc3435c'
+    XiangShan: a4eeaabb4c12349259094a8b55f3ba1c03a9d993
+    yunsuan  : 955921186e34bb8915806582a238181a6dc3435c
+    NEMU     : 90908390002fb7da885e5d880bba3bef2a225b2a
+
+[1;34m==> [14:36:41] 4/7 espresso（Chisel decoder 的逻辑最小化器）[0m
+    复制上游自带的 x86-64 espresso
+    espresso : ELF 64-bit LSB pie executable, x86-64
+
+[1;34m==> [14:36:41] 5/7 生成本机环境文件 /data/my/cie-stage1-repro/work/tools/env.local.sh（位于 work/ 下，不入库）[0m
+    # 由 scripts/00_setup_env_host.sh 于 2026-10-26 14:36:41 按本机探测结果生成，不入库。
+    # 被 scripts/env_host.sh 自动载入。
+    export JAVA_HOME="/usr/lib/jvm/java-17-openjdk-amd64"
+    export CROSS="${CROSS:-/opt/riscv/bin/riscv64-unknown-elf-}"
+
+[1;34m==> [14:36:41] 6/7 生成补丁工作树 XiangShan-vdot / XiangShan-cosim[0m
+    XiangShan-vdot: 复制基线 /data/my/cie-stage1-repro/work/XiangShan-kmhv2 -> /data/my/cie-stage1-repro/work/XiangShan-vdot.tmp.3171164（排除 out/ build/）
+      基线 XiangShan a4eeaabb4 / yunsuan 9559211
+      已应用 rtl/patch/0001-xiangshan-vdot.patch（8 个文件）
+      已应用 rtl/patch/0002-yunsuan-vdot.patch（5 个文件）
+      已应用 tests/unit/yunsuan_vdot_testbench.patch（6 个文件）
+    XiangShan-vdot: 完成 -> /data/my/cie-stage1-repro/work/XiangShan-vdot
+    XiangShan:  M src/main/scala/xiangshan/backend/decode/DecodeUnit.scala
+    XiangShan:  M src/main/scala/xiangshan/backend/decode/Instructions.scala
+    XiangShan:  M src/main/scala/xiangshan/backend/decode/VecDecoder.scala
+    XiangShan:  M src/main/scala/xiangshan/backend/decode/VecExceptionGen.scala
+    XiangShan:  M src/main/scala/xiangshan/backend/fu/wrapper/VIMacU.scala
+    XiangShan:  m yunsuan
+    XiangShan: ?? src/test/scala/xiangshan/backend/decode/
+    XiangShan: ?? src/test/scala/xiangshan/backend/fu/VIMacUHarness.scala
+    XiangShan: ?? src/test/scala/xiangshan/backend/fu/VIMacUTest.scala
+    yunsuan  :  M src/main/scala/yunsuan/encoding/Opcode/VimacOpcode.scala
+    yunsuan  :  M src/main/scala/yunsuan/package.scala
+    yunsuan  :  M src/main/scala/yunsuan/vector/vectorIMAC/VIMac64b.scala
+    yunsuan  :  M src/test/csrc/include/gm_common.h
+    yunsuan  :  M src/test/csrc/include/test_driver.h
+    yunsuan  :  M src/test/csrc/include/vpu_constant.h
+    yunsuan  :  M src/test/csrc/test_driver.cpp
+    yunsuan  :  M src/test/scala/top/VectorSimTop.scala
+    yunsuan  : ?? src/main/scala/yunsuan/vector/vectorIMAC/VDotTop.scala
+    yunsuan  : ?? src/main/scala/yunsuan/vector/vectorIMAC/VDotTree.scala
+    yunsuan  : ?? src/test/csrc/golden_model/vector_dot.cpp
+    XiangShan-cosim: 复制基线 /data/my/cie-stage1-repro/work/XiangShan-kmhv2 -> /data/my/cie-stage1-repro/work/XiangShan-cosim.tmp.3171164（排除 out/ build/）
+      基线 XiangShan a4eeaabb4 / yunsuan 9559211
+      已应用 rtl/patch/0001-xiangshan-vdot.patch（8 个文件）
+      已应用 rtl/patch/0002-yunsuan-vdot.patch（5 个文件）
+      已应用 tests/unit/yunsuan_vdot_testbench.patch（6 个文件）
+    XiangShan-cosim: 完成 -> /data/my/cie-stage1-repro/work/XiangShan-cosim
+    XiangShan:  M src/main/scala/xiangshan/backend/decode/DecodeUnit.scala
+    XiangShan:  M src/main/scala/xiangshan/backend/decode/Instructions.scala
+    XiangShan:  M src/main/scala/xiangshan/backend/decode/VecDecoder.scala
+    XiangShan:  M src/main/scala/xiangshan/backend/decode/VecExceptionGen.scala
+    XiangShan:  M src/main/scala/xiangshan/backend/fu/wrapper/VIMacU.scala
+    XiangShan:  m yunsuan
+    XiangShan: ?? src/test/scala/xiangshan/backend/decode/
+    XiangShan: ?? src/test/scala/xiangshan/backend/fu/VIMacUHarness.scala
+    XiangShan: ?? src/test/scala/xiangshan/backend/fu/VIMacUTest.scala
+    yunsuan  :  M src/main/scala/yunsuan/encoding/Opcode/VimacOpcode.scala
+    yunsuan  :  M src/main/scala/yunsuan/package.scala
+    yunsuan  :  M src/main/scala/yunsuan/vector/vectorIMAC/VIMac64b.scala
+    yunsuan  :  M src/test/csrc/include/gm_common.h
+    yunsuan  :  M src/test/csrc/include/test_driver.h
+    yunsuan  :  M src/test/csrc/include/vpu_constant.h
+    yunsuan  :  M src/test/csrc/test_driver.cpp
+    yunsuan  :  M src/test/scala/top/VectorSimTop.scala
+    yunsuan  : ?? src/main/scala/yunsuan/vector/vectorIMAC/VDotTop.scala
+    yunsuan  : ?? src/main/scala/yunsuan/vector/vectorIMAC/VDotTree.scala
+    yunsuan  : ?? src/test/csrc/golden_model/vector_dot.cpp
+
+[1;34m==> [14:36:53] 7/7 版本核对[0m
+uname            Linux 6.8.0-124-generic x86_64
+verilator        Verilator 5.024 2024-04-05 rev v5.024
+java             openjdk version "17.0.20" 2026-07-21
+JAVA_HOME        /usr/lib/jvm/java-17-openjdk-amd64
+gcc              gcc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0
+CROSS            /opt/riscv/bin/riscv64-unknown-elf- (riscv64-unknown-elf-gcc () 15.2.0)
+espresso         /data/my/cie-stage1-repro/work/tools/bin/espresso
+mill(启动)     /data/my/cie-stage1-repro/work/tools/mill/mill
+mill(yunsuan)    0.11.1
+mill(XiangShan)  0.12.3
+
+[1;32m环境搭建完成（WORK_DIR=/data/my/cie-stage1-repro/work）。交互使用前请执行： source /data/my/cie2026-vdot-xiangshan/scripts/env_host.sh[0m
+
+Script done on 2026-10-26 14:36:54+00:00 [COMMAND_EXIT_CODE="0"]
+
+### ---------------- 终端输出结束 ----------------
+### 结束时间 : 2026-10-26 14:36:54 UTC
+### rc       : 0
+### 耗时     : 216 s

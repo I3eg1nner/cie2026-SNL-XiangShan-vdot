@@ -6,15 +6,19 @@
 # 渲染器：scripts/tools/vcd_plot.py（与 vcd_extract.py 共用同一个 VCD 解析器，
 #         所以图上的值与 logs/stage1/waveform/vadd_signal_trace.txt 必然同源）
 #
-# 用法： bash scripts/tools/make_stage1_figures.sh
-# 本脚本只读 logs/stage1/waveform/ 下的 VCD，不重跑仿真。
+# 用法： bash scripts/tools/make_stage1_figures.sh          # 图 1–6，并在全核 VCD 存在时补图 7
+#        bash scripts/tools/make_stage1_figures.sh fig7     # 只画图 7
+# 图 1–6 只读 logs/stage1/waveform/ 下的 VCD；图 7（可选）只读全核 VCD
+#   ${FULLCORE_VCD:-${WORK_DIR:-<仓库根>/work}/build/fullcore/wave/vdot_wave.vcd}
+# （由 `bash scripts/50_run_fullcore_difftest.sh wave` 生成，382 MB，不入库；不存在时跳过并提示）。
+# 都不重跑仿真。需要装有 matplotlib 的解释器：PYTHON=<venv>/bin/python。
 # =============================================================================
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 W="${ROOT}/logs/stage1/waveform"
 OUT="${ROOT}/docs/stage1/figures"
-PLOT="python3 ${ROOT}/scripts/tools/vcd_plot.py"
+PLOT="${PYTHON:-python3} ${ROOT}/scripts/tools/vcd_plot.py"
 
 V5="${W}/vaddvv_vialufwrapper_fuType5_seed2.vcd"   # VIAluFWrapper → VIntFixpAlu
 V3="${W}/vadd_vintadder_fuType3_seed1.vcd"         # VectorIntAdder（对照）
@@ -23,6 +27,10 @@ A="TOP.SimTop.viaf.vIntFixpAlu"
 ADD="${A}.vIntFixpAlu64bs_0.vIntAdder64b"
 
 mkdir -p "${OUT}"
+ONLY_FIG7=0
+[ "${1:-}" = "fig7" ] && ONLY_FIG7=1
+
+if [ "${ONLY_FIG7}" = 0 ]; then
 for f in "${V5}" "${V3}"; do
   [ -f "${f}" ] || { echo "缺少波形文件：${f}" >&2; exit 1; }
 done
@@ -153,6 +161,57 @@ ${PLOT} --vcd "${V5}" --out "${OUT}/fig6_mask_tail_undisturbed.png" \
   --signal "${A}.old_vd_S1_r|old_vd_S1_r|hex2" \
   --signal "${A}.io_out_vd|io_out_vd（最终 vd）|hex2" \
   --mark '57|in.fire' --mark '59|out.valid'
+
+fi  # ONLY_FIG7
+
+# ------------------------- 图 7（可选）：全核 MinimalConfig 中一条 vadd.vv 的完整流水
+# 信号层次名与 tests/riscv/fullcore/wave_trace.py、scripts/50_run_fullcore_difftest.sh 的 run_wave() 一致；
+# 各阶段时刻与 logs/stage3/fullcore/wave_trace.txt:150-181 逐条对应。
+FULLCORE_VCD="${FULLCORE_VCD:-${WORK_DIR:-${ROOT}/work}/build/fullcore/wave/vdot_wave.vcd}"
+if [ -f "${FULLCORE_VCD}" ]; then
+  P=TOP.SimTop.cpu.l_soc.core_with_l2.core.backend
+  DEC="${P}.inner_ctrlBlock.decode"
+  REN="${P}.inner_ctrlBlock.rename"
+  ROB="${P}.inner_ctrlBlock.rob"
+  IQ1="${P}.inner_vfScheduler.IssueQueueVfmaVialuFixVfalu"
+  ALU="${P}.inner_vfExuBlock.exus_2.VialuFix"
+  WB="${P}.inner_dataPath.io_fromVfWb_1"
+  ${PLOT} --vcd "${FULLCORE_VCD}" --out "${OUT}/fig7_fullcore_vadd_pipeline.png" \
+    --from 1482 --to 1495 --left 0.25 \
+    --title "图 7　全核 MinimalConfig：vadd.vv v1, v8, v9（pc=0x8000003e）从译码到 ROB 提交" \
+    --subtitle "vdot_wave.vcd（50_run_fullcore_difftest.sh wave）　vdot 测试程序中紧跟 fence 之后的那条 vadd，单次执行，e8 / vl=16　robIdx=21，pdest=59" \
+    --xlabel "emu 周期号（--dump-wave 每周期记录一个时间点，VCD 时刻 = 周期号；轨迹见 logs/stage3/fullcore/wave_trace.txt:150-181）" \
+    --mark "1483|译码入" --mark "1484|译码出" --mark "1485|重命名" --mark "1486|入IQ1" \
+    --mark "1487|入ROB" --mark "1488|发射" --mark "1491|进FU" --mark "1492|FU出/写VRF" \
+    --mark "1493|ROB写回" --mark "1494|提交" \
+    --signal "${DEC}.io_in_0_valid|decode.in0.valid" \
+    --signal "${DEC}.io_in_0_bits_instr|decode.in0.instr|hex" \
+    --signal "${DEC}.io_out_0_valid|decode.out0.valid" \
+    --signal "${DEC}.io_out_0_bits_instr|decode.out0.instr|hex" \
+    --signal "${DEC}.io_out_0_bits_fuOpType|decode.out0.fuOpType|hex" \
+    --signal "${REN}.io_in_0_valid|rename.in0.valid" \
+    --signal "${REN}.io_in_0_bits_instr|rename.in0.instr|hex" \
+    --signal "${IQ1}.io_enq_0_valid|IQ1.enq0.valid" \
+    --signal "${IQ1}.io_enq_0_bits_instr|IQ1.enq0.instr|hex" \
+    --signal "${ROB}.io_enq_req_0_valid|rob.enq0.valid" \
+    --signal "${ROB}.io_enq_req_0_bits_pc|rob.enq0.pc|hex" \
+    --signal "${IQ1}.io_deqDelay_0_valid|IQ1.issue0.valid" \
+    --signal "${IQ1}.io_deqDelay_0_bits_common_robIdx_value|IQ1.issue0.robIdx|dec" \
+    --signal "${IQ1}.io_deqDelay_0_bits_common_pdest|IQ1.issue0.pdest|dec" \
+    --signal "${ALU}.io_in_valid|VialuFix.in.valid" \
+    --signal "${ALU}.io_in_bits_ctrl_fuOpType|VialuFix.in.fuOpType|hex" \
+    --signal "${ALU}.io_out_valid|VialuFix.out.valid" \
+    --signal "${ALU}.io_out_bits_res_data|VialuFix.out.res|hex2" \
+    --signal "${WB}_wen|dataPath.fromVfWb1.wen" \
+    --signal "${WB}_addr|dataPath.fromVfWb1.addr|dec" \
+    --signal "${ROB}.io_writeback_15_valid|rob.writeback15.valid" \
+    --signal "${ROB}.io_writeback_15_bits_robIdx_value|rob.writeback15.robIdx|dec" \
+    --signal "${ROB}.io_commits_commitValid_0|rob.commit0.valid" \
+    --signal "${ROB}.io_commits_info_0_debug_pc|rob.commit0.pc|hex" \
+    2>&1 | grep -v findfont || true
+else
+  echo "跳过图 7：全核 VCD 不存在（${FULLCORE_VCD}）。先运行 bash scripts/50_run_fullcore_difftest.sh wave，或用 FULLCORE_VCD=<路径> 指定。"
+fi
 
 echo ""
 echo "生成完毕："

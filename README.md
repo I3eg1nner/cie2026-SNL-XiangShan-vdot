@@ -26,8 +26,8 @@ NEMU↔RTL 协同仿真（FU 级 Level 1 + MinimalConfig 全核 difftest Level 2
 |---|---|---|---|
 | 1.1 环境验证串 | `hello xiangshan, I am cie2026-vdot, IP address 192.168.30.213`，`HIT GOOD TRAP`，8115 条指令 | 实测（NEMU 上执行的裸机 RV64 程序） | `logs/stage1/p1_hello_xiangshan.log:97,115,118` |
 | 　同一程序在香山全核 emu 上 | 源码不改，只把地址常量头文件换成香山 SoC 的值（与 NEMU 配置相同）；带 difftest 运行，打印 `hello xiangshan, I am cie2026-vdot, IP address 172.100.0.6`（运行 emu 的服务器的本机 IP），`HIT GOOD TRAP`，8369 条指令 / 68522 周期 | 实测（MinimalConfig 全核 emu + difftest） | `logs/stage1/p1_hello_xiangshan_fullcore.log:67,76-77` |
-| 2.3 功能测试总计 | **290103 条执行，0 失败**，9358 条按规范跳过（全部为架构非法用例，逐条有据） | 实测（FU 级 Verilator） | `logs/stage2/p5_summary.log:43,45` |
-| 　其中 2.3.1 正数 / 2.3.2 负数 / 2.3.3 边界 | 120 / 132 / 424 条全 PASS（边界跳过 27 条） | 实测 | `docs/stage2/12_基础功能测试报告.md` §0 |
+| 2.3 功能测试总计 | **290103 条执行，0 失败**，9358 条按规范跳过（全部为架构非法用例，逐条有据）。其中 **vdot 用例 262099 条**（定向 676 + 随机差分 235348 + 直驱 `VIMacU` 26024 + 译码级定向 51），**非 vdot 项 28004 条**（既有指令回归 28000 + 反向验证 1 + 补丁应用 3） | 实测（FU 级 Verilator） | `logs/stage2/p5_summary.log:5-43,45`；拆分见 `docs/stage2/12_基础功能测试报告.md` §0.1 |
+| 　其中 2.3.1 正数 / 2.3.2 负数 / 2.3.3 边界 | **FU 级**：120 / 132 / 424 条全 PASS（424 = 规范边界 294 + 非规范 `vstart_relaxed` 130；规范边界另 27 条必须 trap，FU 级跳过）。**全核**（香山昆明湖V2 MinimalConfig + difftest，逐条与 NEMU 比对）：120 / 132 / 321 条全 PASS（321 = 3 个规范边界文件全部行，其中 27 条必须 trap 全部 `mcause=2`），difftest 0 失配 | 实测（FU 级 Verilator；全核 Verilator） | `docs/stage2/12_基础功能测试报告.md` §0.1、§0.2；`logs/stage3/fullcore/corpus_b00.log:22-30,38-39`、`summary.log:8-9` |
 | 　其中随机差分（对 `tests/golden/vdot_ref.c`） | 235348 条，0 失配 | 实测 | `logs/stage2/p5_func_random.log` |
 | 　其中直驱真正被集成的 `VIMacU` | 26024 条，0 失配 | 实测 | `logs/stage2/p5_summary.log`（VIMacU 等价行） |
 | 译码级非法指令判定 | 51 条全 PASS；撤掉 LMUL 守卫后 13 条变红 | 实测 | `logs/stage2/p5_decode_illegal.log:120`、`p5_decode_prove_fail.log:134` |
@@ -42,6 +42,12 @@ NEMU↔RTL 协同仿真（FU 级 Level 1 + MinimalConfig 全核 difftest Level 2
 
 ### 1.2 延迟与加速比（赛题 3.3）
 
+> **主结论**：MinimalConfig 全核实测 latency 加速比——单次 16 元素点积 **1.70×**（函数整体，含 2 条装载与结果取回，52 → 30.5 拍）；
+> 长向量稳态吞吐 **1.81×**（`vdotacc` 单累加器，12.64 → 7.00 拍/16 个 int8），2 路累加器展开 **2.25×**（5.63 拍/16 个 int8）。
+> **适用范围**：香山 MinimalConfig 全核 emu、热态（每点重复 5 次取后 4 次中位数，数据已在 DCache）、带 difftest；默认配置（KunminghuV2Config）未测。
+> **为什么选这三个口径**：它们最贴近实际调用（整函数调用、真实循环 kernel），且是全核实测周期，不依赖建模假设。
+> 下表其余各行（序列本体 5.17×、加取回 2.81×、建模 2.00× / 1.50× / 3.00×、指令数与 uop 数等）都是参考口径，不替代主结论。
+
 | 项目 | 基线 | vdot | 结果 | 标注 | 证据 |
 |---|---:|---:|---:|---|---|
 | vdot 三条指令的 FU 延迟 | — | 2 拍 | 按**数据成形拍**判定（逐拍采 `io_vd` 与参考模型比较，不读 `out.valid`）：`VIMacU` 直驱 178/178/190 笔全部「第 1 拍未成形、第 2 拍逐位正确」；L1 `VDotTop` 波形 12×3 笔 DUT 内部 S2 寄存器与 `io_vd` 均在第 2 拍成形。两个平台的 `out.valid` 都由测试平台按声明延迟构造，不作证据 | 实测（FU 级） | `logs/stage3/p7_latency_measure.log:238-252`；`logs/stage3/waveform/p7_*.vcd` |
@@ -53,8 +59,8 @@ NEMU↔RTL 协同仿真（FU 级 Level 1 + MinimalConfig 全核 difftest Level 2
 | 单次点积：FU 延迟关键路径 | 4 拍 | 2 拍 | **2.00×** | **建模**（实测 FU 延迟按依赖链相加，假设完美前递、无端口冲突） | `bench/results/critical_path.csv`、`sensitivity.csv` |
 | 长向量循环 N=4096：动态指令数 | 2575 | 2061 | **1.249×**（渐近 1.250×，为实测回归斜率之比 10/8 的 N→∞ 外推，不是实测点） | 实测（NEMU `minstret`，是指令数不是周期数） | `bench/results/instr_count_loop.csv`；`p7_baseline_equiv.log:160-167` |
 | 长向量稳态吞吐 | 3 拍/迭代 | 2 拍/迭代 | **1.50×**（2 路累加器展开时 3.00×） | **建模**（FU 级端口 + 依赖下界模型） | `docs/stage3/22_基线实现与延迟加速分析.md` §5.3 |
-| **单次点积：全核周期**（MinimalConfig） | 31 / 38 / 52 拍 | 6 / 13.5 / 30.5 拍 | **5.17× / 2.81× / 1.70×**（序列本体 / 加取回标量 / 函数整体含装载） | **实测（全核 MinimalConfig，`fence`+`mcycle`，带 difftest，热态）**；三种窗口口径不同 | `logs/stage3/fullcore/perf_cycles.log:9-48`；`bench/results/cycles_fullcore.csv` |
-| **长向量稳态：全核周期**（MinimalConfig） | 12.64 拍/迭代 | 7.00（`vdotacc`）/ 5.63（2 累加器）拍/迭代 | **1.81× / 2.25×**（N=4096 整体 1.80× / 2.22×） | **实测（全核 MinimalConfig）** | `perf_cycles.log:109-133,184-233`；`docs/stage3/22_基线实现与延迟加速分析.md` §5.5 |
+| **单次点积：全核周期**（MinimalConfig） | 52 拍（函数整体）；参考 31 / 38 拍 | 30.5 拍（函数整体）；参考 6 / 13.5 拍 | **1.70×**（函数整体含装载与取回，**主结论**）；参考口径：5.17×（序列本体）/ 2.81×（加取回标量），对窗口定义敏感（vdot 侧序列本体净值仅 6 拍，小于一跳依赖 7 拍，说明有一部分藏在空窗口固定开销里，vdot 侧被低估，见 `22` §5.5.1–§5.5.2） | **实测（全核 MinimalConfig，`fence`+`mcycle`，带 difftest，热态）**；三种窗口口径不同 | `logs/stage3/fullcore/perf_cycles.log:9-48`；`bench/results/cycles_fullcore.csv` |
+| **长向量稳态：全核周期**（MinimalConfig） | 12.64 拍/迭代 | 7.00（`vdotacc`）/ 5.63（2 累加器）拍/迭代 | **1.81× / 2.25×**（**主结论**；N=4096 整体 1.80× / 2.22×） | **实测（全核 MinimalConfig）** | `perf_cycles.log:109-133,184-233`；`docs/stage3/22_基线实现与延迟加速分析.md` §5.5 |
 
 > 上表各行**量纲不同、不可互相替代**，不能挑最大的一个当作「加速比」。2.00× 的敏感性区间为
 > 1.00×–5.00×（`bench/results/sensitivity.csv`）。
@@ -165,9 +171,9 @@ bash scripts/50_run_fullcore_difftest.sh hello   # 1.1：hello 程序在全核 e
 
 | 脚本 | 做什么 | 主要产物 | Linux x86_64 全新目录实测 |
 |---|---|---|---|
-| `00_setup_env_host.sh` | 依赖检查、mill / espresso、按 pin 克隆 XiangShan（11 个子模块）与 NEMU，调用 `04` 生成补丁工作树 | `work/` | ✅ 226 s |
+| `00_setup_env_host.sh` | 依赖检查、mill / espresso、按 pin 克隆 XiangShan（11 个子模块）与 NEMU，调用 `04` 生成补丁工作树 | `work/` | ✅ 216 s（终端记录 `logs/stage1/linux_repro/00_setup_env_host.term.log`，含克隆过程，rc/耗时见 `:644-645`） |
 | `01_setup_env_docker.sh` | 构建并进入 xsdev 容器（仅 macOS 需要） | `logs/stage1/p1_docker_build.log` | 未实测（Linux 不需要） |
-| `02_build_nemu.sh` / `03_run_hello.sh` | 构建 NEMU；运行 1.1 验证程序 | `logs/stage1/p1_nemu_build.log`、`p1_hello_xiangshan.log` | ✅ 29 s / 2 s |
+| `02_build_nemu.sh` / `03_run_hello.sh` | 构建 NEMU；运行 1.1 验证程序 | `logs/stage1/p1_nemu_build.log`、`p1_hello_xiangshan.log` | ✅ 31 s / <1 s（`logs/stage1/linux_repro/02_build_nemu.term.log:395-396`、`03_run_hello.term.log:135-136`；汇总见该目录 `README.md`、`docs/stage1/01_环境部署报告.md` §8） |
 | `10_build_yunsuan_sim.sh` | YunSuan L1 平台 + `vadd.vv` 波形 | `logs/stage1/waveform/` | ✅ 105 s |
 | `11_build_vdot_sim.sh` | vdot RTL 精化、Verilog、L1 冒烟 | `logs/stage2/p4_*.log`、`rtl/verilog/vdot/` | ✅ 105 s |
 | `20_run_func_tests.sh` | 阶段二全部功能测试并生成汇总表 | `logs/stage2/p5_*.log` | ✅ 317 s，290103 条 0 失败 |
