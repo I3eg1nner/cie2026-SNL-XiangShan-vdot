@@ -18,8 +18,8 @@
 
 | 项 | 结果 | 证据 |
 |---|---|---|
-| `mill -i YunSuan.compile`（mill 0.11.1） | **通过**，82 个 Scala 源文件 | `logs/stage2/p4_rtl_build.log` |
-| `mill -i xiangshan.compile`（mill 0.12.3） | **通过**，382 个 Scala 源文件，77 s | `logs/stage2/p4_rtl_build.log` |
+| `mill -i YunSuan.compile`（mill 0.11.1） | **通过**，82 个 Scala 源文件 | `logs/stage2/p4_rtl_build.log`；S-3' 后重跑 `logs/stage2/p4_rtl_build_s3p.log:40-42` |
+| `mill -i xiangshan.compile`（mill 0.12.3） | **通过**，382 个 Scala 源文件，77 s（S-3' 后重跑 93 s） | `logs/stage2/p4_rtl_build.log`；S-3' 后重跑 `logs/stage2/p4_rtl_build_s3p.log:59-66` |
 | `VDotTree` / `VDotTop` / `VIMac` Verilog 生成 | **通过** | `logs/stage2/p4_verilog_emit.log`、`rtl/verilog/vdot/` |
 | `VIMacU`（含 vdot）单 FU 精化出 Verilog | **通过**，4873 行（S-3' 后重新生成） | `rtl/verilog/vdot/VIMacU.v` |
 | `DecodeUnit`（含三条新指令）精化出 Verilog | **通过** | `rtl/verilog/vdot/DecodeUnit.v` |
@@ -513,9 +513,9 @@ cp /path/to/tests/golden/vdot_ref.{c,h} src/test/csrc/golden_model/
 
 | 层级 | 内容 | 结果 | 日志 |
 |---|---|---|---|
-| L0 | `mill -i YunSuan.compile`（clean 后完整编译 82 源文件） | exit=0 | `logs/stage2/p4_rtl_build.log` |
+| L0 | `mill -i YunSuan.compile`（clean 后完整编译 82 源文件） | exit=0 | `logs/stage2/p4_rtl_build.log`；S-3' 后以相同命令重跑 `logs/stage2/p4_rtl_build_s3p.log`（含补丁/工作树一致性前置核对 `:35`，总 exit=0 `:90`） |
 | L0 | `mill -i xiangshan.compile`（clean 后完整编译 382 源文件，77 s） | exit=0 | 同上 |
-| L0 | `mill -i xiangshan.test.compile`（21 源文件，含 `VIMacUMain`） | exit=0 | 同上 |
+| L0 | `mill -i xiangshan.test.compile`（21 源文件，含 `VIMacUMain`；S-3' 后重跑为 23 源文件，`p4_rtl_build_s3p.log:84`） | exit=0 | 同上 |
 | L0 | `VDotTree.sv` / `VDotTop.sv` / `VIMac.sv` / `VIMacU.v` / `DecodeUnit.v` 生成 | 全部 exit=0 | `logs/stage2/p4_verilog_emit.log` |
 | L1 | `vdot.vv` 20000 条随机（SEW=8） | `EMU EXCEEDED LIMIT`，Operations:20000 | `logs/stage2/p4_smoke_test.log` |
 | L1 | `vdotacc.vv` 20000 条随机（SEW=8） | `EMU EXCEEDED LIMIT`，Operations:20000 | 同上 |
@@ -647,18 +647,18 @@ LMUL>1 的方案（新增 `UopSplitType.VEC_VDOT`）见设计文档 §8.3，**�
 | 层 | 内容 | 是否入库 | 作用 |
 |---|---|---|---|
 | ① 文本轨迹 | `logs/*/waveform/*_signal_trace.txt` | **是**（始终） | 可 `grep` / `diff` / 脚本比对的机读证据；报告里「某信号第 N 拍等于 X」靠它核对，不用开波形查看器 |
-| ② 波形图 | `docs/stage1/figures/*.png`、`docs/stage3/figures/*.png` | **是**（始终） | 评委与答辩直接看的可视证据 |
+| ② 波形图 | `docs/stage1/figures/*.png`、`docs/stage2/figures/*.png`、`docs/stage3/figures/*.png` | **是**（始终） | 评委与答辩直接看的可视证据 |
 | ③ 原始 VCD | `logs/stage1,2,3/waveform/*.vcd` | **是**（逐目录开例外） | ①② 的源头。有它，任何人都能用 GTKWave 或 `scripts/tools/vcd_extract.py` 自行复核 ①② 的每一个取值，而**不需要重建仿真器** |
 
-入库的 VCD 共 **8 份、10.5 MB**（单份最大 1.85 MB）：
+入库的 VCD 共 **8 份、共约 15.2 MB**（15,200,156 字节，单份最大 2.84 MB；按 `git ls-files '*.vcd'` 逐个 `stat` 实测，裁定 S-3' 重跑之后）：
 
 | 目录 | 份数 | 体积 | 被谁逐值引用 | 重新生成命令 |
 |---|---:|---:|---|---|
-| `logs/stage1/waveform/` | 2 | 2.7 MB | `docs/stage1/02_向量加法指令执行过程分析.md` §5/§6/§11.2（21 条波形证据 + 6 张图） | `WAVE=1 bash scripts/10_build_yunsuan_sim.sh` |
-| `logs/stage2/waveform/` | 3 | 2.4 MB | `docs/stage2/12_基础功能测试报告.md` §10（12 个数值） | `bash scripts/tools/capture_vdot_waves.sh` |
-| `logs/stage3/waveform/` | 3 | 5.4 MB | `docs/stage3/22_基线实现与延迟加速分析.md` §4.2（3×12 笔事务的延迟） | `bash scripts/40_run_bench.sh` |
+| `logs/stage1/waveform/` | 2 | 2.8 MB | `docs/stage1/02_向量加法指令执行过程分析.md` §5/§6/§11.2（21 条波形证据 + 6 张图） | `WAVE=1 bash scripts/10_build_yunsuan_sim.sh` |
+| `logs/stage2/waveform/` | 3 | 4.2 MB | `docs/stage2/12_基础功能测试报告.md` §10（12 个数值） | `bash scripts/tools/capture_vdot_waves.sh` |
+| `logs/stage3/waveform/` | 3 | 8.2 MB | `docs/stage3/22_基线实现与延迟加速分析.md` §4.2（3×12 笔事务的延迟） | `bash scripts/40_run_bench.sh` |
 
-判据只有两条，缺一不可：**(a) 有文档逐个数值引用它**；**(b) 单份 ≤ 2 MB**。
+判据只有两条，缺一不可：**(a) 有文档逐个数值引用它**；**(b) 单份 ≤ 3 MB**（原定 2 MB；S-3' 重跑后阶段三 3 份为 2.62 / 2.74 / 2.84 MB，超出原判据，故放宽到 3 MB——8 份合计仍只有约 15 MB，对仓库体积影响很小）。
 两条都满足才开例外，所以 `.gitignore` 里写的是**逐目录白名单**而不是放宽 `*.vcd` 本身
 ——构建树里的临时波形（`work/*/build/*.vcd`，每跑一次就多一份）仍然一律排除。
 
@@ -666,7 +666,7 @@ LMUL>1 的方案（新增 `UopSplitType.VEC_VDOT`）见设计文档 §8.3，**�
 
 文本轨迹的可核对性其实强于截图（它是逐时刻的数值表），但它是**抽取结果**：
 抽哪些信号、按什么时刻约定采样，都由 `vcd_extract.py` 的参数决定。
-只交付抽取结果，等于要求评委相信抽取过程本身。把 10.5 MB 的源头一并交付，
+只交付抽取结果，等于要求评委相信抽取过程本身。把约 15.2 MB 的源头一并交付，
 证据链才从「报告 → 轨迹 → VCD」完整闭合，代价可以忽略。
 
 ### 11.3 为什么不是「全都不留，让评委自己跑」
@@ -677,8 +677,8 @@ LMUL>1 的方案（新增 `UopSplitType.VEC_VDOT`）见设计文档 §8.3，**�
 
 ### 11.4 仓库体积
 
-交付仓库（不含 `.gitignore` 排除的 `work/` 与 `.git/`）实测 **62.6 MB**，其中波形相关
-（8 份 VCD + 4 份文本轨迹 + 全部 PNG 图）合计 **12.4 MB**，远低于「几百 MB」的上限。
+交付仓库（不含 `.gitignore` 排除的 `work/` 与 `.git/`）当时实测 **62.6 MB**，其中波形相关
+（8 份 VCD + 4 份文本轨迹 + 全部 PNG 图）合计 **12.4 MB**，远低于「几百 MB」的上限。（S-3' 重跑后复测：全部已跟踪文件合计约 44.6 MB，其中 8 份 VCD 约 15.2 MB、4 份文本轨迹约 0.07 MB、20 张 PNG 约 4.7 MB，仍远低于上限。）
 `*.fst` / `*.fsdb` 的例外是预留的（当前一份都没有）：若将来改用 FST 压缩格式，
 同一套判据与目录白名单继续适用。
 

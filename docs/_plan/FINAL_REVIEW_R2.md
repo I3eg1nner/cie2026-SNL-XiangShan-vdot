@@ -301,3 +301,24 @@ def vdot_vv(vs1, vs2, sew=8):
 | **合计** | | **100** | **85–92（中位约 88）** | |
 
 修完 I-1、I-2，并把答辩主演示改为 `vl = 8`（I-3）之后，预测区间不变，但被评委当场质疑的风险明显降低。
+
+---
+
+## 复审后补记（整改情况，审计正文未改）
+
+> 本节由团队在复审之后追加，只记录各条的处理情况，不修改上文的审计结论与评分。I-3 见提交「test(stage3): 新增全核 vl=8 主演示，与赛题官方伪代码逐位等价」，其余各项在同一轮完成，见提交「docs: 整改复审 R2 的文档与证据问题」。
+
+| 编号 | 处理情况 | 提交 |
+|---|---|---|
+| B-1 | 录屏、PPT、`submit.sh` 加密同步与「待确认」项由团队完成 | 由团队完成 |
+| I-1 | `nemu/README.md` 按当前补丁与 `logs/stage3/p5_*.log` 更新：sha256 `cb9194f8…9503`（`p5_nemu_build.log:7`）、+285 / -1 行、`vdot.c` 228 行（`p5_patch_verify.log:19-28`）、语料 30739 + 55 = 30794 条（`p5_vdot_tests.log:17-31,90-93`）、故障注入 7 次（6 检出 + 1 等价变异体）；语义表补上 `vd.u32[1..3] = 0`（`vstart < vl` 时无条件清零，与 `vta`/`vma` 无关，S-3'） | 提交「docs: 整改复审 R2 的文档与证据问题」 |
+| I-2 | `docs/_recon/vdot-semantics-research.md:14` 改为中性表述「普通 HTTP 抓取只拿到 `<title>`」；全仓（不含 `work/`）复查无其它同类名称，余下命中均为正常内容（apt 包名、绘图变量名、赛题原文中的 GPT-2 等）。git 历史中的残留未改写 | 提交「docs: 整改复审 R2 的文档与证据问题」 |
+| I-3 | 新增全核 `vl = 8` 主演示（`docs/stage3/23` §7.3、图 10、`logs/stage3/fullcore/wave_vl8_run.log:59-60`、`wave_vl8_trace.txt:76-81`），讲解大纲与录屏脚本改以 `vl = 8` 为主演示；README §1.1 与 `docs/00` 补记该结论，fig8 / `wave_trace.txt` 注明为 `vl = 16` 满寄存器版本 | 提交「test(stage3): 新增全核 vl=8 主演示，与赛题官方伪代码逐位等价」（README、`docs/00` 补记见提交「docs: 整改复审 R2 的文档与证据问题」） |
+| M-1 | README §5 第 6 条、`docs/00` 阶段二一行改为「已附 3 张波形图并嵌入 `docs/stage2/12` §10」 | 提交「docs: 整改复审 R2 的文档与证据问题」 |
+| M-2 | `.gitignore` 注释与 `docs/stage2/11` §11 按实测更新为「8 份、共约 15.2 MB（15,200,156 字节），单份最大 2.84 MB」，判据放宽为单份 ≤ 3 MB 并说明理由；`.gitignore` 规则未改。`docs/stage3/22` 中同一判据与三份阶段三 VCD 的字节数一并更新 | 提交「docs: 整改复审 R2 的文档与证据问题」 |
+| M-3 | `docs/stage2/10` 该段原文保留，补记全核实测：每跳 = FU 延迟 + 5 拍（`vdotacc` 链 7.000 拍/条，互不相关的 `vdot` 1.000 拍/条，`docs/stage3/22` §5.5.3） | 提交「docs: 整改复审 R2 的文档与证据问题」 |
+| M-4 | `docs/_recon/kmhv2-vector-integration.md:690,783,787` 就地加注「已由 S-3' 修订」，指向 `docs/_plan/MASTER_PLAN.md` D2.4 | 提交「docs: 整改复审 R2 的文档与证据问题」 |
+| M-5 | 本地用户路径与 IP 按团队决定保留（日志不改写） | 不改 |
+| M-6 | README 与 `bench/collect_results.py` 中的引用补全为 `work/XiangShan-kmhv2/src/main/scala/xiangshan/backend/decode/UopInfoGen.scala:197-235`；重新生成 CSV 后只有 `bench/results/speedup.csv` 这一行变化 | 提交「docs: 整改复审 R2 的文档与证据问题」 |
+| M-7 | 在当前 `work/XiangShan-vdot` 上按原日志头部命令重跑 mill 编译，新日志 `logs/stage2/p4_rtl_build_s3p.log`（补丁与工作树逐字节一致 `:35`；82 / 382 / 23 个 Scala 源文件；总 exit=0 `:90`）；`docs/00`、README、`docs/stage2/11` 并列引用新旧两份日志 | 提交「docs: 整改复审 R2 的文档与证据问题」 |
+| M-8 | `target.md` 恢复为初次导入（提交「chore: 初始化交付仓库骨架与总体方案」）时的原文，去掉后加的 HTML 注释；该信息已记录在 `docs/_recon/vdot-semantics-research.md` §14 | 提交「docs: 整改复审 R2 的文档与证据问题」 |

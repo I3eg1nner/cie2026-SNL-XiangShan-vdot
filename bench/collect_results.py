@@ -61,7 +61,7 @@ FU_PORTS = {
 }
 
 # 译码级 uop 条数（LMUL 按各指令在基线序列里实际使用的值）
-# 全部来自 UopInfoGen.scala:197-235 的 numOfUop MuxLookup + VecDecoder.scala 的 UopSplitType
+# 全部来自 work/XiangShan-kmhv2/src/main/scala/xiangshan/backend/decode/UopInfoGen.scala:197-235 的 numOfUop MuxLookup + VecDecoder.scala 的 UopSplitType
 # VecDecoder 行号：先给上游 pristine 树，括号内为打了 rtl/patch/0001 的实现树（补丁插入 vdot 三行导致后移）
 UOPS = [
     # instruction, 场景, UopSplitType, vlmul, uops, 出处
@@ -526,7 +526,7 @@ def main():
              ["vsetvli", "vmv.v.i", "vsetvli", "vwmul.vv", "vsetvli", "vwredsum.vs"])
     uv = sum(dict((u[0], u[4]) for u in UOPS)[x] for x in ["vsetvli", "vdot.vv"])
     add("单次点积 (16 int8)", "译码级 uop 条数 (个)", ub, uv, "源码推导",
-        "UopInfoGen.scala:197-235（由 uop_count.csv 逐条相加）")
+        "work/XiangShan-kmhv2/src/main/scala/xiangshan/backend/decode/UopInfoGen.scala:197-235（由 uop_count.csv 逐条相加）")
     for n in (64, 256, 1024, 4096):
         b = dict((x[0], x[1]) for x in [(nn, vv) for (kk, nn, vv) in eq["loop"] if kk == "baseline_D"])
         v = dict((x[0], x[1]) for x in [(nn, vv) for (kk, nn, vv) in eq["loop"] if kk == "vdotacc"])

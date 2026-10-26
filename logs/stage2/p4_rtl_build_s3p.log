@@ -1,0 +1,90 @@
+==========================================================
+P4 RTL 构建日志（S-3' 之后重跑）  2026-10-27 02:24:02 CST
+主机      : Linux 6.8.0-124-generic x86_64
+JDK       : openjdk version "17.0.20" 2026-07-21
+Verilator : perl: warning: Setting locale failed.
+mill      : /usr/local/bin/mill
+工作树    : /data/my/cie2026-vdot-xiangshan/work/XiangShan-vdot
+工作树 HEAD: XiangShan a4eeaabb4 / yunsuan 9559211
+交付补丁  : rtl/patch/*.patch 最后修改提交 b16b58d 2026-10-26 15:39:16 +0000
+说明      : 命令与 logs/stage2/p4_rtl_build.log（2026-10-24，S-3' 之前）逐条相同；
+            先 mill clean 掉对应编译任务的缓存，保证日志是真实的完整编译输出
+==========================================================
+
+### 0. 前置核对：工作树与交付补丁逐字节一致（只读，scripts/tools/verify_patches.sh）###
+$ bash scripts/tools/verify_patches.sh
+=== 补丁可应用性验证  2026-10-27 02:24:02 CST ===
+pristine 基线 : /data/my/cie2026-vdot-xiangshan/work/XiangShan-kmhv2  @ a4eeaabb4
+               yunsuan @ 9559211
+实现工作树     : /data/my/cie2026-vdot-xiangshan/work/XiangShan-vdot  @ a4eeaabb4
+               yunsuan @ 9559211
+（pristine 工作树只用 git archive 导出只读副本，全程不写入）
+
+--- xiangshan ---
+  git apply --check rtl/patch/0001-xiangshan-vdot.patch
+    应用成功
+  应用结果与实现工作树对比： 相同 8 个文件，不同 0 个
+
+--- yunsuan ---
+  git apply --check rtl/patch/0002-yunsuan-vdot.patch
+    应用成功
+  git apply --check tests/unit/yunsuan_vdot_testbench.patch
+    应用成功
+  应用结果与实现工作树对比： 相同 11 个文件，不同 0 个
+
+PATCH-VERIFY: PASS
+exit=0
+
+### 1. YunSuan 子工程编译 (mill 0.11.1) ###
+$ cd work/XiangShan-vdot/yunsuan && mill -i clean YunSuan.compile && mill -i YunSuan.compile
+[info] compiling 82 Scala sources to /data/my/cie2026-vdot-xiangshan/work/XiangShan-vdot/yunsuan/out/YunSuan/compile.dest/classes ...
+[info] done compiling
+exit=0
+
+### 2. XiangShan 全仓 Scala 编译 (mill 0.12.3) ###
+$ cd work/XiangShan-vdot && mill -i clean xiangshan.compile && mill -i xiangshan.compile
+============================== clean xiangshan.compile ==============================
+=====================================================================================
+[1/1] clean
+[0J[1A
+[0J[1A
+[1/1] ============================== clean xiangshan.compile ============================== 1s
+[1] clean
+==============================================================================================
+[1/1] ============================== clean xiangshan.compile ============================== 1s
+==============================================================================================
+============================== xiangshan.compile ==============================
+===============================================================================
+[653/653] xiangshan.compile
+[653] [info] compiling 382 Scala sources to /data/my/cie2026-vdot-xiangshan/work/XiangShan-vdot/out/xiangshan/compile.dest/classes ...
+[653/653] ============================== xiangshan.compile ============================== 60s
+[653] xiangshan.compile 58s
+=============================================================================================
+[653] [info] done compiling
+[653/653] ============================== xiangshan.compile ============================== 93s
+=============================================================================================
+exit=0
+
+### 3. XiangShan 测试源编译（含 VIMacUMain 精化入口）###
+$ mill -i -D jvm-xmx=8G clean xiangshan.test.compile && mill -i -D jvm-xmx=8G xiangshan.test.compile
+============================== clean xiangshan.test.compile ==============================
+==========================================================================================
+[1/1] clean
+[0J[1A
+[0J[1A
+[1/1] ============================== clean xiangshan.test.compile ============================= 1s
+[1] clean
+[build.sc-64] methodCodeHashSignatures
+==================================================================================================
+[1/1] ============================== clean xiangshan.test.compile ============================= 1s
+==================================================================================================
+============================== xiangshan.test.compile ==============================
+====================================================================================
+[731/731] xiangshan.test.compile
+[731] [info] compiling 23 Scala sources to /data/my/cie2026-vdot-xiangshan/work/XiangShan-vdot/out/xiangshan/test/compile.dest/classes ...
+[731] [info] done compiling
+[731/731] ============================== xiangshan.test.compile ============================== 11s
+==================================================================================================
+exit=0
+
+=== 构建结束 2026-10-27 02:26:41 CST  总 exit=0 ===

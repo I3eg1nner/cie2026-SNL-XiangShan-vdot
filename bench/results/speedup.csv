@@ -2,7 +2,7 @@ case,metric,baseline,vdot,speedup,kind,assumption
 单次点积 (16 int8),FU 延迟关键路径 (cycle),4,2,2.000,建模估算,用实测 FU 延迟拼依赖链；假设完美前递、无发射冲突、vsetvli 延迟 0
 单次点积 (16 int8),架构指令条数 (条),6,2,3.000,实测(全核 minstret 窗口差),序列本体（操作数已在寄存器，两侧都含必需的 vsetvli）；logs/stage3/fullcore/perf_cycles.log:19-23 ; logs/stage3/fullcore/perf_cycles.log:24-28；与源码宏静态计数 6 / 2 条一致
 单次点积 (16 int8),向量算术指令条数 (条),3,1,3.000,静态计数(源码宏),不含 vsetvli：基线 vmv.v.i/vwmul.vv/vwredsum.vs，vdot 只有 vdot.vv（perf_kernels.S BASE_BODY / VDOT_BODY）
-单次点积 (16 int8),译码级 uop 条数 (个),14,3,4.667,源码推导,UopInfoGen.scala:197-235（由 uop_count.csv 逐条相加）
+单次点积 (16 int8),译码级 uop 条数 (个),14,3,4.667,源码推导,work/XiangShan-kmhv2/src/main/scala/xiangshan/backend/decode/UopInfoGen.scala:197-235（由 uop_count.csv 逐条相加）
 长向量循环 N=64,动态指令总数 (条),57,47,1.213,实测,NEMU CSR minstret；两侧用同一组数据、同一份 baseline_rvv.S
 长向量循环 N=256,动态指令总数 (条),177,143,1.238,实测,NEMU CSR minstret；两侧用同一组数据、同一份 baseline_rvv.S
 长向量循环 N=1024,动态指令总数 (条),657,527,1.247,实测,NEMU CSR minstret；两侧用同一组数据、同一份 baseline_rvv.S

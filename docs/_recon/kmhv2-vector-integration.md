@@ -687,7 +687,7 @@ val red_vd_tail = Mux(vl_reg === 0.U, old_vd_reg, Mux(ta_reg, red_vd_tail_one, r
 | `vta = 1` | 低 `SEW_vd` 位 = 归约结果，**其余位全 1** |
 | `vta = 0` | 低 `SEW_vd` 位 = 归约结果，其余位 = `old_vd` |
 
-> 这正是 `vdot.vv`（`vd.u32[0] = Σ…`，其余按 vta 处理）需要的全部尾部语义。把 `vd_vsew_bits_reg` 固定为 32、`red_vd` 换成点积结果即可。
+> 这正是 `vdot.vv`（`vd.u32[0] = Σ…`，其余按 vta 处理）需要的全部尾部语义。把 `vd_vsew_bits_reg` 固定为 32、`red_vd` 换成点积结果即可。（**已由 S-3' 修订**：vdot/vdotacc 在 `vstart < vl` 时 `vd[VLEN-1:32]` 恒为 0，与 `vta`/`vma` 无关，见 `docs/_plan/MASTER_PLAN.md` D2.4；本段为修订前的侦察记录，原文保留）
 
 ### 5.6 掩码 / vl / vstart 在 `Reduction` 内部的处理
 
@@ -780,11 +780,11 @@ io.out.bits.ctrl.exceptionVec.get(ExceptionNO.illegalInstr) := mgu.io.out.illega
 
 ### 6.3 vdot 的特殊性：归约不走 `Mgu`
 
-`VIPU`（`wrapper/VIPU.scala:149`）直接 `io.out.bits.res.data := vialu.io.out.bits.vd`，**完全不用 `Mgu`**。原因是归约的尾部语义是「只写元素 0，其余按 vta」，与 `Mgu` 的逐元素 active/tail 模型不同。
+`VIPU`（`wrapper/VIPU.scala:149`）直接 `io.out.bits.res.data := vialu.io.out.bits.vd`，**完全不用 `Mgu`**。原因是归约的尾部语义是「只写元素 0，其余按 vta」，与 `Mgu` 的逐元素 active/tail 模型不同。（**已由 S-3' 修订**：vdot/vdotacc 在 `vstart < vl` 时 `vd[VLEN-1:32]` 恒为 0，与 `vta`/`vma` 无关，见 `docs/_plan/MASTER_PLAN.md` D2.4；本段为修订前的侦察记录，原文保留）
 
 因此：
 - **`vdot4a.vv`（按元素）→ 用 `Mgu`**，`eew = e32`，与 `vmacc` 完全同构。
-- **`vdot.vv` / `vdotacc.vv`（归约）→ 不用 `Mgu`**，照抄 `Reduction.scala:644-647` 的 `red_vd_tail`。掩码通过「把被屏蔽的元素乘积置 0」实现（加法的单位元是 0，与 `Reduction.scala:106` 的 `zero(w)` 同理）。
+- **`vdot.vv` / `vdotacc.vv`（归约）→ 不用 `Mgu`**，照抄 `Reduction.scala:644-647` 的 `red_vd_tail`。掩码通过「把被屏蔽的元素乘积置 0」实现（加法的单位元是 0，与 `Reduction.scala:106` 的 `zero(w)` 同理）。（尾部处理**已由 S-3' 修订**为 `vd[VLEN-1:32]` 恒为 0、不再照抄 `red_vd_tail`，见 `docs/_plan/MASTER_PLAN.md` D2.4）
 
 ### 6.4 ⚠️ vstart 的硬性限制
 
