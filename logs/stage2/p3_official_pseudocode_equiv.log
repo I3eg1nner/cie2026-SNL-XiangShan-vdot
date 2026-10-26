@@ -3,7 +3,7 @@
 ==========================================================
 date : 2026-10-26T15:07:26Z UTC
 host : Linux 6.8.0-124-generic x86_64
-repo : d79623a（工作区含 S-3' 修订，未提交）
+repo : d476b08（工作区含 S-3' 修订，未提交）
 $ python3 tests/golden/check_official_pseudocode.py --cli tests/golden/vdot_cli --vectors tests/vectors --random 10000
 === 参考模型 vs 赛题官方伪代码（字面实现）逐位核对 ===
 配置：vl=8, vm=1, vstart=0, SEW=8, LMUL=1, VLEN=128；比对 vd 全部 128 位

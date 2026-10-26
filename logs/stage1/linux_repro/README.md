@@ -14,7 +14,7 @@ XiangShan 与 NEMU）、`02_build_nemu.sh`、`03_run_hello.sh`，完整记录终
 | CPU / 内存 | AMD EPYC 7543，128 核 / 1007 GB（`00_setup_env_host.term.log:13-14`） |
 | 工具 | git 2.34.1、宿主 GCC 11.4.0、Verilator 5.024、OpenJDK 17.0.20、交叉 GCC 15.2.0（`/opt/riscv/bin/riscv64-unknown-elf-`）（`00_setup_env_host.term.log:627-632`） |
 | 权限 | 无 root、无 Docker；readline / SDL2 开发包经 `LOCAL_SYSROOT=1` 用 `apt-get download` + `dpkg -x` 解包到 `${WORK_DIR}/sysroot`（`00_setup_env_host.term.log:48-59`） |
-| 交付仓库版本 | `6d2089462e09dde020d18e29e932ad1a307709c2`（每份日志第 4 行） |
+| 交付仓库版本 | `4272246d2ecf0df6d6bd40aa5ee2433c59ea5306`（每份日志第 4 行） |
 
 ## 命令
 

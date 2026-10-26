@@ -46,7 +46,7 @@ NEMU↔RTL 协同仿真（FU 级 Level 1 + MinimalConfig 全核 difftest Level 2
 | 　NEMU 补丁干净应用 / 故障注入 | 干净副本上重跑 30794/30794；故障注入 6/6 被检出（含新增的「回退 S-3'」；另 1 个经论证的等价变异体） | 实测 | `logs/stage3/p5_patch_verify.log:47,51`、`logs/stage3/p5_fault_injection.log:191-192` |
 | 3.1.2 协同仿真（**Level 1**：真实 NEMU `.so` ↔ Verilated 译码单元 + vdot 功能单元） | 72794 条激励；值比对 **55960/55960，0 失配**；非法判定 **分歧 0**（首轮 6415 条分歧经 G5a 补守卫 + 裁定 S-7' 后归零） | 实测 | `logs/stage3/cosim/p6_cosim_run.log:45-52`；首轮记录见 `docs/stage3/21_协同仿真验证报告.md` §7.4 |
 | 3.1.2 协同仿真（**Level 2**：MinimalConfig 全核 emu ↔ 同一 NEMU `.so`，逐条提交 difftest） | 语料 **30794/30794**（4834 条必须 trap 的用例全部 `mcause=2`）；10 个依赖内核 × 4 个种子 **0 失败**；**24,524,262 条提交（27,104,437 周期）0 失配**，10/10 次 `HIT GOOD TRAP`；故障注入两种各 **3/3 检出**（`VIMacU` 结果 bit0 翻转；写回尾部退回旧 S-3 的全 1，`s3old`）；全核波形确认 `VIMacU` 2 拍（fig8 / `wave_trace.txt` 为 `vl=16` 满寄存器版本；`vl=8` 主演示见 `23` §7.3、fig10）。只构建了 MinimalConfig | 实测（全核 Verilator） | `logs/stage3/fullcore/summary.log:1-9`、`fault_summary.log:1-5`、`fault_summary_s3old.log:1-5`；`docs/stage3/23_全核difftest验证报告.md` |
-| 　协同仿真故障注入（Level 1） | 7/7 被检出（RTL 侧 3、NEMU 侧 4，其中 `T3-NEMU-3` 守护 S-7'、`T3-NEMU-4` 守护 S-3'）；T3-RTL-1 实为输出格式选择取反，真正的 `io_vd` bit0 翻转是补充项 T3-RTL-1b，6402/6402 失配被检出 | 实测 | `logs/stage3/cosim/p6_fault_injection.log:358`；`logs/stage3/cosim/p6_fault_rtl1_rerun.log:41-58`；S-3' 之前的 6/6 存档 `p6_fault_injection_v2.log` 已删除，见 git 历史（`git show 7b6ac30^:logs/stage3/cosim/p6_fault_injection_v2.log`） |
+| 　协同仿真故障注入（Level 1） | 7/7 被检出（RTL 侧 3、NEMU 侧 4，其中 `T3-NEMU-3` 守护 S-7'、`T3-NEMU-4` 守护 S-3'）；T3-RTL-1 实为输出格式选择取反，真正的 `io_vd` bit0 翻转是补充项 T3-RTL-1b，6402/6402 失配被检出 | 实测 | `logs/stage3/cosim/p6_fault_injection.log:358`；`logs/stage3/cosim/p6_fault_rtl1_rerun.log:41-58`；S-3' 之前的 6/6 存档 `p6_fault_injection_v2.log` 已删除，见 git 历史（`git show 0f62281^:logs/stage3/cosim/p6_fault_injection_v2.log`） |
 | 3.2 基线等价性 | RVV 1.0 基线序列与 vdot 指令族在 NEMU 上 **25960 条实跑用例逐位相同，0 失配**（S-3' 后单次点积基线以 `vmv.v.i v8, 0` 清零整个 `v8`，`vdotacc` 基线由 4 条增为 7 条）；长向量循环 24 个长度 0 失配 | 实测 | `logs/stage3/p7_baseline_equiv.log:114-117,146` |
 
 ### 1.2 延迟与加速比（赛题 3.3）
@@ -166,7 +166,7 @@ sudo apt-get install -y clang                                       # 仅 50 号
   下载预编译包解压到 `/opt/riscv`（脚本自动探测），或用 `CROSS=<前缀>` 指定。
 * **全核 difftest（`50` 号脚本）另需 clang++ 与 ≥64 GB 内存**：difftest 子模块把 clang 专有选项 `-fno-slp-vectorize` 写死在
   `difftest/verilator.mk:76`，g++ 直接报错；`make emu` 实测峰值 RSS 56445000 KiB（约 53.8 GiB，`logs/stage3/fullcore/build_emu.log:2434`；
-  S-3' 之前首次构建中 Verilator 前端约 56.4 GiB，旧日志已删除，见 git 历史（提交 19a29ea））。
+  S-3' 之前首次构建中 Verilator 前端约 56.4 GiB，旧日志已删除，见 git 历史（提交 4674e08））。
 * **没有 root**：`LOCAL_SYSROOT=1 bash scripts/00_setup_env_host.sh`，把 readline / SDL2 开发包解包到 `${WORK_DIR}/sysroot`。
 * macOS：`brew install verilator openjdk@17 gnu-sed cmake` + Docker Desktop，并先执行 `./scripts/01_setup_env_docker.sh build`；
   NEMU 与交叉编译在容器内执行（`XS_RUNNER=auto` 自动选择）。
@@ -203,14 +203,14 @@ bash scripts/50_run_fullcore_difftest.sh wave-vl8  # vl=8 主演示（与官方�
 | `21_build_nemu_vdot.sh` | NEMU 扩展构建与一致性测试（`fault` / `verify-patch` 子命令） | `logs/stage3/p5_*.log` | ✅ 21 s（`verify-patch` 10 s、`fault` 21 s） |
 | `30_run_cosim.sh` | 协同仿真（Verilator + 链接 NEMU `.so`） | `logs/stage3/cosim/` | ✅ 251 s（`fault` 96 s） |
 | `40_run_bench.sh` | 基线等价性（NEMU）+ FU 延迟实测 + 绘图 | `logs/stage3/p7_*.log`、`bench/results/`、`docs/stage3/figures/` | ✅ 126 s |
-| `50_run_fullcore_difftest.sh` | 全核 difftest（MinimalConfig emu + NEMU `.so`）：`build` / `run` / `wave` / `wave-vl8`（`vl=8` 主演示）/ `fault` / `perf`（周期实测）/ `hello`（1.1）；退出时把私有 NEMU 副本恢复为独立解释器形态 | `logs/stage3/fullcore/`、`logs/stage1/p1_hello_xiangshan_fullcore.log` | ✅ 在 128 核、约 1 TB 内存的服务器上实测（S-3' 后重跑，部分任务并行，耗时偏保守）：`build` 的 `make emu` 墙钟 24:31.63、峰值 RSS 约 53.8 GiB（`logs/stage3/fullcore/build_emu.log:2429,2434,2448`），脚本整体 24m45s（`build_driver.log:40`）；`run` 60m33s（`run_driver.log:76`）；`fault` 首次需另构建一次 emu；`perf` 894 s、`hello` 53 s（`logs/stage3/fullcore/perf_cycles.log:325`、`logs/stage1/p1_hello_xiangshan_fullcore.log:81`）。S-3' 之前从零构建的脚本复测日志已删除，见 git 历史（提交 19a29ea）；不在上面「12 步」之内 |
+| `50_run_fullcore_difftest.sh` | 全核 difftest（MinimalConfig emu + NEMU `.so`）：`build` / `run` / `wave` / `wave-vl8`（`vl=8` 主演示）/ `fault` / `perf`（周期实测）/ `hello`（1.1）；退出时把私有 NEMU 副本恢复为独立解释器形态 | `logs/stage3/fullcore/`、`logs/stage1/p1_hello_xiangshan_fullcore.log` | ✅ 在 128 核、约 1 TB 内存的服务器上实测（S-3' 后重跑，部分任务并行，耗时偏保守）：`build` 的 `make emu` 墙钟 24:31.63、峰值 RSS 约 53.8 GiB（`logs/stage3/fullcore/build_emu.log:2429,2434,2448`），脚本整体 24m45s（`build_driver.log:40`）；`run` 60m33s（`run_driver.log:76`）；`fault` 首次需另构建一次 emu；`perf` 894 s、`hello` 53 s（`logs/stage3/fullcore/perf_cycles.log:325`、`logs/stage1/p1_hello_xiangshan_fullcore.log:81`）。S-3' 之前从零构建的脚本复测日志已删除，见 git 历史（提交 4674e08）；不在上面「12 步」之内 |
 
 以上 12 步（含 `21 verify-patch`、`21 fault`、`30 fault`）全部通过，功能与一致性数字与当时（S-3' 之前）的存档相同。两点已知差异与限制：
 
 * **交叉 GCC 版本会改变 `minstret` 绝对值**：现存档（S-3' 后重跑，GCC 15.2 `riscv64-unknown-elf-gcc`，`logs/stage3/p7_baseline_equiv.log:13-14`）
   比 S-3' 之前的存档（xsdev 容器内的 `riscv64-linux-gnu-gcc` 13.3）每点多 2 条（N=4096：2575/2061 → 2577/2063，比值 1.249 不变；
   N=64：1.222 → 1.213），每 16 元素的斜率不变，与 S-3' 无关（`docs/stage3/22_基线实现与延迟加速分析.md:632-639`）。
-  原补充日志 `p7_baseline_gcc15_supplement.log` 已删除，见 git 历史（`git show 7b6ac30^:logs/stage3/p7_baseline_gcc15_supplement.log`）。
+  原补充日志 `p7_baseline_gcc15_supplement.log` 已删除，见 git 历史（`git show 0f62281^:logs/stage3/p7_baseline_gcc15_supplement.log`）。
 * **波形模式要求 yunsuan 目录路径 ≤ 63 字节**：上游 `emu.cpp` 用 `getcwd(cwd, 64)` 拼 VCD 路径，超长时波形静默丢失。
   `40` 已改为在短路径临时目录里运行 emu；`10`/`11` 的 `WAVE=1` 与 `20` 的 `WITH_WAVE=1` 遇到长路径会直接报错，
   请把 `WORK_DIR` 设到较短的路径。

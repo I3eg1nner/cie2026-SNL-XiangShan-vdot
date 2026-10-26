@@ -1,7 +1,7 @@
 ### 开始时间 : 2026-10-26 14:36:54 UTC
 ### 主机     : f3f1baf57000 / Linux 6.8.0-124-generic x86_64
 ### 环境变量 : WORK_DIR=/data/my/cie-stage1-repro/work LOG_ROOT=/data/my/cie-stage1-repro/logs RESULTS_DIR=/data/my/cie-stage1-repro/results FIG_DIR=/data/my/cie-stage1-repro/figures LOCAL_SYSROOT=1
-### 交付仓库 : 6d2089462e09dde020d18e29e932ad1a307709c2
+### 交付仓库 : 4272246d2ecf0df6d6bd40aa5ee2433c59ea5306
 ### 命令行   : script -q -e -c "cd /data/my/cie2026-vdot-xiangshan && bash scripts/02_build_nemu.sh" <本文件>
 ### ---------------- 以下为 script 记录的终端原始输出 ----------------
 Script started on 2026-10-26 14:36:54+00:00 [<not executed on terminal>]

@@ -79,7 +79,7 @@ VLEN=128。基础指令 `vdot.vv` 对应赛题要求；另两条为本方案的�
 3. 保留 `vl` 机制，作为字面语义的超集：`vl=8` 即官方伪代码，`vl=16` 为满寄存器版本。「8」来自题源 arXiv:2409.00661 的 VDOTU（64 位寄存器装 8 个 int8），昆明湖 V2 的 `VIMacU` 同样按 64 位切片组织乘法阵列。
 4. 伪代码未覆盖的 vl / vm / vstart / LMUL 属于工程化规定，S-1、S-2、S-4、S-5、S-6、S-7' 不变。
 
-**传播范围（已完成，提交 b16b58d / 9d3409e）**：`tests/golden/vdot_ref.c` → 重新生成 `tests/vectors/`（并为三项基础测试各补 6 条 `vl=8` 定向用例）→ `bench/baseline/` 基线序列 → NEMU `vdot.c` → RTL `VIMacU` / `VDotTop` 写回成形 → 重跑 golden 自检、FU 级功能测试、协同仿真与全核 difftest，各级故障注入新增「回退 S-3'」项。
+**传播范围（已完成，提交 364b141 / 61eb937）**：`tests/golden/vdot_ref.c` → 重新生成 `tests/vectors/`（并为三项基础测试各补 6 条 `vl=8` 定向用例）→ `bench/baseline/` 基线序列 → NEMU `vdot.c` → RTL `VIMacU` / `VDotTop` 写回成形 → 重跑 golden 自检、FU 级功能测试、协同仿真与全核 difftest，各级故障注入新增「回退 S-3'」项。
 
 #### D2.2 基线选型（P3 裁定）
 单次点积基线选用**候选 D**（6 条指令）：`vsetivli 4, e32` → `vmv.v.i`（整寄存器清零）→ `vsetvli e8` → `vwmul.vv` → `vsetvli e16, tu` → `vwredsum.vs`，关键路径 3 级（D2.4 S-3' 之前前两条为 `vsetvli e32` → `vmv.s.x`、第 5 条用 `ta`，条数不变）。长向量循环体基线刻意**不使用**会把归约放进循环的朴素候选 A，以免人为抬高加速比。详见 `bench/baseline/`。

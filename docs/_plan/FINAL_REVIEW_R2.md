@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |---|---|
-| 复审对象 | 仓库 `main` @ `6b3e499`（工作区干净） |
+| 复审对象 | 仓库 `main` @ `edc9dc7`（工作区干净） |
 | 复审日期 | 2026-10-26 |
 | 立场 | 站在评委角度证伪；不采信文档自述，结论一律追到文件、日志原始行与代码 |
 | 依据 | `target.md`、`score.md`、官方语义图 `docs/_recon/figures/vdot_official_semantics.jpg`（复审者亲自看图）、`docs/_plan/MASTER_PLAN.md` §2 执行纪律 |
@@ -75,14 +75,14 @@ def vdot_vv(vs1, vs2, sew=8):
 | 层 | 日志 | 时间 | 修订后的直接证据 | 判定 |
 |---|---|---|---|---|
 | 官方伪代码等价 | `logs/stage2/p3_official_pseudocode_equiv.log` | 15:07Z | 头部如实写明「工作区含 S-3' 修订，未提交」；阴性对照（旧语料）532/532 失配 | 修订后 |
-| FU 级（L1 `VDotTop` / `VIMacU` 直驱） | `logs/stage2/p5_func_*.log`、`p5_vimacu_equiv.log`、`p5_summary.log` | 17:37–17:40Z，由 `b2484a2`（17:41）提交 | 逐条 DUT 输出高 64 位为 0（如 `p5_func_positive.log:73-75`、`p5_func_boundary.log:224-226`）；语料即 S-3' 语料 | 修订后 |
+| FU 级（L1 `VDotTop` / `VIMacU` 直驱） | `logs/stage2/p5_func_*.log`、`p5_vimacu_equiv.log`、`p5_summary.log` | 17:37–17:40Z，由 `cfcd658`（17:41）提交 | 逐条 DUT 输出高 64 位为 0（如 `p5_func_positive.log:73-75`、`p5_func_boundary.log:224-226`）；语料即 S-3' 语料 | 修订后 |
 | RTL 故障注入 | `logs/stage2/p5_fault_injection.log:273-274` | 15:21Z | 6/6，包含「回退 S-3'」一项 | 修订后 |
 | NEMU | `logs/stage3/p5_vdot_tests.log`、`p5_nemu_build.log` | 15:11Z | 构建日志记录的 patch sha256 `cb9194f8…`（`p5_nemu_build.log:7`）与现仓库中补丁的 sha256 相同；30794/30794 对 S-3' 语料逐字节比对通过 | 修订后 |
 | Level 1 协同仿真 | `logs/stage3/cosim/p6_*.log` | 15:18–15:25Z | `p6_fault_rtl1_rerun.log:50` 中被注入的 `VDotTop.sv` 表达式是 `{96'h0, _vdotTree_io_dotVd[31:0]}`；`T3-NEMU-4`（回退 S-3'）被检出 | 修订后 |
-| 全核 difftest | `logs/stage3/fullcore/*` | 15:41–17:07Z，由 `9d3409e`（17:10）提交 | `wave_trace.txt:183`：`VIMACU-OUT res=000000000000000000000000ffffff58`（高 96 位为 0，而该指令 `vta=1`）；`fault_summary_s3old.log:1-3` 把尾部改回全 1 后 `v3_high` 立刻失配，说明全核比对确实落在高位上；语料 30794/30794 0 失配 | 修订后 |
+| 全核 difftest | `logs/stage3/fullcore/*` | 15:41–17:07Z，由 `61eb937`（17:10）提交 | `wave_trace.txt:183`：`VIMACU-OUT res=000000000000000000000000ffffff58`（高 96 位为 0，而该指令 `vta=1`）；`fault_summary_s3old.log:1-3` 把尾部改回全 1 后 `v3_high` 立刻失配，说明全核比对确实落在高位上；语料 30794/30794 0 失配 | 修订后 |
 | 全核周期 | `logs/stage3/fullcore/perf_cycles.log` | 16:10Z | 反汇编 `work/build/fullcore/perf/perf_cycles.dis:984-989` 中基线本体已是 `vmv.v.i v8,0` + `tu` 归约。PERF 行与修订前逐行相同，与文档「各点周期逐拍相同」一致 | 修订后 |
 
-**时间顺序与提交顺序吻合**：所有 S-3' 日志都早于提交它们的 commit，晚于修订开始（`d79623a`，14:44Z）。唯一的细节是 `work/NEMU/.../vdot.c` 的 mtime（15:24Z）晚于 NEMU 测试日志（15:11Z）。复审者核对后认为这是协同仿真故障注入（15:22–15:25Z）改写源文件后又还原造成的：内容与补丁逐字节相同，15:11 的构建日志也证明当时补丁已处于「已应用」状态。不构成问题。
+**时间顺序与提交顺序吻合**：所有 S-3' 日志都早于提交它们的 commit，晚于修订开始（`d476b08`，14:44Z）。唯一的细节是 `work/NEMU/.../vdot.c` 的 mtime（15:24Z）晚于 NEMU 测试日志（15:11Z）。复审者核对后认为这是协同仿真故障注入（15:22–15:25Z）改写源文件后又还原造成的：内容与补丁逐字节相同，15:11 的构建日志也证明当时补丁已处于「已应用」状态。不构成问题。
 
 **仍在库中的修订前日志**：`logs/stage2/p4_*.log`（阶段二 P4 的首次构建与冒烟测试，2026-10-24，macOS 路径），以及 `logs/stage3/fullcore/fault_diff.txt`（bit0 翻转注入的 diff，与语义无关）。这些日志中没有 vdot 的期望值或高位取值，不构成旧语义残留；但 `docs/00` 中 2.2 一行仍以 `p4_rtl_build.log` 作为编译证据，见问题 M-7。
 
@@ -129,7 +129,7 @@ def vdot_vv(vs1, vs2, sew=8):
 ### 重要
 
 **I-1　`nemu/README.md` 整份停留在 S-3' 之前，sha256 与它自己引用的日志行矛盾**
-- 证据：该文件最后一次提交是 `75aa818`（10-25），S-3' 之后未更新。
+- 证据：该文件最后一次提交是 `0cb8465`（10-25），S-3' 之后未更新。
   - `nemu/README.md:22`：patch sha256 写 `fb003c54…8838`，并标注出处 `logs/stage3/p5_nemu_build.log:7`；但该日志行与现补丁实测的 sha256 都是 `cb9194f8…9503`。
   - `:23`：「+278 / -1 行，`vdot.c` 221 行」；实测为 +285 / -1、`vdot.c` 228 行（`git apply --stat`），`docs/stage3/20:22,136,145` 已是新值。
   - `:34,108-110`：「13 个共享 suite（30703 条）…共 30758 条」；现为 30739 / 30794。
@@ -148,7 +148,7 @@ def vdot_vv(vs1, vs2, sew=8):
 
 ### 次要
 
-**M-1　「阶段二未附波形截图」已过时**：`README.md` §5 第 6 条（「阶段二波形以 VCD + 文本轨迹交付，未另附截图」）、`docs/00_项目总览.md` §2 阶段二一行（「仍未整改：I-3 未附波形截图」）。实际上 `docs/stage2/figures/fig1-3_*.png` 存在，并已嵌入 `docs/stage2/12:1022,1078,1095`（提交 `91163b8`）。建议删去或改为「已附图」。
+**M-1　「阶段二未附波形截图」已过时**：`README.md` §5 第 6 条（「阶段二波形以 VCD + 文本轨迹交付，未另附截图」）、`docs/00_项目总览.md` §2 阶段二一行（「仍未整改：I-3 未附波形截图」）。实际上 `docs/stage2/figures/fig1-3_*.png` 存在，并已嵌入 `docs/stage2/12:1022,1078,1095`（提交 `aa1572c`）。建议删去或改为「已附图」。
 
 **M-2　VCD 体积说明过时**：`.gitignore:29-30` 与 `docs/stage2/11_RTL实现说明.md:653-660` 写「8 份、10.5 MB，单份 ≤ 2 MB（最大 1.85 MB），阶段三 5.4 MB」。S-3' 重跑后实测共 15,200,156 B，阶段三 3 份为 2.62 / 2.74 / 2.84 MB，超出文件里自定的「单份 ≤ 2 MB」判据。建议更新数字，或放宽判据并说明理由。
 
@@ -162,7 +162,7 @@ def vdot_vv(vs1, vs2, sew=8):
 
 **M-7　2.2 的编译证据是 S-3' 之前的构建**：`docs/00_项目总览.md:31` 以 `logs/stage2/p4_rtl_build.log:13,32`（2026-10-24）作为「82 / 382 个 Scala 源文件编译通过」的证据。S-3' 之后的构建证据在 `logs/stage3/cosim/p6_build.log`、`logs/stage3/fullcore/build_emu.log` 与 `p5_*` 中。建议并列给出 S-3' 之后的构建日志。
 
-**M-8　`target.md`（赛题原文）中插入了团队注记**：`target.md` 第 17 行的 HTML 注释（`6b3e499` 加入），虽然标明了「团队补记」，但改动了标称为「原文」的文件。建议把注记移到 README 或 `docs/stage2/10`，保持原文不变。
+**M-8　`target.md`（赛题原文）中插入了团队注记**：`target.md` 第 17 行的 HTML 注释（`edc9dc7` 加入），虽然标明了「团队补记」，但改动了标称为「原文」的文件。建议把注记移到 README 或 `docs/stage2/10`，保持原文不变。
 
 ---
 
@@ -265,7 +265,7 @@ def vdot_vv(vs1, vs2, sew=8):
 | `gcc … vdot_cli.c vdot_ref.c -o /tmp/review4/golden/vdot_cli`，然后 `python3 tests/golden/check_official_pseudocode.py --cli /tmp/review4/golden/vdot_cli --vectors tests/vectors --random 10000` | `OFFICIAL-PSEUDOCODE-EQUIV: PASS (20570 cases, 0 mismatches)`，退出码 0 |
 | 复审者独立脚本 `/tmp/review4/my_check.py tests/vectors` | vdot / vdotacc 合计 17369 条 OK 用例 0 失配，高位非 0 的行 0 条（见 §1.3） |
 | `diff` 补丁抽出的 `vdot.c` 与 `work/NEMU` 工作区中的版本 | 相同 |
-| `git show 9d3409e^:logs/stage3/fullcore/perf_cycles.log` 与现日志的 `PERF` 行对比；`cycles_fullcore.csv` 新旧对比 | 均相同，与「S-3' 后周期逐拍相同」的表述一致 |
+| `git show 61eb937^:logs/stage3/fullcore/perf_cycles.log` 与现日志的 `PERF` 行对比；`cycles_fullcore.csv` 新旧对比 | 均相同，与「S-3' 后周期逐拍相同」的表述一致 |
 | 收尾 `git status --short` | 已跟踪文件无改动，唯一变化是本报告这个新增文件；`work/` 下各工作树的 `git status` 条数与复审前相同 |
 
 说明：复审者手工编译 `test_golden.c` 时漏链了 `bench/baseline/baseline_ref.c`（项目 `Makefile` 会一并链接），属于复审操作疏漏，与仓库无关，因此该自检未计入上表。

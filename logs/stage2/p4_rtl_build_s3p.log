@@ -6,7 +6,7 @@ Verilator : perl: warning: Setting locale failed.
 mill      : /usr/local/bin/mill
 工作树    : /data/my/cie2026-vdot-xiangshan/work/XiangShan-vdot
 工作树 HEAD: XiangShan a4eeaabb4 / yunsuan 9559211
-交付补丁  : rtl/patch/*.patch 最后修改提交 b16b58d 2026-10-26 15:39:16 +0000
+交付补丁  : rtl/patch/*.patch 最后修改提交 364b141 2026-10-26 15:39:16 +0000
 说明      : 命令与 logs/stage2/p4_rtl_build.log（2026-10-24，S-3' 之前）逐条相同；
             先 mill clean 掉对应编译任务的缓存，保证日志是真实的完整编译输出
 ==========================================================

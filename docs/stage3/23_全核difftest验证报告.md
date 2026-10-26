@@ -25,7 +25,7 @@
 | 全核波形（译码 → ROB 提交） | **完成**。文本轨迹 + 时序图；VCD 382 MB 不入库 | `wave_trace.txt:155-192`；`wave_fullcore_vdot.png`（嵌入 §7 图 8） |
 | vl=8 主演示（与官方伪代码逐位等价） | **完成**。`vsetivli zero, 8, e8, m1, ta, ma`（vta=1）下 vdot / vdotacc 只取元素 0..7，高 8 字节的无关值不参与；vd 旧值的元素 1..3（非零垃圾值）被清零；`vdot` 得 `0x00000000_00000000_00000000_000000cc`（Σi² = 204），`vdotacc` 得 `0x…000004b4`（1000 + 204）；程序内自检通过，HIT GOOD TRAP，difftest 失配 0 | `wave_vl8_run.log:32-34,45-56,59`；`wave_vl8_trace.txt:76-81`；§7.3 图 10 |
 | Level 1 等价性论证是否成立 | **成立，且其 4 个缺口中的 G1–G4 已在全核上实测闭合**（§8） | §8 |
-| 发现 RTL / NEMU 补丁缺陷 | **未发现**。全核 difftest 本身没有促成 `rtl/patch/`、`nemu/patch/` 的任何改动（两份补丁在 S-3' 语义修订中有改动，那是语义对齐，见提交 b16b58d，不是本报告发现的缺陷） | — |
+| 发现 RTL / NEMU 补丁缺陷 | **未发现**。全核 difftest 本身没有促成 `rtl/patch/`、`nemu/patch/` 的任何改动（两份补丁在 S-3' 语义修订中有改动，那是语义对齐，见提交 364b141，不是本报告发现的缺陷） | — |
 
 一句话：**打了 vdot 补丁的昆明湖V2 全核与打了 vdot 补丁的 NEMU 在 24,524,262 条逐条提交比对（27,104,437 个周期）上 0 失配；vdot 指令族在乱序流水线中的发射、物理寄存器旁路、提交与异常投递均与 NEMU 一致。**
 
@@ -115,7 +115,7 @@ make emu CONFIG=MinimalConfig EMU_THREADS=16 EMU_TRACE=1 JVM_XMX=200G \
 
 说明：
 
-* 分阶段耗时由日志中各阶段起点打印的时间戳相减得到，不是 GNU time 的分阶段统计；峰值 RSS 是 GNU time 对整个 `make emu` 进程树记录的最大单进程 RSS（字段 `Maximum resident set size (kbytes)`，单位为 KiB = 1024 字节）。这次日志没有分阶段的 RSS；首次构建的分阶段统计显示峰值出现在 Verilator 单线程前端（59157676 KiB），该记录见 git 历史（提交 19a29ea 中的 `logs/stage3/fullcore/build_time_breakdown.log:34,39`）。
+* 分阶段耗时由日志中各阶段起点打印的时间戳相减得到，不是 GNU time 的分阶段统计；峰值 RSS 是 GNU time 对整个 `make emu` 进程树记录的最大单进程 RSS（字段 `Maximum resident set size (kbytes)`，单位为 KiB = 1024 字节）。这次日志没有分阶段的 RSS；首次构建的分阶段统计显示峰值出现在 Verilator 单线程前端（59157676 KiB），该记录见 git 历史（提交 4674e08 中的 `logs/stage3/fullcore/build_time_breakdown.log:34,39`）。
 * 这次构建期间，两棵故障注入树（§6）的 emu 构建同时进行（`build_emu_fault.log:1`、`build_emu_fault_s3old.log:1` 的起始时刻分别为 15:43:32、15:43:54），三份构建共享 128 核，耗时偏保守；两棵注入树各自为 27:34.11 / 27:18.77，峰值 RSS 56596284 / 56621028 KiB（`build_emu_fault.log:2429,2434`、`build_emu_fault_s3old.log:2426,2431`）。
 * 脚本自身的墙钟为 24m45s（`build_driver.log:40`），但该次脚本以 `exit=2` 结束（`build_driver.log:33,43`）：emu 已构建完成（`build_emu.log:2448` `exit=0`，`build_driver.log:32` 已列出 emu）之后，构建进行中脚本文件被就地改写（加入 `FAULT_KIND` 选项），bash 读到改写后的文件尾部报 `unexpected EOF`。日志中已附说明并在不改动任何东西的前提下重跑一次 `build` 模式，确认补丁状态、`.so` 与 emu 均已就绪、`exit=0`（`build_driver.log:45-65`）。构建产物不受影响：本 emu 正是 §5 各次运行使用的 emu（`corpus_b00.log:42` `emu compiled at Oct 26 2026, 16:04:36`）。
 
@@ -123,10 +123,10 @@ make emu CONFIG=MinimalConfig EMU_THREADS=16 EMU_TRACE=1 JVM_XMX=200G \
 
 ### 3.3 首次构建中真实遇到的两次失败（如实记录）
 
-以下发生在首次构建（S-3' 之前）。当时的 g++/clang 排查日志在 S-3' 重建时已从工作区删除（它们不再对应当前树），记录保留在 git 历史中（提交 19a29ea），下文行号均指该提交中的文件，可用 `git show 19a29ea:<路径>` 查看。
+以下发生在首次构建（S-3' 之前）。当时的 g++/clang 排查日志在 S-3' 重建时已从工作区删除（它们不再对应当前树），记录保留在 git 历史中（提交 4674e08），下文行号均指该提交中的文件，可用 `git show 4674e08:<路径>` 查看。
 
-1. **g++ 不认识 clang 专有选项**。difftest 子模块（`3729300`）把 `OPT_FAST ?= -O3 -fno-slp-vectorize` 写死（`work/XiangShan-fullcore/difftest/verilator.mk:76`，当前树仍然如此），该选项只有 clang 认识；Verilator 默认用 g++，于是 C++ 阶段立即失败：19a29ea 的 `logs/stage3/fullcore/build_emu.log:2421-2423`（`g++: error: unrecognized command-line option '-fno-slp-vectorize'`）、`:2484` `exit=2`。
-2. **g++ 编译超大单函数极慢**。改用 GCC 等价选项 `-fno-tree-slp-vectorize` 重编（19a29ea 的 `build_emu_2.log:3`）后，Verilator 生成的 `VSimTop___024root__DepSet_hd5918264__2.cpp`（15.9 MB，几乎全是一个函数 `nba_sequent__TOP__22`）在 g++ 11.4 `-O3` 下编译 85 分钟仍未结束。同一文件用 `clang++ -O3 -fno-slp-vectorize` 单独编译只需 1 分 48 秒，于是人工终止（同文件 `:38-61`），改用 clang++ 重编全部目标文件，1 分 42 秒完成（19a29ea 的 `build_emu_3.log:38,57`）。
+1. **g++ 不认识 clang 专有选项**。difftest 子模块（`3729300`）把 `OPT_FAST ?= -O3 -fno-slp-vectorize` 写死（`work/XiangShan-fullcore/difftest/verilator.mk:76`，当前树仍然如此），该选项只有 clang 认识；Verilator 默认用 g++，于是 C++ 阶段立即失败：4674e08 的 `logs/stage3/fullcore/build_emu.log:2421-2423`（`g++: error: unrecognized command-line option '-fno-slp-vectorize'`）、`:2484` `exit=2`。
+2. **g++ 编译超大单函数极慢**。改用 GCC 等价选项 `-fno-tree-slp-vectorize` 重编（4674e08 的 `build_emu_2.log:3`）后，Verilator 生成的 `VSimTop___024root__DepSet_hd5918264__2.cpp`（15.9 MB，几乎全是一个函数 `nba_sequent__TOP__22`）在 g++ 11.4 `-O3` 下编译 85 分钟仍未结束。同一文件用 `clang++ -O3 -fno-slp-vectorize` 单独编译只需 1 分 48 秒，于是人工终止（同文件 `:38-61`），改用 clang++ 重编全部目标文件，1 分 42 秒完成（4674e08 的 `build_emu_3.log:38,57`）。
 
 S-3' 重建直接使用 clang++（`build_emu.log:19` 的 `CXX=clang++ LINK=clang++`），一次通过。
 
@@ -380,7 +380,7 @@ vdotacc.vv v4, v9, v8
 
 ## 9. 发现与局限
 
-1. **未发现 RTL 或 NEMU 补丁缺陷**。全核 difftest 没有促成 `rtl/patch/`、`nemu/patch/` 的任何改动（S-3' 语义修订对两份补丁的改动见提交 b16b58d，修订后全核已按新补丁重建并重跑，结果见 §5、§6）。
+1. **未发现 RTL 或 NEMU 补丁缺陷**。全核 difftest 没有促成 `rtl/patch/`、`nemu/patch/` 的任何改动（S-3' 语义修订对两份补丁的改动见提交 364b141，修订后全核已按新补丁重建并重跑，结果见 §5、§6）。
 2. **环境问题两处**（§3.3，首次构建时发现）：上游 difftest 的 `OPT_FAST` 写死 clang 专有选项；g++ 11.4 编译 Verilator 生成的超大函数不可接受地慢。已在脚本中固化为 clang++。
 3. **对 `docs/stage3/22` 遗留威胁的一条实测证据**：`22` 中 vdotacc 循环携带依赖按 FU 延迟记为 2 拍。全核波形显示，在 MinimalConfig 下相互依赖的 VIMacU 指令发射间隔是 **7 拍**（FU 2 拍 + 读寄存器堆 3 拍 + 写回唤醒到发射 2 拍，§7.2 第 4 条）。同样的唤醒 / 读寄存器开销也作用于基线里依赖 VIAluFix 的 `vwadd.wv` 链（本波形中 vadd 从发射到结果为 1488→1492，再到消费者发射 1494，共 6 拍）。所以「2 拍 vs 1 拍」在全核中会被稀释成约「7 拍 vs 6 拍」。这条波形本身只是一条依赖链上的观测，**不是吞吐测量**；之后的全核周期实测（`22` §5.5.3）证实了每跳 = FU 延迟 + 5 拍（`vdotacc` 7.000 拍、`vwadd.wv` 6.000 拍），长向量循环的稳态周期与加速比见 `22` §5.5.4（单累加器 1.81×、2 累加器 2.25×，均只对 MinimalConfig 成立）。仍未做的是真实 LLM 内核（int8 GEMM / attention）与默认配置上的周期测量。
 4. **配置**：只构建了 MinimalConfig（理由与影响见 §3.1）。默认配置、`KunminghuV2Config` 未运行。
@@ -408,7 +408,7 @@ bash scripts/50_run_fullcore_difftest.sh fault   # 故障注入：写回尾部�
 
 可调参数见脚本文件头（`FC_CONFIG`、`EMU_THREADS`、`JVM_XMX`、`BATCHES`、`DEP_ITERS`、`DEP_SEEDS`、`WAVE_BEGIN/END`；故障注入种类 `FAULT_KIND=bit0|s3old` 见 `scripts/50_run_fullcore_difftest.sh:20-24,384-401`）。日志写到 `${LOG_ROOT}/stage3/fullcore/`，已有同名日志时改写到 `rerun_<时间戳>/` 子目录，不覆盖存档。
 
-本报告的存档（S-3' 修订后重跑）由以下命令产生：`build`（`build_driver.log`、`build_emu.log`；脚本末尾 `exit=2` 的原因见 §3.2，emu 构建本身 `exit=0`）、`run`（`run_driver.log`）、`wave`（`wave_driver.log`）、`wave-vl8`（`wave_vl8_driver.log`）、`fault` 与 `FAULT_KIND=s3old fault`（`fault_driver.log`、`fault_driver_s3old.log`，注入树构建日志 `build_emu_fault.log`、`build_emu_fault_s3old.log`），均为上述脚本原样运行。首次构建（S-3' 之前）的三次手工 `make emu` 与脚本从零复测的日志不再对应当前树，已从工作区删除，见 git 历史（提交 19a29ea）。
+本报告的存档（S-3' 修订后重跑）由以下命令产生：`build`（`build_driver.log`、`build_emu.log`；脚本末尾 `exit=2` 的原因见 §3.2，emu 构建本身 `exit=0`）、`run`（`run_driver.log`）、`wave`（`wave_driver.log`）、`wave-vl8`（`wave_vl8_driver.log`）、`fault` 与 `FAULT_KIND=s3old fault`（`fault_driver.log`、`fault_driver_s3old.log`，注入树构建日志 `build_emu_fault.log`、`build_emu_fault_s3old.log`），均为上述脚本原样运行。首次构建（S-3' 之前）的三次手工 `make emu` 与脚本从零复测的日志不再对应当前树，已从工作区删除，见 git 历史（提交 4674e08）。
 
 ---
 
@@ -423,7 +423,7 @@ bash scripts/50_run_fullcore_difftest.sh fault   # 故障注入：写回尾部�
 | `tests/riscv/fullcore/vdot_wave.S` | 波形抓取用最小程序（vl=16） |
 | `tests/riscv/fullcore/vdot_wave_vl8.S` | vl=8 主演示（与官方伪代码逐位等价，程序内自检，§7.3） |
 | `tests/riscv/fullcore/wave_trace.py` | 从全核 VCD 抽取 vdot 事件轨迹 |
-| `logs/stage3/fullcore/build_driver.log`、`build_emu.log` | S-3' 重建的脚本驱动日志与 `make emu` 日志（§3.2）；首次构建的 g++/clang 排查记录（`build_emu_2/3.log`、`build_time_breakdown.log` 等）见 git 历史（提交 19a29ea） |
+| `logs/stage3/fullcore/build_driver.log`、`build_emu.log` | S-3' 重建的脚本驱动日志与 `make emu` 日志（§3.2）；首次构建的 g++/clang 排查记录（`build_emu_2/3.log`、`build_time_breakdown.log` 等）见 git 历史（提交 4674e08） |
 | `logs/stage3/fullcore/build_emu_fault.log`、`build_emu_fault_s3old.log` | 两棵故障注入树的 emu 构建日志 |
 | `logs/stage3/fullcore/corpus_b0[0-5].log`、`dep[0-3].log`、`summary.log`、`run_driver.log` | difftest 运行日志与汇总 |
 | `logs/stage3/fullcore/fault_*.log`、`fault_diff.txt`、`fault_summary.log`、`fault_driver.log` | 故障注入 bit0（§6.1） |
