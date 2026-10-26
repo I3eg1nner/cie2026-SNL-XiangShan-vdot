@@ -972,6 +972,9 @@ def_EHelper(vdot_vv) {
   `https://api.rv.cie.org.cn/storage/ueditor/20260615/bc72c5ea-d0b4-4f962e3cdd5feb916af2db486c8ec14c4353eb302.png`
   （路径中的 `20260615` 是上传目录名）。
 * 访问日期：2026-10-26。
+* 存档：取回的图片原样（未作任何修改）保存为 `docs/_recon/figures/vdot_official_semantics.jpg`，
+  sha256 `4d255095d1e327010354c3cb50afd2f283f07f14784d9734f249c344cf3b1a6c`（66723 字节，691×268 JPEG；服务器上的文件名后缀为 `.png`，实际内容是 JPEG）。
+  `target.md:19` 的 `bc72c5ea-d0b4-45aa-961f-9c11eb1caeda.png` 即同一张图在赛题正文中的文件名。
 
 ### 14.2 语义图转录（逐字，行号为图上行号）
 

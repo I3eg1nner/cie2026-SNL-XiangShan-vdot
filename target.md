@@ -16,7 +16,7 @@
 
 核心要求：复用香山昆明湖 V2 现有的向量实现，将 vdot 指令作为向量指令集中新增的自定义指令进行功能单元扩展。vdot.vv 指令语义（SEW = 8, VLEN = 128）
 
-bc72c5ea-d0b4-45aa-961f-9c11eb1caeda.png
+bc72c5ea-d0b4-45aa-961f-9c11eb1caeda.png <!-- 注（团队补记）：此处即赛题官方语义图（vdot_vv 的 8 行 Python 伪代码），原样存档于 docs/_recon/figures/vdot_official_semantics.jpg（sha256 4d255095d1e327010354c3cb50afd2f283f07f14784d9734f249c344cf3b1a6c）；转录与逐行对照见 docs/stage2/10_vdot指令设计文档.md §1 开头 -->
 
 
 

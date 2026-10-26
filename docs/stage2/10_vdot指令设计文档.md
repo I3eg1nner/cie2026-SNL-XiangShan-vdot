@@ -32,7 +32,7 @@
 |---|---|
 | 赛题页 | https://rv.cie.org.cn/direction?id=8（Vue 单页应用，正文与图片由前端渲染） |
 | 数据接口 | `https://api.rv.cie.org.cn/api/subject/index?race_id=8`，返回赛题正文，其中引用了下面这张语义图 |
-| 语义图 | `https://api.rv.cie.org.cn/storage/ueditor/20260615/bc72c5ea-d0b4-4f962e3cdd5feb916af2db486c8ec14c4353eb302.png` |
+| 语义图 | `https://api.rv.cie.org.cn/storage/ueditor/20260615/bc72c5ea-d0b4-4f962e3cdd5feb916af2db486c8ec14c4353eb302.png`；原样存档于 `docs/_recon/figures/vdot_official_semantics.jpg`（sha256 `4d255095d1e327010354c3cb50afd2f283f07f14784d9734f249c344cf3b1a6c`） |
 | 访问日期 | 2026-10-26 |
 | 图上的内容 | 一段 8 行 Python 伪代码（下方逐字转录）。**图上没有任何指令编码信息**（funct6 / funct3 / opcode 都没有），也没有 vl、vm、vstart、vta/vma、LMUL 的规定 |
 
