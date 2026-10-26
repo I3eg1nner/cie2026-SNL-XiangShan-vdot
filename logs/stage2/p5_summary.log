@@ -1,4 +1,4 @@
-=== vdot 功能测试汇总  2026-10-26 15:31:27 UTC ===
+=== vdot 功能测试汇总  2026-10-26 17:40:10 UTC ===
 
 分类         suite                              attempted    passed   failed  skipped 结果
 --------------------------------------------------------------------------------------------------
@@ -45,9 +45,9 @@ VIMacU 等价  VIMacU 直驱语料回放              26060     26060        0  
 失败的 suite 数：0
 
 日志：
-  p5_func_positive.log       128 行
-  p5_func_negative.log       127 行
-  p5_func_boundary.log       179 行
+  p5_func_positive.log       178 行
+  p5_func_negative.log       177 行
+  p5_func_boundary.log       229 行
   p5_func_random.log         167 行
   p5_regression.log          56 行
   p5_decode_illegal.log      124 行

@@ -1,4 +1,4 @@
-=== 2.3.3 边界值测试  2026-10-26 15:28:57 UTC ===
+=== 2.3.3 边界值测试  2026-10-26 17:37:46 UTC ===
 
 ########################################################################
 # suite  : boundary(vdot.vv)
@@ -14,7 +14,7 @@ Using seed = 7
 [vdot-vectors] all 100 cases consumed
 EMU EXCEEDED LIMIT
 HAS Executed Cycles:419 Operations:100
-EMU has executed 31 ms.
+EMU has executed 30 ms.
 # 判定   : PASS（attempted=100 passed=100 failed=0 skipped=9）
 
 ########################################################################
@@ -31,7 +31,7 @@ Using seed = 7
 [vdot-vectors] all 100 cases consumed
 EMU EXCEEDED LIMIT
 HAS Executed Cycles:419 Operations:100
-EMU has executed 31 ms.
+EMU has executed 30 ms.
 # 判定   : PASS（attempted=100 passed=100 failed=0 skipped=9）
 
 ########################################################################
@@ -65,7 +65,7 @@ Using seed = 7
 [vdot-vectors] all 130 cases consumed
 EMU EXCEEDED LIMIT
 HAS Executed Cycles:539 Operations:130
-EMU has executed 37 ms.
+EMU has executed 35 ms.
 # 判定   : PASS（attempted=130 passed=130 failed=0 skipped=0）
 
 ---- 边界覆盖点自查（直接从语料文件统计，不依赖仿真）----
@@ -107,7 +107,7 @@ EMU has executed 37 ms.
 ==   vdot 8 0 0 1 0 1 0102030405060708090a0b0c0d0e0f10 707172737475767778797a7b7c7d7e7f a5a5a5a55a5a5a5a1111111122222222 a5a5a5a55a5a5a5a1111111122222222 00000000000000000000000000000000 OK
 ======================================================================
 Emu compiled at Oct 26 2026, 15:15:16
-[vdot-vectors] loaded 1 cases from /tmp/vdotcase.BP4XBL (skipped 0 non-OK, 0 unparsed)
+[vdot-vectors] loaded 1 cases from /tmp/vdotcase.6joWtt (skipped 0 non-OK, 0 unparsed)
 [vdot-vectors] run with -O 1 to execute every case exactly once
 Set Test Type Res: fuType:7 fuOpType:225 (pick_fuType=0 pick_fuOpType=0)
 [vdot-vectors] all 1 cases consumed
@@ -123,7 +123,7 @@ DUT Output:
   result  2222222211111111_5a5a5a5aa5a5a5a5 fflags: 0_0  vxsat: 0
 EMU EXCEEDED LIMIT
 HAS Executed Cycles:23 Operations:1
-EMU has executed 9 ms.
+EMU has executed 8 ms.
 
 ======================================================================
 == 代表性用例：vdot.vv 全 0 掩码（v0 低 16 位全 0、高位填 0xA5 用于检验无关掩码位被忽略）：裁定 S-4，仍然写 vd[0]=0
@@ -132,7 +132,7 @@ EMU has executed 9 ms.
 ==   vdot 8 0 16 0 1 0 7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f 02020202020202020202020202020202 01000000020000000300000004000000 00000000000000000000000000000000 0000a5a5a5a5a5a5a5a5a5a5a5a5a5a5 OK
 ======================================================================
 Emu compiled at Oct 26 2026, 15:15:16
-[vdot-vectors] loaded 1 cases from /tmp/vdotcase.OHSHJ3 (skipped 0 non-OK, 0 unparsed)
+[vdot-vectors] loaded 1 cases from /tmp/vdotcase.KYFULs (skipped 0 non-OK, 0 unparsed)
 [vdot-vectors] run with -O 1 to execute every case exactly once
 Set Test Type Res: fuType:7 fuOpType:225 (pick_fuType=0 pick_fuOpType=0)
 [vdot-vectors] all 1 cases consumed
@@ -148,7 +148,7 @@ DUT Output:
   result  0000000000000000_0000000000000000 fflags: 0_0  vxsat: 0
 EMU EXCEEDED LIMIT
 HAS Executed Cycles:23 Operations:1
-EMU has executed 9 ms.
+EMU has executed 8 ms.
 
 ======================================================================
 == 代表性用例：vdot4a.vv vstart=1（非规范 SKIP 策略语料）：数据通路仍然正确实现 prestart 门控。
@@ -160,7 +160,7 @@ EMU has executed 9 ms.
 ==   vdot4a 32 1 4 1 1 1 61689afb72b9828e07e1e1a2a2dfcce4 8f3b5c2211c3941a947944576b1346c8 e384049007aa450142951da973ba001f e384049018ec4501795b1da99e88001f 00000000000000000000000000000000 OK
 ======================================================================
 Emu compiled at Oct 26 2026, 15:15:16
-[vdot-vectors] loaded 1 cases from /tmp/vdotcase.uwD4QX (skipped 0 non-OK, 0 unparsed)
+[vdot-vectors] loaded 1 cases from /tmp/vdotcase.P4wm7U (skipped 0 non-OK, 0 unparsed)
 [vdot-vectors] run with -O 1 to execute every case exactly once
 Set Test Type Res: fuType:7 fuOpType:225 (pick_fuType=0 pick_fuOpType=0)
 [vdot-vectors] all 1 cases consumed
@@ -176,4 +176,54 @@ DUT Output:
   result  1f00889ea91d5b79_0145ec18900484e3 fflags: 0_0  vxsat: 0
 EMU EXCEEDED LIMIT
 HAS Executed Cycles:23 Operations:1
-EMU has executed 9 ms.
+EMU has executed 8 ms.
+
+======================================================================
+== 代表性用例：vdot.vv vl=8 主演示（赛题官方伪代码取 8 个 int8）：+127/-128 交错，8×(-16256) = -130048 = 0xFFFE0400，高 96 位清零
+== 来源：tests/vectors/boundary.txt   过滤：NR==126
+== 语料原文（op vsew vstart vl vm vta vma vs1 vs2 vd_in vd_expected v0 status）：
+==   vdot 8 0 8 1 0 0 7f807f807f807f805555555555555555 807f807f807f807f3333333333333333 a5a5a5a5efbeaddebebafeca78563412 0004feff000000000000000000000000 00000000000000000000000000000000 OK
+======================================================================
+Emu compiled at Oct 26 2026, 15:15:16
+[vdot-vectors] loaded 1 cases from /tmp/vdotcase.lQe25W (skipped 0 non-OK, 0 unparsed)
+[vdot-vectors] run with -O 1 to execute every case exactly once
+Set Test Type Res: fuType:7 fuOpType:225 (pick_fuType=0 pick_fuOpType=0)
+[vdot-vectors] all 1 cases consumed
+Using seed = 7
+---- case #0 : MATCH ----
+REF Input:
+  src1 3333333333333333_7f807f807f807f80 src2 5555555555555555_807f807f807f807f src3 12345678cafebabe_deadbeefa5a5a5a5 src4 0000000000000000_0000000000000000
+  fuType a fuOpType 0 sew 0 uop_idx 0 src_widen 0 widen 0 is_frs1 0 rm 0
+  vstart 0 vl 8 vlmul 0 vm 1 ta 0 ma 0
+Expected Output 
+  result  0000000000000000_00000000fffe0400 fflags: 0_0  vxsat: 0
+DUT Output:
+  result  0000000000000000_00000000fffe0400 fflags: 0_0  vxsat: 0
+EMU EXCEEDED LIMIT
+HAS Executed Cycles:23 Operations:1
+EMU has executed 8 ms.
+
+======================================================================
+== 代表性用例：vdotacc.vv vl=8 主演示：0xA5A5A5A5 + 0xFFFE0400 = 0xA5A3A9A5（32 位回绕），高 96 位清零
+== 来源：tests/vectors/vdotacc_boundary.txt   过滤：NR==126
+== 语料原文（op vsew vstart vl vm vta vma vs1 vs2 vd_in vd_expected v0 status）：
+==   vdotacc 8 0 8 1 0 0 7f807f807f807f805555555555555555 807f807f807f807f3333333333333333 a5a5a5a5efbeaddebebafeca78563412 a5a9a3a5000000000000000000000000 00000000000000000000000000000000 OK
+======================================================================
+Emu compiled at Oct 26 2026, 15:15:16
+[vdot-vectors] loaded 1 cases from /tmp/vdotcase.0JX3Gv (skipped 0 non-OK, 0 unparsed)
+[vdot-vectors] run with -O 1 to execute every case exactly once
+Set Test Type Res: fuType:7 fuOpType:225 (pick_fuType=0 pick_fuOpType=0)
+[vdot-vectors] all 1 cases consumed
+Using seed = 7
+---- case #0 : MATCH ----
+REF Input:
+  src1 3333333333333333_7f807f807f807f80 src2 5555555555555555_807f807f807f807f src3 12345678cafebabe_deadbeefa5a5a5a5 src4 0000000000000000_0000000000000000
+  fuType a fuOpType 1 sew 0 uop_idx 0 src_widen 0 widen 0 is_frs1 0 rm 0
+  vstart 0 vl 8 vlmul 0 vm 1 ta 0 ma 0
+Expected Output 
+  result  0000000000000000_00000000a5a3a9a5 fflags: 0_0  vxsat: 0
+DUT Output:
+  result  0000000000000000_00000000a5a3a9a5 fflags: 0_0  vxsat: 0
+EMU EXCEEDED LIMIT
+HAS Executed Cycles:23 Operations:1
+EMU has executed 8 ms.

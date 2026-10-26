@@ -1,4 +1,4 @@
-=== VIMacU 直驱等价性验证  2026-10-26 15:30:49 UTC ===
+=== VIMacU 直驱等价性验证  2026-10-26 17:39:35 UTC ===
 
 --- (1) 精化 VIMacUHarness（内部例化真正的 VIMacU）---
 [mill-state-guard] /data/my/cie2026-vdot-xiangshan/work/XiangShan-vdot: 清理了 0 个失效的增量编译状态
@@ -41,7 +41,7 @@ rm VVIMacUHarness__ALL.verilator_deplist.tmp
 make: Leaving directory '/data/my/cie2026-vdot-xiangshan/work/XiangShan-vdot/build/vimacu-tb/obj'
 - V e r i l a t i o n   R e p o r t: Verilator 5.024 2024-04-05 rev v5.024
 - Verilator: Built from 0.210 MB sources in 14 modules, into 3.727 MB in 17 C++ files needing 0.010 MB
-- Verilator: Walltime 3.559 s (elab=0.019, cvt=0.259, bld=3.205); cpu 0.000 s on 128 threads; alloced 326.754 MB
+- Verilator: Walltime 0.809 s (elab=0.020, cvt=0.274, bld=0.441); cpu 0.000 s on 128 threads; alloced 326.758 MB
     vimacu_tb : 481664 bytes
 
 --- (3) 回放全部定向语料（与 L1 平台用的是同一批文件）---

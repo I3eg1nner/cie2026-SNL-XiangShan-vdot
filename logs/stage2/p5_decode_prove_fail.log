@@ -1,10 +1,10 @@
-=== 译码级守卫反向验证  2026-10-26 15:30:16 UTC ===
+=== 译码级守卫反向验证  2026-10-26 17:39:01 UTC ===
 === 命令： PROVE_FAIL=1 bash scripts/tools/run_decode_tb.sh ===
 === 目的： 证明 §5.5 的「全 PASS」不是因为用例恒真 ——
 ===       临时撤掉 dotEmulIllegal 之后，LMUL 相关用例必须立刻变红。
 ===       脚本结束时会按备份还原源码并重新生成正确的 Verilog。
 
-=== VecExceptionGen 译码级合法性定向测试  2026-10-26 15:30:16 UTC ===
+=== VecExceptionGen 译码级合法性定向测试  2026-10-26 17:39:01 UTC ===
 
 --- (1) 精化 VecExceptionGenHarness ---
 [mill-state-guard] /data/my/cie2026-vdot-xiangshan/work/XiangShan-vdot: 清理了 0 个失效的增量编译状态
@@ -22,7 +22,7 @@ rm VVecExceptionGenHarness__ALL.verilator_deplist.tmp
 make: Leaving directory '/data/my/cie2026-vdot-xiangshan/work/XiangShan-vdot/build/decode-tb/obj'
 - V e r i l a t i o n   R e p o r t: Verilator 5.024 2024-04-05 rev v5.024
 - Verilator: Built from 0.025 MB sources in 3 modules, into 0.114 MB in 7 C++ files needing 0.000 MB
-- Verilator: Walltime 0.320 s (elab=0.002, cvt=0.012, bld=0.267); cpu 0.000 s on 128 threads; alloced 275.758 MB
+- Verilator: Walltime 0.299 s (elab=0.002, cvt=0.012, bld=0.266); cpu 0.000 s on 128 threads; alloced 275.758 MB
 
 --- (3) 运行定向用例 ---
 DUT: VecExceptionGenHarness（内部例化真正的 VecExceptionGen）

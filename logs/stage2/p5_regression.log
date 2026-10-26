@@ -1,4 +1,4 @@
-=== 既有指令 / 既有功能单元回归  2026-10-26 15:29:49 UTC ===
+=== 既有指令 / 既有功能单元回归  2026-10-26 17:38:35 UTC ===
 
 --- (A) 上游 CI 的随机混合测试（.github/workflows/main.yml:42 原样命令）---
 命令： ./build/emu -O 10000
@@ -7,7 +7,7 @@ Set Test Type Res: fuType:7 fuOpType:225 (pick_fuType=0 pick_fuOpType=0)
 Using seed = 0
 EMU EXCEEDED LIMIT
 HAS Executed Cycles:54959 Operations:10000
-EMU has executed 3224 ms.
+EMU has executed 3161 ms.
 
 --- (B) 逐个既有功能单元定向回归（2000 条 / 个）---
     fuType 对照表见 docs/stage1/03_仿真平台搭建报告.md §4.3

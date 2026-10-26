@@ -172,6 +172,10 @@ step "1/7 2.3.1 正数测试"
     "vdotacc.vv：带累加器的正数点积"
   worked_example "${VEC_DIR}/vdot4a_positive.txt" '$4==4 && $6==1' \
     "vdot4a.vv：4 组分组点积累加"
+  worked_example "${VEC_DIR}/positive.txt" 'NR==61' \
+    "vdot.vv vl=8 主演示（赛题官方伪代码取 8 个 int8）：前 8 个元素 vs1=vs2=0x7F，8×127×127 = 129032 = 0x1F808，高 96 位清零"
+  worked_example "${VEC_DIR}/vdotacc_positive.txt" 'NR==61' \
+    "vdotacc.vv vl=8 主演示：0xA5A5A5A5 + 0x1F808 = 0xA5A79DAD（32 位回绕），高 96 位清零"
 } 2>&1 | tee "${LOG_DIR}/p5_func_positive.log"
 
 # ---------------------------------------------------------------------------
@@ -189,6 +193,10 @@ step "2/7 2.3.2 负数测试"
     "vdot.vv 正负混合：16×(-128)×(+127) = -260096 = 0xFFFC0800"
   worked_example "${VEC_DIR}/vdot4a_negative.txt" '$4==4 && $6==1' \
     "vdot4a.vv：负数分组点积"
+  worked_example "${VEC_DIR}/negative.txt" 'NR==65' \
+    "vdot.vv vl=8 主演示（赛题官方伪代码取 8 个 int8）：前 8 个元素 0x80×0x7F，8×(-128)×(+127) = -130048 = 0xFFFE0400，高 96 位清零"
+  worked_example "${VEC_DIR}/vdotacc_negative.txt" 'NR==65' \
+    "vdotacc.vv vl=8 主演示：0xA5A5A5A5 + 0xFFFE0400 = 0xA5A3A9A5（32 位回绕），高 96 位清零"
 } 2>&1 | tee "${LOG_DIR}/p5_func_negative.log"
 
 # ---------------------------------------------------------------------------
@@ -229,6 +237,10 @@ step "3/7 2.3.3 边界值测试"
 ==   架构层面该配置已被裁定 S-7' 判为非法指令（平台约束优先原则），
 ==   规范语料 vdot4a_boundary.txt / vdot4a_random.txt 里对应的 1545 条已标为 ILLEGAL_VSTART，
 ==   由 VecExceptionGen 在译码级拦截（见 p5_decode_illegal.log 的 [I] 组）"
+  worked_example "${VEC_DIR}/boundary.txt" 'NR==126' \
+    "vdot.vv vl=8 主演示（赛题官方伪代码取 8 个 int8）：+127/-128 交错，8×(-16256) = -130048 = 0xFFFE0400，高 96 位清零"
+  worked_example "${VEC_DIR}/vdotacc_boundary.txt" 'NR==126' \
+    "vdotacc.vv vl=8 主演示：0xA5A5A5A5 + 0xFFFE0400 = 0xA5A3A9A5（32 位回绕），高 96 位清零"
 } 2>&1 | tee "${LOG_DIR}/p5_func_boundary.log"
 
 # ---------------------------------------------------------------------------
