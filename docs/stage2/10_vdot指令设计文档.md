@@ -8,7 +8,8 @@
 | 代码树根（下文简称 `$XS`） | `<仓库根>/work/XiangShan-kmhv2`（由 `scripts/00_setup_env_host.sh` 按 pin 克隆） |
 | 架构参数 | VLEN = 128，ELEN = 64，XLEN = 64 |
 | 语义唯一事实来源 | `tests/golden/vdot_ref.c` + `vdot_ref.h` |
-| 规范约束 | `docs/_plan/MASTER_PLAN.md` 决策 **D2** 与 **D2.1 语义裁定 S-1…S-9** |
+| 赛题官方语义 | 赛题页给出的 `vdot_vv` Python 伪代码（2026-10-26 取得），逐行对照见 §1 开头「赛题官方语义与逐行对照」 |
+| 规范约束 | `docs/_plan/MASTER_PLAN.md` 决策 **D2**、**D2.1 语义裁定 S-1…S-9**（S-3 已由 **D2.4 / S-3'** 取代，S-7 的 vstart 部分已由 D2.3 / S-7' 取代） |
 
 ## 0. 阅读约定
 
@@ -20,6 +21,92 @@
 ---
 
 ## 1. 指令规范
+
+### 赛题官方语义与逐行对照（S-3' 的依据）
+
+本小节不编号，以免打乱 §1.0–§1.6 被其它文档引用的编号。
+
+#### 来源
+
+| 项 | 内容 |
+|---|---|
+| 赛题页 | https://rv.cie.org.cn/direction?id=8（Vue 单页应用，正文与图片由前端渲染） |
+| 数据接口 | `https://api.rv.cie.org.cn/api/subject/index?race_id=8`，返回赛题正文，其中引用了下面这张语义图 |
+| 语义图 | `https://api.rv.cie.org.cn/storage/ueditor/20260615/bc72c5ea-d0b4-4f962e3cdd5feb916af2db486c8ec14c4353eb302.png` |
+| 访问日期 | 2026-10-26 |
+| 图上的内容 | 一段 8 行 Python 伪代码（下方逐字转录）。**图上没有任何指令编码信息**（funct6 / funct3 / opcode 都没有），也没有 vl、vm、vstart、vta/vma、LMUL 的规定 |
+
+本项目在 P2–P7 期间一直没有取到这张图（`docs/_recon/vdot-semantics-research.md` §1 记录了当时的检索过程），D2 的语义是依据赛题学术源头 arXiv:2409.00661 与 RVV 1.0 归约惯例确定的。2026-10-26 取到图后做了一次复核，结论是：主体（8 个 int8 有符号乘积求和，结果写目的寄存器第一个元素）与 D2 一致；**唯一的差异是目的寄存器其余位的处理**（原 S-3 按 `vta` 处理 tail，官方伪代码要求清零），据此做出修订 S-3'。
+
+#### 伪代码原文（逐字转录，行号为图上行号）
+
+```python
+1  def vdot_vv(vs1, vs2, sew=8):
+2      # 根据SEW设定，从两个源向量寄存器中各取8个int8数据
+3      result = 0
+4      for i in range(8):
+5          result += sign_extend(vs1[i]) * sign_extend(vs2[i])
+6      # 结果写入目标向量寄存器vd的第一个元素
+7      vd[0] = result
+8      vd[1..VLEN-1] = 0  # 其他通道清零
+```
+
+#### 逐行对照
+
+| 图上行 | 官方伪代码 | 本项目语义（S-3' 之后） | 参考模型 | RTL（`VIMacU` / L1 `VDotTop`） |
+|---|---|---|---|---|
+| 1 | `def vdot_vv(vs1, vs2, sew=8)` | `vdot.vv vd, vs2, vs1, vm`；仅在 `vtype.vsew = 8` 时合法，否则 Illegal Instruction（§1.5.1）。两个源的书写顺序与伪代码相反，但乘法可交换，不影响结果 | `vdot_ref.c:236` | 译码级 `dotEewIllegal`（§1.5.3） |
+| 2 | 各取 8 个 int8 | 取元素 `0 .. vl-1`；**`vl = 8` 时恰为伪代码的 8 个**，`vl = 16`（VLMAX）时取满整个 128 位寄存器 | `vdot_ref.c:104` | `ByteMaskTailGen` 的 `activeEn`（§4.5） |
+| 3 | `result = 0` | `vdot.vv` 初值 0；`vdotacc.vv` 初值为 `vd.u32[0]`（本项目的扩展指令，伪代码未涉及） | `vdot_ref.c:103` | `accOperand_0`（§4.4.2 Acc 级） |
+| 4 | `for i in range(8)` | `for (i = vstart; i < vl; i++)`；`vstart` 恒为 0（S-1），故 `vl = 8` 时循环范围与伪代码完全相同 | `vdot_ref.c:104` | 16 路乘积 + `activeEn` 门控 |
+| 5 | `result += sign_extend(vs1[i]) * sign_extend(vs2[i])` | 有符号 8×8 乘积符号扩展到 32 位后累加；掩码为 0 的源元素排除（伪代码无掩码，相当于 `vm = 1`） | `vdot_ref.c:105-106` | `rtl/chisel/yunsuan/VDotTree.scala:77`（符号扩展） |
+| 6 | 结果写入 vd 的第一个元素 | 元素 0 按 **EEW = 32** 计（int8 点积写 int32；8 项最大幅值 131072、16 项 262144，都在 int32 内，§1.6） | `vdot_ref.c:63-65` 规则 5 | `dotVd(31, 0)` |
+| 7 | `vd[0] = result` | `vd[31:0] = result` | `vdot_ref.c:112` | `rtl/chisel/xiangshan/VIMacU.scala:192-193`；`rtl/chisel/yunsuan/VDotTop.scala:128` |
+| 8 | `vd[1..VLEN-1] = 0`（其他通道清零） | **`vd[VLEN-1:32]` 恒为 0，与 `vta`、`vma` 无关（S-3'）** | `vdot_ref.c:109-110` | 同上一行的 `Cat(0.U((VLEN - 32).W), dotVd(31, 0))` |
+
+第 8 行的下标写法 `1..VLEN-1` 混用了元素下标与位宽，字面上有两种读法（「元素 1 起到底」或「位 1 起到底」，但后者会和第 7 行重叠）。本项目取「除 `vd[0]` 这个 32 位元素以外的全部位清零」，与 `tests/golden/check_official_pseudocode.py:27-32` 的字面实现约定一致。
+
+#### 伪代码没有覆盖、由本项目作工程化规定的部分
+
+| 项 | 本项目规定 | 裁定 |
+|---|---|---|
+| `vl ≠ 8` | 保留 `vl` 机制：对元素 `0 .. vl-1` 求和；`vl = 16` 为满寄存器版本 | D2（本节「取舍 1」） |
+| `vl = 0` / `vstart >= vl` | `vd` 完全不写（包括高 96 位） | S-5，不变 |
+| `vstart != 0` | Illegal Instruction | S-1 / S-7'，不变 |
+| `vm = 0` | 掩码为 0 的源元素排除出求和；全部被掩掉时 `vd[31:0] = 0`（`vdotacc` 为原值），高 96 位照样清零 | S-4，不变 |
+| `vma` | 忽略 | S-2，不变 |
+| `vta` | **不再参与写回** | S-3'（取代 S-3） |
+| LMUL | 固定 LMUL = 1 | S-6，不变 |
+| `vdotacc.vv`、`vdot4a.vv` | 本项目的扩展指令，伪代码未涉及。`vdotacc` 同样清零高 96 位；`vdot4a` 是逐元素指令，tail 仍按 `vta` 处理，**不受 S-3' 影响** | S-3' / S-7' |
+
+#### 差异与取舍理由
+
+**取舍 1：保留 `vl` 机制，作为字面语义的超集。** 伪代码把元素个数写死为 8。本项目保留 `vl`：`vl = 8` 时与官方伪代码逐位等价（证据见下），`vl = 16` 时是 VLEN = 128 的满寄存器版本，其余 `vl` 取值给出自然的部分和。这样做不丢失字面语义，又让指令能按 RVV 惯例用 `vsetvli` 控制长度，长向量循环的尾部迭代不需要额外的清零处理。
+
+**「8」从哪里来。** 赛题的学术源头 arXiv:2409.00661（南湖 vdot）中，VDOTU 是「八路 8-bit 乘法器 + 七个加法器」，操作数是 64 位通用寄存器，一个寄存器正好装 8 个 int8（`docs/_recon/vdot-semantics-research.md:61-133`）。昆明湖 V2 的 `VIMacU` 同样按 64 位切片组织乘法阵列（`$XS/src/main/scala/xiangshan/backend/fu/wrapper/VIMacU.scala:50-51`：`dataWidthOfDataModule = 64`、`numVecModule = dataWidth / 64`），每片在 SEW = 8 时恰好做 8 个 8×8 乘法。因此「8」可以理解为一个 64 位切片的宽度，VLEN = 128 时两片合计 16 路，即 `vl = 16` 的满寄存器版本。
+
+**取舍 2：清零不能用 RVV 的 tail-agnostic 来解释，因此把 vdot 的目的定义为「整寄存器结果，无 tail」。** RVV 1.0 §3.4.3 规定，标为 agnostic 的目的元素只能保留原值或被写成全 1。若把元素 1..3 仍视为 tail，「清零」在 `vta = 0` 时违反 undisturbed，在 `vta = 1` 时也不属于规范允许的两种取值（保留原值或全 1）。所以本项目不再把元素 1..3 当作 tail，而是规定 vdot 的结果占满整个目的寄存器：低 32 位是点积，高 96 位是结果的一部分、恒为 0。这与 `vredsum.vs` 等标准归约的写法不同，属于自定义扩展的有意偏离。业界有同类先例：
+
+* x86 `VPDPBUSD` 的 VEX / EVEX 编码在写 `DEST` 后执行 `DEST[MAX_VL-1:VL] := 0`，把超出操作宽度的高位清零（https://www.felixcloutier.com/x86/vpdpbusd ，Operation 段）；
+* AArch64 AdvSIMD 以 64 位视图（如 `SDOT Vd.2S, …`）写向量寄存器时，寄存器的高位被清零；
+* 南湖 VDOTU 把 64 位结果写满整个目的通用寄存器 `rd`（`docs/_recon/vdot-semantics-research.md` §2.3）。
+
+**清零的好处与本版本的边界。** 「整寄存器结果」使 `vdot.vv` 的输出（`vstart < vl` 时）不再依赖旧 `vd` 的值，理论上可以消除对旧目的寄存器的假依赖、省掉读旧 `vd` 的端口占用。**本版本没有做相应的微架构优化**：三条指令仍登记在 `vmaInsts`（`rtl/chisel/xiangshan/DecodeUnit.scala:980-984`），因为 `vl = 0` 时 S-5 要求原样保留旧 `vd`，`vdot.vv` 仍需读旧 `vd`。把「`vl` 已知非 0 时去掉对旧 `vd` 的依赖」列为后续优化。
+
+**取舍 3：伪代码未覆盖的 `vl` / `vm` / `vstart` / LMUL 属于工程化规定。** 这些裁定（S-1、S-2、S-4、S-5、S-6、S-7'）都沿用原有论证，不因 S-3' 而改变；它们在伪代码对应的配置（`vl = 8`、`vm = 1`、`vstart = 0`、LMUL = 1）下都不起作用，因此不影响逐位等价。
+
+#### `vl = 8` 时与官方伪代码逐位等价的证据
+
+脚本 `tests/golden/check_official_pseudocode.py` 按字面实现了上面的伪代码（`official_vdot_vv()`，`check_official_pseudocode.py:56-63`，不引用参考模型的任何代码），在 `vl = 8`、`vm = 1`、`vstart = 0` 的配置下与参考模型比对 128 位目的寄存器的全部位：
+
+| 检查 | 条数 | 失配 | 证据 |
+|---|---:|---:|---|
+| 共享语料中符合该配置的 `vdot` / `vdotacc` 用例 | 285 + 285 | 0 | `logs/stage2/p3_official_pseudocode_equiv.log:30-31` |
+| 随机激励（`vd` 初值、`vta`、`vma`、源寄存器第 8..15 个元素全随机），经 `vdot_cli` 现场调用参考模型 | 10000 + 10000 | 0 | `logs/stage2/p3_official_pseudocode_equiv.log:34-35` |
+| **合计** | **20570** | **0** | `logs/stage2/p3_official_pseudocode_equiv.log:40`（`OFFICIAL-PSEUDOCODE-EQUIV: PASS`） |
+| 阴性对照：同一脚本读修订前（原 S-3）的旧语料 | 266 + 266 = 532 | **532** | `logs/stage2/p3_official_pseudocode_equiv.log:62`（`FAIL (532 cases, 532 mismatches)`） |
+
+随机激励中源寄存器第 8..15 个元素、`vd` 初值、`vta`、`vma` 都随机取值，因此这一组同时证明了 `vl = 8` 时结果与这些量无关。阴性对照说明脚本确实能区分新旧语义：原 S-3 下元素 1..3 取决于 `vta`（全 1 或旧值），旧语料里符合该配置的 532 条全部与官方伪代码不一致。
 
 ### 1.0 指令族总览
 
@@ -97,7 +184,7 @@ vdot4a.vv   vd, vs2, vs1, vm
 | `vdot4a.vv` | `0x77` | `0x76` | `0xEE1101D7` |
 
 > 上表机器码由位域拼接算得（`funct6<<26 | vm<<25 | vs2<<20 | vs1<<15 | funct3<<12 | vd<<7 | opcode`），已用脚本复核。
-> **UNVERIFIED**：本机未安装 RISC-V 工具链，`.insn r` 宏是否被 GNU as 接受（尤其 `v3` 这类向量寄存器名在 `.insn` 中的可用性）未实测。测试程序优先使用 `.word`，并在 P4 阶段用 `objdump -d` 回读校验。**后续已闭合（阶段三）**：交叉工具链 `riscv64-linux-gnu-gcc` 13 已就位，P5 语料用它把 `.word` 形式的机器码汇编进镜像，`objdump -d` 回读出 6 个编码（`logs/stage3/p5_vdot_tests.log:42-49`），并在打了补丁的 NEMU 上 30758 条全部通过（同文件 `:87`）；全核 difftest 中香山译码单元把 `.4byte` 宏生成的编码译为 `vdot.vv` / `vdotacc.vv` / `vdot4a.vv`（`logs/stage3/fullcore/wave_trace.txt:159,162,170`）。`.insn r` 宏本身始终没有被任何测试程序使用，仍未实测，但已不影响编码的正确性。
+> **UNVERIFIED**：本机未安装 RISC-V 工具链，`.insn r` 宏是否被 GNU as 接受（尤其 `v3` 这类向量寄存器名在 `.insn` 中的可用性）未实测。测试程序优先使用 `.word`，并在 P4 阶段用 `objdump -d` 回读校验。**后续已闭合（阶段三）**：交叉工具链已就位（S-3' 后重跑的日志使用 `riscv64-unknown-elf-gcc` 15.2.0，`logs/stage3/p5_vdot_tests.log:5-6`），P5 语料用它把 `.word` 形式的机器码汇编进镜像，`objdump -d` 回读出 6 个编码（`logs/stage3/p5_vdot_tests.log:45-52`），并在打了补丁的 NEMU 上 30794 条全部通过（同文件 `:90`，S-3' 修订后重跑）；全核 difftest 中香山译码单元把 `.4byte` 宏生成的编码译为 `vdot.vv` / `vdotacc.vv` / `vdot4a.vv`（`logs/stage3/fullcore/wave_trace.txt:159,162,170`）。`.insn r` 宏本身始终没有被任何测试程序使用，仍未实测，但已不影响编码的正确性。
 
 ### 1.3 操作数与 EEW 表
 
@@ -105,10 +192,10 @@ vdot4a.vv   vd, vs2, vs1, vm
 |---|---|---|---|---|---|---|
 | `vdot.vv` | `vs2` | 源 A | 8 | LMUL | 16 | signed |
 | | `vs1` | 源 B | 8 | LMUL | 16 | signed |
-| | `vd` | 目的 | 32 | 1（单寄存器） | 4（只写元素 0，其余为 tail） | — |
+| | `vd` | 目的 | 32 | 1（单寄存器） | 4（元素 0 为结果，元素 1..3 恒清零，无 tail；S-3'） | — |
 | | `v0` | 掩码 | 1 bit/源元素 | — | 16 bit | — |
 | `vdotacc.vv` | `vs2` / `vs1` | 源 A / B | 8 | LMUL | 16 | signed |
-| | `vd` | **第三源 + 目的** | 32 | 1 | 元素 0 读—改—写 | 累加器按无符号 32 位回绕 |
+| | `vd` | **第三源 + 目的** | 32 | 1 | 元素 0 读—改—写，元素 1..3 恒清零 | 累加器按无符号 32 位回绕 |
 | | `v0` | 掩码 | 1 bit/源元素 | — | 16 bit | — |
 | `vdot4a.vv` | `vs2` / `vs1` | 源 A / B（每 32 位元素含 4 个 int8 子元素） | 32 | LMUL | 4 | 子元素 signed |
 | | `vd` | **第三源 + 目的** | 32 | LMUL | 4 | 累加器按无符号 32 位回绕 |
@@ -127,32 +214,32 @@ vdot4a.vv   vd, vs2, vs1, vm
 ```c
 /* vdot.vv    vd, vs2, vs1, vm    —— accumulate = 0
  * vdotacc.vv vd, vs2, vs1, vm    —— accumulate = 1
- * 对应 vdot_ref.c:69-126 vdot_reduce_common()
+ * 对应 vdot_ref.c:74-130 vdot_reduce_common() 及其两个包装
  */
-VLMAX = VLEN / 8;                                    /* = 16   (vdot_ref.c:76) */
+VLMAX = VLEN / 8;                                    /* = 16   (vdot_ref.c:81) */
 
 /* --- 译码/执行前的非法性检查 --- */
 if (vtype.vill)            raise ILLEGAL_INSTRUCTION;
 if (mstatus.VS == Off)     raise ILLEGAL_INSTRUCTION;
-if (vtype.vsew != 0b000)   raise ILLEGAL_INSTRUCTION;   /* 必须 SEW=8   (vdot_ref.c:232/236) */
-if (vstart != 0)           raise ILLEGAL_INSTRUCTION;   /* 裁定 S-1     (vdot_ref.c:90-91) */
+if (vtype.vsew != 0b000)   raise ILLEGAL_INSTRUCTION;   /* 必须 SEW=8   (vdot_ref.c:236/240) */
+if (vstart != 0)           raise ILLEGAL_INSTRUCTION;   /* 裁定 S-1     (vdot_ref.c:96-97) */
 require_aligned(vs1, LMUL); require_aligned(vs2, LMUL);  /* vd 为单寄存器，EMUL=1，无对齐要求 */
 
-/* --- vstart >= vl（含 vl == 0）：整条指令不写回任何元素，连 tail 都不写 --- */
-if (vstart >= vl) { vstart = 0; mstatus.VS = Dirty; return; }   /* 裁定 S-5 (vdot_ref.c:94) */
+/* --- vstart >= vl（含 vl == 0）：vd 完全不写（包括高 96 位） --- */
+if (vstart >= vl) { vstart = 0; mstatus.VS = Dirty; return; }   /* 裁定 S-5 (vdot_ref.c:100) */
 
 /* --- 归约主体：在 uint32 上累加，自然 2^32 回绕，无 UB --- */
-uint32_t sum = accumulate ? vd.u32[0] : 0u;             /* (vdot_ref.c:97) */
+uint32_t sum = accumulate ? vd.u32[0] : 0u;             /* (vdot_ref.c:103) */
 for (i = vstart /* ==0 */; i < vl; i++) {
     if (vm == 0 && v0.mask[i] == 0) continue;           /* 裁定：inactive 源元素排除出归约 */
-    sum += (uint32_t)( sext32(vs2.i8[i]) * sext32(vs1.i8[i]) );   /* (vdot_ref.c:100) */
+    sum += (uint32_t)( sext32(vs2.i8[i]) * sext32(vs1.i8[i]) );   /* (vdot_ref.c:106) */
 }
 
-/* --- 写回：先铺 tail（元素 1..3，EEW=32），再写元素 0；两者不相交 --- */
-if (vtype.vta)                                          /* 裁定 S-3 (vdot_ref.c:104-106) */
-    for (j = 1; j < VLEN/32; j++) vd.u32[j] = 0xFFFFFFFF;
-vd.u32[0] = sum;                                        /* 裁定 S-4 (vdot_ref.c:108) */
-/* vtype.vma 对归约无意义，忽略（裁定 S-2, vdot_ref.c:80） */
+/* --- 写回：元素 1..3（vd[127:32]）无条件清零，再写元素 0；两者不相交 --- */
+for (j = 1; j < VLEN/32; j++) vd.u32[j] = 0;            /* 裁定 S-3' (vdot_ref.c:109-110)，与 vta 无关 */
+vd.u32[0] = sum;                                        /* 裁定 S-4 (vdot_ref.c:112) */
+/* vtype.vma 对归约无意义，忽略（裁定 S-2, vdot_ref.c:85）；
+ * vtype.vta 同样不参与写回（裁定 S-3', vdot_ref.c:86） */
 
 vstart = 0;  mstatus.VS = Dirty;
 ```
@@ -161,30 +248,30 @@ vstart = 0;  mstatus.VS = Dirty;
 
 ```c
 /* vdot4a.vv vd, vs2, vs1, vm
- * 对应 vdot_ref.c:153-195 vdot4a_vv_ex()
+ * 对应 vdot_ref.c:157-199 vdot4a_vv_ex()
  */
-VLMAX = VLEN / 32;                                   /* = 4    (vdot_ref.c:157) */
+VLMAX = VLEN / 32;                                   /* = 4    (vdot_ref.c:161) */
 
 if (vtype.vill)            raise ILLEGAL_INSTRUCTION;
-if (vtype.vsew != 0b010)   raise ILLEGAL_INSTRUCTION;   /* 必须 SEW=32  (vdot_ref.c:240) */
+if (vtype.vsew != 0b010)   raise ILLEGAL_INSTRUCTION;   /* 必须 SEW=32  (vdot_ref.c:244) */
 require_aligned(vd, LMUL); require_aligned(vs1, LMUL); require_aligned(vs2, LMUL);
 
-if (vstart != 0)           raise ILLEGAL_INSTRUCTION;   /* 裁定 S-7'  (vdot_ref.c:170-171) */
+if (vstart != 0)           raise ILLEGAL_INSTRUCTION;   /* 裁定 S-7'  (vdot_ref.c:174-175) */
 
-if (vstart >= vl) { vstart = 0; mstatus.VS = Dirty; return; }   /* 裁定 S-5 (vdot_ref.c:174) */
+if (vstart >= vl) { vstart = 0; mstatus.VS = Dirty; return; }   /* 裁定 S-5 (vdot_ref.c:178) */
 
 for (i = vstart /* ==0 */; i < vl; i++) {            /* prestart 仅在放宽实现上可达，见 S-7' */
     if (vm == 0 && v0.mask[i] == 0) {                /* inactive */
-        if (vtype.vma) vd.u32[i] = 0xFFFFFFFF;       /* (vdot_ref.c:177-179) */
+        if (vtype.vma) vd.u32[i] = 0xFFFFFFFF;       /* (vdot_ref.c:181-183) */
         continue;                                    /* vma==0：保持不变 */
     }
     uint32_t acc = vd.u32[i];
     for (j = 0; j < 4; j++)                          /* 裁定 S-7：子字节索引取 4i+j（S-7' 未修订此条） */
         acc += (uint32_t)( sext32(vs2.i8[4*i+j]) * sext32(vs1.i8[4*i+j]) );
-    vd.u32[i] = acc;                                 /* (vdot_ref.c:181-187) */
+    vd.u32[i] = acc;                                 /* (vdot_ref.c:185-191) */
 }
-if (vtype.vta)                                       /* tail: i >= vl */
-    for (i = vl; i < VLMAX; i++) vd.u32[i] = 0xFFFFFFFF;    /* (vdot_ref.c:191-193) */
+if (vtype.vta)                                       /* tail: i >= vl（vdot4a 不受 S-3' 影响） */
+    for (i = vl; i < VLMAX; i++) vd.u32[i] = 0xFFFFFFFF;    /* (vdot_ref.c:195-197) */
 
 vstart = 0;  mstatus.VS = Dirty;
 ```
@@ -201,20 +288,20 @@ vstart = 0;  mstatus.VS = Dirty;
 | 情形 | 行为 | 依据 | 参考模型 |
 |---|---|---|---|
 | `vtype.vill = 1` | Illegal Instruction | RVV §3.4.1 | — |
-| `vtype.vsew != 8` | Illegal Instruction | D2；本指令仅定义于 SEW=8 | `vdot_ref.c:232,236` |
-| **`vstart != 0`** | **Illegal Instruction** | **S-1**；RVV §14「Vector reduction operations raise an illegal instruction exception if vstart is non-zero」 | `vdot_ref.c:90-91` |
-| `vstart >= vl`（含 `vl = 0`） | 不写回任何元素，**连 tail 都不写**，`vd` 完全保持 | **S-5**；RVV §5.4 | `vdot_ref.c:94` |
-| `vl = 0`（且 vstart=0） | 同上：`vd` 完全保持 | S-5 | `vdot_ref.c:94` |
+| `vtype.vsew != 8` | Illegal Instruction | D2；本指令仅定义于 SEW=8（赛题伪代码 `sew=8`） | `vdot_ref.c:236,240` |
+| **`vstart != 0`** | **Illegal Instruction** | **S-1**；RVV §14「Vector reduction operations raise an illegal instruction exception if vstart is non-zero」 | `vdot_ref.c:96-97` |
+| `vstart >= vl`（含 `vl = 0`） | `vd` 完全不写（**高 96 位也不清零**），整寄存器保持原值 | **S-5**；RVV §5.4 | `vdot_ref.c:100` |
+| `vl = 0`（且 vstart=0） | 同上：`vd` 完全保持 | S-5 | `vdot_ref.c:100` |
 | `vm = 1` | 全部 `i < vl` 的源元素参与归约 | RVV §5.3 | `vdot_ref.c:38` |
-| `vm = 0`，`v0.mask[i] = 0` | 第 `i` 对源元素**排除出归约**（等价于贡献 0） | RVV §14「Inactive elements … are excluded from the reduction」 | `vdot_ref.c:99` |
-| `vm = 0` 且 `v0` 全 0（所有源被掩掉） | 仍写 `vd.u32[0]`：`vdot` 写 0，`vdotacc` 写原值 | **S-4**；归约单位元为 0 | `vdot_ref.c:97-108` |
-| `vta = 1` | 目的元素 1..3（EEW=32）写全 1 | **S-3**；RVV §3.4.3 | `vdot_ref.c:104-106` |
-| `vta = 0` | 目的元素 1..3 保持 `vd` 原值 | S-3；RVV §3.4.3 | 同上（不进分支） |
-| `vma` | **忽略**（归约无 body-inactive 目的元素） | **S-2** | `vdot_ref.c:80` |
+| `vm = 0`，`v0.mask[i] = 0` | 第 `i` 对源元素**排除出归约**（等价于贡献 0） | RVV §14「Inactive elements … are excluded from the reduction」 | `vdot_ref.c:105` |
+| `vm = 0` 且 `v0` 全 0（所有源被掩掉） | 仍写 `vd.u32[0]`：`vdot` 写 0，`vdotacc` 写原值；高 96 位照样清零 | **S-4**；归约单位元为 0 | `vdot_ref.c:103-112` |
+| `vstart < vl` 时目的元素 1..3（`vd[127:32]`） | **恒写 0**，与 `vta`、`vma` 无关 | **S-3'**（取代 S-3）；赛题官方伪代码 `vd[1..VLEN-1] = 0`，见 §1 开头对照表 | `vdot_ref.c:109-110` |
+| `vta` | **不参与写回**（只做取值合法性校验）。vdot 的目的定义为整寄存器结果、无 tail | **S-3'**；不能用 RVV §3.4.3 的 agnostic 解释清零，理由见 §1 开头「取舍 2」 | `vdot_ref.c:86` |
+| `vma` | **忽略**（归约无 body-inactive 目的元素） | **S-2** | `vdot_ref.c:85` |
 | `vd` 与 `vs1`/`vs2` 寄存器重叠 | **允许**（`vd` 为单元素目的，RVV §5.2 允许） | RVV §5.2；`VecExceptionGen.scala:282,289` 的 `vdIsSingleElem` 分支 | — |
 | `vd = v0` 且 `vm = 0` | **允许**（单元素目的例外，`VecExceptionGen.scala:260` `v0AllowOverlap`） | RVV §5.3 | — |
 | `LMUL` | **本版本固定 LMUL = 1**（S-6）。`vlmul != 0` 的行为见 §8.3 扩展性论证，本版本不交付 | **S-6** | — |
-| 执行结束 | `vstart = 0`，`mstatus.VS = Dirty` | RVV §3.7 | `vdot_ref.c:67` 注 |
+| 执行结束 | `vstart = 0`，`mstatus.VS = Dirty` | RVV §3.7 | `vdot_ref.c:72` 注 |
 | `vxsat` | **恒不置位**（无饱和，见 §1.6 溢出证明） | D2 | — |
 
 #### 1.5.2 `vdot4a.vv`（逐元素）
@@ -222,16 +309,16 @@ vstart = 0;  mstatus.VS = Dirty;
 | 情形 | 行为 | 依据 | 参考模型 |
 |---|---|---|---|
 | `vtype.vill = 1` | Illegal Instruction | RVV §3.4.1 | — |
-| `vtype.vsew != 32` | Illegal Instruction | D2 / Zvdot4a8i draft v0.1 同样要求 SEW=32 | `vdot_ref.c:240` |
-| **`vstart != 0`** | **Illegal Instruction** | **S-7'**（取代原 S-7 的 vstart 部分）；**平台约束优先原则**，非 RVV 对逐元素指令的一般规定 —— 见下文 §1.5.4 与 §9 裁定 R-17 | `vdot_ref.c:170-171` |
-| `vstart >= vl`（含 `vl = 0`） | 不写回任何元素，连 tail 都不写 | **S-5**；RVV §5.4 | `vdot_ref.c:174` |
-| `i < vstart`（prestart） | 目的元素保持不变。S-7' 之后该情形在本平台**架构上不可达**，仅在放宽 `vstart` 的实现上有意义；数据通路仍正确实现（非规范语料 `vstart_relaxed.txt` 的 40 条 vdot4a 用例在 L1 实测通过） | S-7' 的放宽分支；RVV §3.7 / §5.4 | `vdot_ref.c:176` |
+| `vtype.vsew != 32` | Illegal Instruction | D2 / Zvdot4a8i draft v0.1 同样要求 SEW=32 | `vdot_ref.c:244` |
+| **`vstart != 0`** | **Illegal Instruction** | **S-7'**（取代原 S-7 的 vstart 部分）；**平台约束优先原则**，非 RVV 对逐元素指令的一般规定 —— 见下文 §1.5.4 与 §9 裁定 R-17 | `vdot_ref.c:174-175` |
+| `vstart >= vl`（含 `vl = 0`） | 不写回任何元素，连 tail 都不写 | **S-5**；RVV §5.4 | `vdot_ref.c:178` |
+| `i < vstart`（prestart） | 目的元素保持不变。S-7' 之后该情形在本平台**架构上不可达**，仅在放宽 `vstart` 的实现上有意义；数据通路仍正确实现（非规范语料 `vstart_relaxed.txt` 的 40 条 vdot4a 用例在 L1 实测通过） | S-7' 的放宽分支；RVV §3.7 / §5.4 | `vdot_ref.c:180` |
 | `vm = 1` | `vstart <= i < vl` 全部为 active | RVV §5.3 | — |
-| `vm = 0`，`v0.mask[i] = 0`，`vma = 0` | 目的元素 `i` 保持原值（undisturbed） | RVV §3.4.3 | `vdot_ref.c:177-179` |
-| `vm = 0`，`v0.mask[i] = 0`，`vma = 1` | 目的元素 `i` 写全 1（agnostic） | RVV §3.4.3 | `vdot_ref.c:178` |
-| `i >= vl`（tail），`vta = 1` | 写全 1 | RVV §3.4.3 | `vdot_ref.c:191-193` |
+| `vm = 0`，`v0.mask[i] = 0`，`vma = 0` | 目的元素 `i` 保持原值（undisturbed） | RVV §3.4.3 | `vdot_ref.c:181-183` |
+| `vm = 0`，`v0.mask[i] = 0`，`vma = 1` | 目的元素 `i` 写全 1（agnostic） | RVV §3.4.3 | `vdot_ref.c:182` |
+| `i >= vl`（tail），`vta = 1` | 写全 1（`vdot4a` 不受 S-3' 影响） | RVV §3.4.3 | `vdot_ref.c:195-197` |
 | `i >= vl`（tail），`vta = 0` | 保持原值 | RVV §3.4.3 | 同上 |
-| 掩码粒度 | **32 位目的元素**（每个结果 1 bit），与 Zvdot4a8i 一致 | `vdot_ref.c:150` | — |
+| 掩码粒度 | **32 位目的元素**（每个结果 1 bit），与 Zvdot4a8i 一致 | `vdot_ref.c:154` | — |
 | `vd` 与 `vs1`/`vs2` 重叠 | 允许（EEW/EMUL 完全相同，RVV §5.2 的「相同 EEW 可完全重叠」） | `VecExceptionGen.scala:286`（`vs2Constraint1`） | — |
 | `LMUL` | 本版本固定 LMUL = 1（S-6）。LMUL>1 结构上直接复用 `UopSplitType.VEC_VVV`，见 §8.3 | S-6 | — |
 | 累加溢出 | 按 2^32 模回绕，**不饱和**，不置 `vxsat` | RVV §11「overflows wrap around」 | `vdot_ref.c:16-18` |
@@ -504,8 +591,8 @@ OPIVV 的整个 `1110xx` 与 `1111xx` 共 8 个编码全部空闲，`111000` / `
 │   ├── ByteMaskTailGen(128)          新例化一份（S0 侧）     [复用]        │
 │   │     -> activeEn[15:0]（SEW=8 时逐元素）-> 寄存到 S1 做乘积门控       │
 │   │                                                                       │
-│   ├── RedTailGen                    新建，3 行逻辑           [新]         │
-│   │     照抄 Reduction.scala:644-647，vd_vsew_bits 固定 32               │
+│   ├── RedTailGen                    新建，1 个 Mux           [新]         │
+│   │     vstart>=vl ? oldVd : {96'b0, R0}（S-3'，§4.6）                    │
 │   │                                                                       │
 │   └── Mgu(128)                      VIMacU.scala:65        [复用，不改]   │
 │         vdot4a / 全部原有指令走这里；vdot / vdotacc 走 RedTailGen        │
@@ -524,7 +611,7 @@ OPIVV 的整个 `1110xx` 与 `1111xx` 共 8 个编码全部空闲，`111000` / `
 | **寄存器 1** | — | `wallaceOut_mid_reg` = 6×128b ×2 片（`:168`） | `activeEnS1` = 16b；控制位 `isDotS1` / `foldS1` / `accS1` |
 | **S1** | — | Wallace 后 3 级（`:178`，6→4→3→2）；8 × `Adder_16b`，`sew=8` 时 8 段完全独立（`:185-201`）→ `sum_wo` Vec(8)(16b) | 从 `sum_wo` 抽头 16 个 16 位乘积；按 `activeEn` 门控并符号扩展到 32 位；Fold L0（4×CSA4to2(32)）+ Fold L1（4×CSA4to2(32)） |
 | **寄存器 2** | — | `walOut` = 128b ×2 片（`:208`）；`sewS2`/`highHalfS2`/… | `(S1_g, C1_g)` = 8×32b = 256b |
-| **S2** | 输出拍 | `vdS2` 按 SEW 截取（`:216-222`）；`vsmul` 舍入 + 8 段链式 `Adder_8b_rnd`（`:253-281`）；饱和（`:283-292`）；`io.vd`（`:294`） | Fold L2（4×CSA4to2(32)）；Acc（4×CSA3to2(32)）注入 `oldVd`；4 × 32 位 CPA；`RedTailGen` 元素 0 定位 + tail；输出三选一 |
+| **S2** | 输出拍 | `vdS2` 按 SEW 截取（`:216-222`）；`vsmul` 舍入 + 8 段链式 `Adder_8b_rnd`（`:253-281`）；饱和（`:283-292`）；`io.vd`（`:294`） | Fold L2（4×CSA4to2(32)）；Acc（4×CSA3to2(32)）注入 `oldVd`；4 × 32 位 CPA；`RedTailGen` 元素 0 定位 + 高 96 位清零（S-3'）；输出三选一 |
 | **输出** | `io.out.valid` | `io.out.bits.res.data := mgu.io.out.vd`（`VIMacU.scala:148`） | `:= Mux(outIsDotRed, redVd, mgu.io.out.vd)` |
 
 > **为什么 `Mgu` 不在关键路径上额外增加风险**：`vdot4a` 走的就是现有 `vmacc` 的那条 `Mgu` 路径（`VIMacU.scala:132-148`），只是 `vd` 来源换成 `dotVd`，`eew` 由 `outEew`（`:131`）给出的 e32。`vdot`/`vdotacc` 则完全绕过 `Mgu`，走更短的 `RedTailGen`（3 个掩码 AND/OR + 2 个 mux）。
@@ -559,7 +646,7 @@ VDotTree
                                  [Fold L0 ×4][Fold L1 ×4]
   ─ reg ─                                     ↑ T1→T2 锁存 (S1_g, C1_g)
   S2 组合                                      [Fold L2 ×4][Acc ×4][CPA32 ×4]
-                                               [RedTailGen 元素0 + tail]
+                                               [RedTailGen 元素0 + 高位清零]
                                                [输出 mux]
 
 io.out.valid       ──────────────────────────────┐
@@ -569,7 +656,7 @@ io.out.valid       ────────────────────�
 ```
 
 **结论**：`vdot.vv` 的 FU 延迟 = **2 个周期**，与 `vmul.vv`/`vmacc.vv` 完全相同，不改变 `VimacCfg.latency`（`FuConfig.scala:563`），因此调度器、唤醒网络、写回仲裁一律不动。
-实测周期数：**2 周期**（P7 实测，FU 级，按数据成形拍判定：直驱 `VIMacU` 时 vdot 178 笔全部「第 1 拍未成形、第 2 拍与参考模型逐位一致」，`logs/stage3/p7_latency_measure.log:238-242`；vdotacc / vdot4a 见 `:243-252`；另有 L1 波形 12×3 笔，DUT 内部 S2 寄存器与 `io_vd` 均在第 2 拍成形。两个平台的 `out.valid` 都由测试平台按声明延迟构造，不作证据；详见 `docs/stage3/22_基线实现与延迟加速分析.md` §4.2/§4.3）。
+实测周期数：**2 周期**（P7 实测，FU 级，按数据成形拍判定：直驱 `VIMacU` 时 vdot 196 笔全部「第 1 拍未成形、第 2 拍与参考模型逐位一致」，`logs/stage3/p7_latency_measure.log:232-236`；vdotacc / vdot4a 见 `:237-246`（S-3' 修订后重跑的数字）；另有 L1 波形 12×3 笔，DUT 内部 S2 寄存器与 `io_vd` 均在第 2 拍成形。两个平台的 `out.valid` 都由测试平台按声明延迟构造，不作证据；详见 `docs/stage3/22_基线实现与延迟加速分析.md` §4.2/§4.3）。
 
 ### 3.5 背靠背发射行为
 
@@ -645,7 +732,7 @@ S2（SEW=8 非 vsmul 工况下本段仅 ≈5 级）
    Fold L2 : 4 × CSA4to2(32)          ≈ 3 级
    Acc     : 4 × CSA3to2(32)          ≈ 2 级
    CPA     : 4 × 32 位加法器           ≈ 10 级
-   RedTailGen（2 AND + 1 OR + 2 mux） ≈ 4 级
+   RedTailGen（2 AND + 1 OR + 2 mux） ≈ 4 级（设计期按原 S-3 估算；S-3' 后实现为 1 个 2 选 1 mux + 常量 0，只会更少）
    输出 mux                            ≈ 2 级
    ────────────────────────────────  S2 增量 ≈ 21 级
    S2 总计（vdot 工况）≈ 21 级            vs  S2 最坏工况（SEW=64 vsmul）≈ 19–23 级
@@ -730,10 +817,10 @@ S2（SEW=8 非 vsmul 工况下本段仅 ≈5 级）
          │ isDotRed (vdot/vdotacc)              isDot4a         │
          ▼                                                      ▼
    ┌────────────────┐                                  ┌──────────────────┐
-   │  RedTailGen    │  照抄 Reduction.scala:644-647    │   Mgu(128)        │
+   │  RedTailGen    │  S-3'：vstart>=vl ? oldVd :     │   Mgu(128)        │
    │  只保留 R0 作   │  vd_vsew_bits 固定 = 32          │   eew = e32       │
    │  元素 0，       │                                  │   activeEn/       │
-   │  元素1..3 按vta │                                  │   agnosticEn      │
+   │  元素1..3 清零  │        {96'b0, R0}               │   agnosticEn      │
    └───────┬────────┘                                  └─────────┬────────┘
            │                                                     │
            └──────────────────── Mux(outIsDotRed) ───────────────┘
@@ -921,34 +1008,31 @@ E(i) := Fill(32, dotActiveEnS1(i)) & SignExt(prod16Cat(i), 32)
 | `v0.mask[i] = 0` 的元素不参与 | `activeEn = bodyEnInVd & maskEn` | `ByteMaskTailGen.scala:72,78` |
 | `vm = 1` 时全部 active | `VecPipedFuncUnit` 的 `srcMask` 在 `vm=1` 时取 `allMaskTrue` | `VecPipedFuncUnit.scala:48-53` |
 | **`vstart >= vl` 时连 tail 都不写（S-5）** | `activeEn` 与 `agnosticEn` 同时被 `Mux(begin >= end, 0.U, …)` 清零 | `ByteMaskTailGen.scala:78-79` |
-| 全部源被掩掉仍写 `vd[0]`（S-4） | `activeEn` 全 0 ⟹ 所有 `E[i] = 0` ⟹ 树输出 0；元素 0 的写入由 `RedTailGen` 无条件执行（只要 `vl != 0`） | §4.6 |
-| `vma` 被忽略（S-2） | `RedTailGen` 不读 `agnosticEn`，只读 `vta` | §4.6 |
+| 全部源被掩掉仍写 `vd[0]`（S-4） | `activeEn` 全 0 ⟹ 所有 `E[i] = 0` ⟹ 树输出 0；元素 0 的写入由 `RedTailGen` 无条件执行（只要 `vl != 0`），高 96 位同样清零 | §4.6 |
+| `vma` 被忽略（S-2）、`vta` 不参与写回（S-3'） | `RedTailGen` 既不读 `agnosticEn`，也不读 `vta` | §4.6 |
 
 `vdot4a.vv` 的掩码走**现有 `Mgu`**，`info.eew = outEew = e32`（`VIMacU.scala:131`，`widen=false` 且 `vsew=e32`），`Mgu` 内部 `VecDataToMaskDataVec(in.mask, e32)`（`Mgu.scala:60`）自动把 `v0` 按 32 位元素粒度展开 —— 这正是 S-7 要求的掩码粒度，**零额外代码**。
 
-### 4.6 元素 0 定位与 tail 处理（`RedTailGen`）
+### 4.6 元素 0 定位与高位清零（`RedTailGen`）
 
-归约类不走 `Mgu`（原因与 `VIPU` 相同：`Mgu` 的逐字节 active/tail 模型表达不了「只写元素 0」）。直接照抄 `Reduction.scala:644-647` 的三行，把 `vd_vsew_bits_reg` 固定成 32：
+归约类不走 `Mgu`（原因与 `VIPU` 相同：`Mgu` 的逐字节 active/tail 模型表达不了「只写元素 0」）。S-3' 之后写回规则只剩两种情形，`RedTailGen` 化简为一个 2 选 1：
 
 ```scala
-// RedTailGen：vdot / vdotacc 的写回成形
-private val vdMask   = ~0.U(VLEN.W)                        // Reduction.scala:53
-private val bits32   = 32.U                                // 目的 EEW 固定 32 (S-3)
-private val redVdOne = (vdMask << bits32) | (dotVd & (vdMask >> (VLEN.U - bits32)))
-private val redVdOld = (outOldVd & (vdMask << bits32)) | (dotVd & (vdMask >> (VLEN.U - bits32)))
-private val redVd    = Mux(outVl === 0.U, outOldVd,
-                       Mux(outVecCtrl.vta, redVdOne, redVdOld))
+// RedTailGen：vdot / vdotacc 的写回成形（rtl/chisel/xiangshan/VIMacU.scala:192-193）
+private val redVd = Mux(outVstart >= outVl, outOldVd,                   // 裁定 S-5
+                    Cat(0.U((VLEN - 32).W), dotVd(31, 0)))              // 裁定 S-3'
 ```
 
-语义对照（与 `vdot_ref.c:94,104-108` 逐条一致）：
+语义对照（与 `vdot_ref.c:100,109-112` 逐条一致）：
 
 | 条件 | `redVd` | 裁定 |
 |---|---|---|
-| `vl == 0`（`vstart` 恒为 0，S-1 保证 `vstart >= vl` ⟺ `vl == 0`） | `outOldVd`，整条指令不写任何位 | S-5 |
-| `vta = 1` | `[31:0] = dotVd[31:0]`，`[127:32]` 全 1 | S-3 |
-| `vta = 0` | `[31:0] = dotVd[31:0]`，`[127:32] = outOldVd[127:32]` | S-3 |
+| `vstart >= vl`（含 `vl == 0`） | `outOldVd`，整条指令不写任何位 | S-5 |
+| `vstart < vl` | `[31:0] = dotVd[31:0]`，`[127:32]` 恒为 0，与 `vta`、`vma` 无关 | S-3' |
 
-> **S-5 在归约形态下的化简**：由于 S-1 强制 `vstart == 0`，「`vstart >= vl`」退化为「`vl == 0`」。这使得 `RedTailGen` 只需一个 `vl === 0` 比较，无需任何 `vstart` 比较逻辑——**S-1 直接简化了硬件**，这是裁定 S-1 的额外收益。
+> **设计期版本（原 S-3，已废止）**：本节原稿照抄 `Reduction.scala:644-647` 的 `red_vd_tail` 三行，按 `vta` 在「高 96 位全 1」与「高 96 位取 `outOldVd`」之间选择。S-3' 删掉了 `vta` 分支，也就不再需要 `Reduction.scala` 的移位掩码惯用法。实现中判据写成 `outVstart >= outVl` 而非设计稿的 `outVl === 0.U`，理由见 `docs/stage2/11_RTL实现说明.md` §9 第 2 条。L1 平台的 `VDotTop` 用同一写法（`rtl/chisel/yunsuan/VDotTop.scala:128`）。
+
+> **S-5 在归约形态下的化简**：由于 S-1 强制 `vstart == 0`，「`vstart >= vl`」退化为「`vl == 0`」。这使得 `RedTailGen` 只需一个 `vl === 0` 比较，无需任何 `vstart` 比较逻辑——**S-1 直接简化了硬件**，这是裁定 S-1 的额外收益。（实现中为了在 L1 平台上与参考模型逐字对齐，仍写成完整判据 `outVstart >= outVl`，代价是一个 8 位比较器。）
 
 最终输出选择：
 
@@ -976,7 +1060,7 @@ io.out.bits.res.vxsat.get := Mux(outIsDot, false.B, (outVxsat & mgu.io.out.activ
 | 3 | `CSA3to2(width)` 压缩原语 | `$XS/yunsuan/.../VectorFloatFMA.scala:1581-1595` | 直接例化 4 个 `CSA3to2(32)` | 0 行 |
 | 4 | `Mgu(vlen)` 尾部/掩码成形 | `$XS/src/main/scala/xiangshan/backend/fu/vector/Mgu.scala:34-131` | `vdot4a` 完整复用（`eew=e32` 自动给出 32 位掩码粒度） | 0 行 |
 | 5 | `ByteMaskTailGen(vlen)` | `$XS/src/main/scala/xiangshan/backend/fu/vector/ByteMaskTailGen.scala:46-79` | `vdot4a` 经 `Mgu` 间接复用；`vdot/vdotacc` 新例化一份做乘积门控 | 0 行（新增一次例化） |
-| 6 | 归约 tail 成形惯用法 `red_vd_tail` | `$XS/yunsuan/.../VectorALU/Reduction.scala:644-647` | 照抄 3 行，`vd_vsew_bits` 固定 32 | 照抄 3 行 |
+| 6 | 归约 tail 成形惯用法 `red_vd_tail` | `$XS/yunsuan/.../VectorALU/Reduction.scala:644-647` | 设计期照抄 3 行（原 S-3）；**S-3' 后不再使用**，写回成形改为 1 行 `Cat(0, dotVd(31,0))`（§4.6） | 0 行（S-3' 后） |
 | 7 | `VecPipedFuncUnit` 流水骨架 | `$XS/src/main/scala/xiangshan/backend/fu/vector/VecPipedFuncUnit.scala:13-94` | 100% 复用：`vs1/vs2/oldVd/vm/vma/vta/vsew/vlmul/vstart/vuopIdx/srcMask/vl` 全部现成 | 0 行 |
 | 8 | `HasPipelineReg` 流水寄存器生成 | `$XS/src/main/scala/xiangshan/backend/fu/FuncUnit.scala:175-211` | 100% 复用，`latency=2` 不变 | 0 行 |
 | 9 | `VecDataSplitModule` 源数据切分 | `$XS/src/main/scala/xiangshan/backend/fu/vector/utils/VecDataSplitModule.scala:13-31` | 100% 复用 | 0 行 |
@@ -992,7 +1076,7 @@ io.out.bits.res.vxsat.get := Mux(outIsDot, false.B, (outVxsat & mgu.io.out.activ
 | 新增件 | 内容 | 规模 |
 |---|---|---|
 | `VDotTree`（新建，`yunsuan.vector.mac`） | 门控 + 符号扩展 + 3 级蝶形折叠（12 × `CSA4to2(32)`）+ 4 × `CSA3to2(32)` + 4 × 32 位 CPA | 约 120 行 Chisel |
-| `RedTailGen`（并入 `VIMacU`） | 3 行组合逻辑 | 3 行 |
+| `RedTailGen`（并入 `VIMacU`） | 1 个 2 选 1（S-3' 后；原 S-3 设计为 3 行） | 2 行 |
 | 译码/编码/异常登记 | 见 §6 集成点清单 | 约 30 行 |
 
 ### 5.3 复用比例估算（结构计数，非综合结果）
@@ -1136,7 +1220,7 @@ object VerilogVDotTree extends App {
    io.out.bits.res.data := Mux(outIsDotRed, redVd, mgu.io.out.vd)
    io.out.bits.res.vxsat.get := Mux(outIsDot, false.B, (outVxsat & mgu.io.out.active).orR)
    ```
-7. `RedTailGen` 三行（§4.6）。
+7. `RedTailGen`（§4.6；S-3' 后为一个 2 选 1）。
 - 照抄对象：`:99-121` 的 `vimacs` 驱动循环、`:132-146` 的 `mgu` 驱动、`Reduction.scala:644-647`。
 
 ### 阶段 C：译码链路
@@ -1166,7 +1250,7 @@ object VerilogVDotTree extends App {
 **C3** — `$XS/src/main/scala/xiangshan/backend/decode/DecodeUnit.scala:976-979`
 - 把 `VDOTACC_VV` 与 `VDOT4A_VV` 加入 `vmaInsts` 列表。
 - 理由：`:1069` `decodedInst.vpu.isDependOldVd := … || isVma || …`。若该位为 0，`NewDispatch.scala` 会在 `vlIsVlmax && (vm||vma) && !isWritePartVd` 时**丢弃对旧 `vd` 的依赖**，使累加读到的 `oldVd` 不可信。
-- `VDOT_VV` 是否也要加：`vdot.vv` 在 `vta=0` 时需要 `oldVd` 的 `[127:32]` 做 tail-undisturbed，**也必须加**。更稳妥的等价做法是把三条指令统一登记。
+- `VDOT_VV` 是否也要加：**也必须加**。原 S-3 下的理由是 `vta=0` 时需要 `oldVd` 的 `[127:32]` 做 tail-undisturbed；S-3' 之后高 96 位恒清零，但 `vstart >= vl`（含 `vl = 0`）时 S-5 要求 `vd` 原样保留，`vdot.vv` 仍需读旧 `vd`。三条指令统一登记（实现见 `rtl/chisel/xiangshan/DecodeUnit.scala:980-984`）。
 - 照抄对象：列表中已有的 `VMACC_VV`。
 
 **C4** — `$XS/src/main/scala/xiangshan/backend/decode/VecExceptionGen.scala`
@@ -1200,7 +1284,7 @@ object VerilogVDotTree extends App {
 
 **D2** — 用例覆盖矩阵（对应 P4 验收标准）
 - 正数 ≥20、负数 ≥20（含全负 / 正负混合）；
-- 边界：`+127/-128/0`、全 0、全 `-128`、`vl = 0/1/15/16`、`vm` 掩码（全 0 / 全 1 / 交错）、`vta` 两种取值；
+- 边界：`+127/-128/0`、全 0、全 `-128`、`vl = 0/1/8/15/16`（`vl = 8` 对应赛题官方伪代码）、`vm` 掩码（全 0 / 全 1 / 交错）、`vta` 两种取值（S-3' 下用于验证 `vdot`/`vdotacc` 的结果确实与 `vta` 无关）；
 - `vstart != 0`：按修订后的 P4 标准，**三条指令的期望结果都是 Illegal Instruction**（`vdot`/`vdotacc` 依 S-1，`vdot4a` 依 S-7'，§1.5.4）。FU 级平台不建模异常，这些用例应**跳过并在报告中记录跳过条数与原因**（§1.5.3）；`vdot4a` 的 prestart 数据通路改由非规范语料 `vstart_relaxed.txt` 覆盖。
 
 **D3** — `$XS/src/test/scala/xiangshan/DecodeTest.scala`
@@ -1235,6 +1319,7 @@ object VerilogVDotTree extends App {
 | 符号组合 | s × s | s × s | s × s | s×s / u×u / s×u / u×s 四种 | s×s（`UDOT` u×u，`USDOT` u×s） | **仅 u×s** | s × s |
 | 累加宽度 | 32（内部 20 位足够） | 32 | 32 | 32 | 32 | 32 | 64 |
 | 溢出 | **不可能**（§1.6 已证） | 2^32 回绕 | 2^32 回绕 | 2^32 回绕 | 2^32 回绕 | 2^32 回绕（`VPDPBUSDS` 饱和） | — |
+| 目的寄存器其余位 | **清零**（S-3'，赛题官方伪代码） | **清零**（S-3'） | tail 按 `vta` | tail 按 `vta` | `Vd.2S` 形式写 64 位视图时高位清零 | VEX/EVEX：`DEST[MAX_VL-1:VL] := 0` | 64 位结果写满 `rd` |
 | 掩码粒度 | 源元素（8 位） | 源元素（8 位） | 目的元素（32 位） | 目的元素（32 位） | 无掩码 | EVEX：32 位元素 | 无 |
 | `vstart != 0` | **Illegal**（S-1） | **Illegal**（S-1） | **Illegal**（S-7'，平台约束；§1.5.4） | 正常生效 | n/a | n/a | n/a |
 | FU 延迟 | 2 周期（P7 FU 级实测，`docs/stage3/22` §4.3） | 2 周期 | 2 周期 | 实现相关 | 实现相关 | 典型 ~5 周期（Intel 公开文档） | 论文未给 |
@@ -1243,7 +1328,7 @@ object VerilogVDotTree extends App {
 
 **(1) 为什么 `vdot.vv` 做「全向量归约 + 不累加」，而工业界的 6 个先例清一色是「4 路分组 + 累加」？**
 
-因为赛题的学术源头是 arXiv:2409.00661（Nanhu-vdot），其 `VDOTU` 正是「8 路 int8 乘法 + 7 个加法器 → 单标量，累加由软件做」。赛题把它从 custom-0 的 R-type 改写成 RVV 的 `.vv` 形式，但归约形态与「不累加」这两个特征保留了下来。D2 据此把 `vdot.vv` 定义为**由 `vl` 决定路数的全向量归约**（`vl=8` 时与论文完全一致，`vl=16` 是 VLEN=128 的满幅形态），**是论文语义的超集**。
+因为赛题的官方语义就是这样规定的：赛题页的伪代码（§1 开头）是「8 个 int8 有符号乘积求和 → 写 `vd[0]`，其余清零」，不累加；其学术源头 arXiv:2409.00661（Nanhu-vdot）的 `VDOTU` 同样是「8 路 int8 乘法 + 7 个加法器 → 单标量，累加由软件做」。赛题把它从 custom-0 的 R-type 改写成 RVV 的 `.vv` 形式，归约形态与「不累加」两个特征保留了下来。D2 据此把 `vdot.vv` 定义为**由 `vl` 决定路数的全向量归约**：**`vl=8` 时与赛题官方伪代码逐位等价**（`logs/stage2/p3_official_pseudocode_equiv.log:40`），`vl=16` 是 VLEN=128 的满寄存器版本，**是字面语义的超集**。（D2 最初在没有取到官方图的情况下按论文确定，2026-10-26 取到图后复核，主体一致，仅目的寄存器高位的处理按官方伪代码修订为 S-3'。）
 
 **(2) 既然归约形态在长向量循环里不如分组累加，为什么还要做？**
 
@@ -1258,7 +1343,7 @@ object VerilogVDotTree extends App {
 **(3) 为什么选 OPIVV（`funct3=000`）而不是标准 `Zvdot4a8i` 用的 OPMVV（`funct3=010`）？**
 
 - OPIVV 的 `case class` 默认 `src3 = SrcType.vp`（`VecDecoder.scala:37`），**三源读取零成本**；OPMVV 必须显式传 `vdRen = T`。
-- 赛题文本写的是 `vdot.vv`，而「整数向量—向量」在直觉上对应 `funct3=000`；已公开的三个参赛队仓库中有两个读成 `000`（见 `docs/_recon/vdot-semantics-research.md` §4）。
+- 赛题文本写的是 `vdot.vv`，而「整数向量—向量」在直觉上对应 `funct3=000`；已公开的三个参赛队仓库中有两个读成 `000`（见 `docs/_recon/vdot-semantics-research.md` §4）。赛题官方语义图（§1 开头）**没有给出任何编码信息**，funct6 / funct3 由本项目自定（funct6 的空闲性证明见 §2）。
 - 本设计是**非标准自定义扩展**，不以二进制兼容 `Zvdot4a8i` 为目标；若将来需要兼容，`vdot4a.vv` 平移到 OPMVV `101100` 只需改一行 BitPat。
 
 **(4) 为什么不做无符号/混合符号变体（`vdot4au` / `vdot4asu`）？**
@@ -1268,7 +1353,7 @@ object VerilogVDotTree extends App {
 
 **(5) 与基线（D2.2 候选 D）的对比**
 
-基线用 6 条现有 RVV 指令实现同一功能：`vsetvli e32` → `vmv.s.x` → `vsetvli e8` → `vwmul.vv` → `vsetvli e16` → `vwredsum.vs`，关键路径 3 级。
+基线用 6 条现有 RVV 指令实现同一功能：`vsetivli 4, e32` → `vmv.v.i v8, 0`（整寄存器清零）→ `vsetvli e8` → `vwmul.vv` → `vsetvli e16, tu` → `vwredsum.vs`，关键路径 3 级（`bench/baseline/baseline_rvv.S:279-301`）。S-3' 之前第 1、2 条是 `vsetvli e32` + `vmv.s.x`、第 5 条用 `ta`；S-3' 要求 `vd[127:32]` 清零，于是先把 `v8` 整体清零、归约改用 `tu` 保住这些 0，条数不变。`vdotacc.vv` 的等价基线因 RVV 1.0 没有「保留元素 0、其余清零」的单条指令，从 4 条增至 7 条（含 `vsetvli`，另需 1 条标量 `slli`；`bench/baseline/baseline_ref.c:358-370`）。
 
 | 维度 | 基线（6 条） | `vdot.vv`（1 条） | 说明 |
 |---|---|---|---|
@@ -1364,7 +1449,7 @@ uop 1..lmul-1: lsrc(0)=vs1+i, lsrc(1)=vs2+i, lsrc(2)=vd, ldest=vd, uopIdx=i  →
 numOfUop = lmul
 ```
 
-FU 侧零改动：`VIMacU` 根据 `vuopIdx === 0.U` 决定 `accLane0`（`vdot` 的 uop0 不累加，之后累加；`vdotacc` 全程累加）。`vlRemain = vl - uopIdx*16` 的计算照抄 `Reduction.scala:87-89` 的 `shift`/`vlRemain` 写法；`vta` 的 tail 由每个 uop 原样传递（uop0 从架构 `oldVd` 取 tail，之后各 uop 从上一 uop 的结果取，链式保持）。
+FU 侧零改动：`VIMacU` 根据 `vuopIdx === 0.U` 决定 `accLane0`（`vdot` 的 uop0 不累加，之后累加；`vdotacc` 全程累加）。`vlRemain = vl - uopIdx*16` 的计算照抄 `Reduction.scala:87-89` 的 `shift`/`vlRemain` 写法；S-3' 之后 `vd[127:32]` 恒为 0，不存在需要逐 uop 传递的 tail（原 S-3 下的设想是 uop0 从架构 `oldVd` 取 tail、之后各 uop 链式保持，现已不需要）。
 
 **关键问题：XiangShan 的 uop 框架允许同一条指令的多个 uop 写同一个架构寄存器吗？**
 
@@ -1442,11 +1527,12 @@ uop lmul..2lmul-2  : 把 TMP 两两相加                              （需要
 | **R-10** | `latency` 保持 2 还是提到 3？ | (a) 保持 2；(b) 提到 3 | **(a)，(b) 作保底**。(b) 只需改 `FuConfig.scala:563` 一行，但会让 `vmul`/`vmulh`/`vwmul*`/`vmacc`/`vnmsac`/`vmadd`/`vnmsub`/`vwmacc*`/`vsmul` 等十余条既有指令**集体慢 50%**，且 `vmacc` 类累加链吞吐损失 33%。切换触发条件写死为「P7 综合显示方案 B 的 S2 为全芯片关键路径且局部优化无效」。 |
 | **R-11** | 可重构树用「两棵树 + 输出 mux」还是「蝶形折叠 + 输入门控」？ | (a) 两棵树；(b) 单向归并 + bypass mux；(c) XOR 蝶形 + 输入门控 | **(c)**。(a) 面积近乎翻倍。(b) 结果路径上有 mux，增加关键路径。(c) 利用 `CSA4to2(a,b,0,0)` 是合法直通这一性质，模式切换只作用在**加数输入端的 AND 门**上，结果路径零 mux；XOR 蝶形还使每个 lane 运算完全相同，`vdot` 直接取 lane0，省掉元素 0 的选择逻辑（§4.4.3）。 |
 | **R-12** | 归约形态的掩码在哪里注入单位元？ | (a) 源元素（照抄 `Reduction.scala:186-191`）；(b) 乘积 | **(b)**。乘积门控只需 16 个 32 位 AND（在 S1，该段有裕量），而源元素门控要在 S0 的乘法阵列入口动手，会挤占 S0（≈20 级，最长的一段）。加法的单位元是 0，两种注入点数学等价。 |
-| **R-13** | 归约形态走 `Mgu` 还是自建 tail 逻辑？ | (a) `Mgu`；(b) 照抄 `Reduction.scala:644-647` | **(b)**。`Mgu` 的逐字节 active/tail 模型表达不了「只写元素 0，其余按 `vta`」。`VIPU` 面对同样的问题也是绕过 `Mgu`（`wrapper/VIPU.scala:149` 直接 `io.out.bits.res.data := vialu.io.out.bits.vd`；该文件虽在 `:31` import 了 `Mgu`，但全文没有 `Module(new Mgu)`）。`vdot4a` 是正常的逐元素指令，继续走 `Mgu`。 |
+| **R-13** | 归约形态走 `Mgu` 还是自建 tail 逻辑？ | (a) `Mgu`；(b) 照抄 `Reduction.scala:644-647` | **(b)**。`Mgu` 的逐字节 active/tail 模型表达不了「只写元素 0，其余按 `vta`」（S-3' 之后为「只写元素 0，其余清零」，同样表达不了）。`VIPU` 面对同样的问题也是绕过 `Mgu`（`wrapper/VIPU.scala:149` 直接 `io.out.bits.res.data := vialu.io.out.bits.vd`；该文件虽在 `:31` import 了 `Mgu`，但全文没有 `Module(new Mgu)`）。`vdot4a` 是正常的逐元素指令，继续走 `Mgu`。 |
 | **R-14** | `vdot.vv` 是否需要饱和逻辑 / `vxsat`？ | (a) 需要；(b) 不需要 | **(b)**。§1.6 给出严格证明：`|Σ p_i| <= 16 × 16384 = 2^18 < 2^31`，不可能溢出。`io.out.bits.res.vxsat` 对 vdot 三条指令恒为 0。`vdotacc`/`vdot4a` 的累加按 RVV §11 回绕，同样不置 `vxsat`。 |
 | **R-15** | `vdot.vv` 的 `vs1` 要不要登记进 `VecExceptionGen` 的 `vs1IsSingleElem`？ | (a) 要（照抄 `redWideningInst`）；(b) 不要 | **(b)**。`vs1IsSingleElem`（`VecExceptionGen.scala:220`）会把 `vs1Emul` 设成 `"b100"`（单寄存器，`:222`）。这对 `vwredsum.vs` 是对的（`vs1[0]` 是标量种子），对 `vdot.vv` 是错的（`vs1` 是完整的 LMUL 向量）。只有 `vdIsSingleElem`（`:245`）要加，因为 `vd` 确实只占一个寄存器。 |
 | **R-17** | 协同仿真发现：`vdot4a` + `vstart != 0` 在 NEMU 上正常执行、在香山上判非法（1946 条确定性分歧）。改哪一侧？ | (a) 改香山向 NEMU 靠：为 `vdot4a` 在 `vstartIllegal` 上开例外，并让 `Mgu` 处理 prestart；(b) 改 NEMU/ISA 向香山靠：把 `vdot4a` 的 `vstart != 0` 也裁定为非法（**裁定 S-7'**） | **(b)，依据「平台约束优先原则」**：自定义指令的 ISA 语义不应宽于宿主微架构的实际能力。昆明湖 V2 的向量算术通路不支持非零 `vstart` 重启，这是既有架构事实；让 ISA 向微架构收敛，改动面只在本指令族内，且使三条 vdot 指令与同平台所有标准向量算术指令的 `vstart` 行为完全一致（实测对照 `bench/results/vstart_control.csv`，8 条指令在 `vstart=1` 时一律 `TRAP mcause=2`）。否决 (a) 的理由同 R-06：改公共判据的回归面是整个向量后端。**本裁定是平台约束驱动的，不是语义内在限制** —— 支持 `vstart` 重启的实现可以放宽（参考模型的 `VDOT_VSTART_SKIP` 策略 + 非规范语料 `vstart_relaxed.txt` 的 40 条 vdot4a 用例已给出可执行定义）。完整论证见 §1.5.4，发现过程见 `docs/stage3/21` §7.3。**RTL 侧零改动**，由 `tests/unit/vecexcgen_tb.cpp` 的 `[I]` 组实测确认。 |
-| **R-16** | 机器码示例要不要用汇编器实际验证？ | — | 本机无 RISC-V 工具链，`.insn r` 宏的可接受性标注为 **UNVERIFIED**；`.word` 形式的机器码由位域拼接算得并用脚本复核，P4 阶段须用 `objdump -d` 回读确认。**后续已闭合（阶段三）**：交叉工具链 `riscv64-linux-gnu-gcc` 13 已就位，P5 语料用它把 `.word` 形式的机器码汇编进镜像，`objdump -d` 回读出 6 个编码（`logs/stage3/p5_vdot_tests.log:42-49`），并在打了补丁的 NEMU 上 30758 条全部通过（同文件 `:87`）；全核 difftest 中香山译码单元把 `.4byte` 宏生成的编码译为 `vdot.vv` / `vdotacc.vv` / `vdot4a.vv`（`logs/stage3/fullcore/wave_trace.txt:159,162,170`）。`.insn r` 宏本身始终没有被任何测试程序使用，仍未实测，但已不影响编码的正确性。 |
+| **R-18** | 2026-10-26 取到赛题官方语义图：伪代码要求 `vd[1..VLEN-1] = 0`（其他通道清零），而原 S-3 让元素 1..3 按 `vta` 作 tail（`vta=1` 写全 1、`vta=0` 保持）。改不改？怎么改？ | (a) 维持 S-3，在文档中说明偏差；(b) 只在 `vta=1` 时把 tail 写 0；(c) 修订为 **S-3'**：`vstart < vl` 时 `vd[VLEN-1:32]` 恒为 0，与 `vta`/`vma` 无关；同时保留 `vl` 机制 | **(c)**。(a) 在 `vl=8` 这一与伪代码对应的配置下与官方语义不一致（阴性对照：旧语料 532 条全部失配，`logs/stage2/p3_official_pseudocode_equiv.log:62`），不可接受。(b) 不合规：RVV 1.0 §3.4.3 只允许 agnostic 元素保留原值或写全 1，写 0 不在其列；且 `vta=0` 时仍与伪代码不符。(c) 把 vdot 的目的定义为「整寄存器结果、无 tail」，不再借用 tail-agnostic 的说法，有 x86 `VPDPBUSD`（VEX/EVEX 清零 `DEST[MAX_VL-1:VL]`）、AArch64 窄视图写清零高位、南湖 VDOTU 写满 `rd` 等先例；`vl=8` 时与伪代码逐位等价（20570 条 0 失配，同日志 `:40`），`vl=16` 为满寄存器版本。改动面：参考模型写回 1 处、NEMU、`VIMacU` / `VDotTop` 写回成形各 1 处（`rtl/patch/0001-xiangshan-vdot.patch:276-277`、`rtl/patch/0002-yunsuan-vdot.patch:181-184`），`vdot4a` 不受影响。完整论证见 §1 开头「赛题官方语义与逐行对照」。 |
+| **R-16** | 机器码示例要不要用汇编器实际验证？ | — | 本机无 RISC-V 工具链，`.insn r` 宏的可接受性标注为 **UNVERIFIED**；`.word` 形式的机器码由位域拼接算得并用脚本复核，P4 阶段须用 `objdump -d` 回读确认。**后续已闭合（阶段三）**：交叉工具链已就位（S-3' 后重跑的日志使用 `riscv64-unknown-elf-gcc` 15.2.0，`logs/stage3/p5_vdot_tests.log:5-6`），P5 语料用它把 `.word` 形式的机器码汇编进镜像，`objdump -d` 回读出 6 个编码（`logs/stage3/p5_vdot_tests.log:45-52`），并在打了补丁的 NEMU 上 30794 条全部通过（同文件 `:90`，S-3' 修订后重跑）；全核 difftest 中香山译码单元把 `.4byte` 宏生成的编码译为 `vdot.vv` / `vdotacc.vv` / `vdot4a.vv`（`logs/stage3/fullcore/wave_trace.txt:159,162,170`）。`.insn r` 宏本身始终没有被任何测试程序使用，仍未实测，但已不影响编码的正确性。 |
 
 ---
 
@@ -1461,3 +1547,16 @@ uop lmul..2lmul-2  : 把 TMP 两两相加                              （需要
 | 5 | `.insn r` 宏的汇编器可接受性验证（`objdump -d` 回读） | P4 |
 | 6 | 单条 `vdot.vv` 的 RTL 实测周期数、背靠背间隔、与基线候选 D 的加速比 —— **P7 已完成**：FU 级实测 2 周期、加速比见 `docs/stage3/22` §5；背靠背间隔 P7 未实测，后续 MinimalConfig 全核波形观测到依赖发射间隔 7 拍（`docs/stage3/23` §7.2，单条链） | P7 / 全核 difftest |
 | 7 | LMUL>1（`UopSplitType.VEC_VDOT`）、`.vx` 变体、混合符号变体 | 后续版本 |
+| 8 | S-3' 使 `vdot.vv` 在 `vstart < vl` 时的输出不依赖旧 `vd`：可在 `vl` 已知非 0 时去掉对旧目的寄存器的假依赖（不读旧 `vd`、不占第三读端口）。本版本未做，三条指令仍登记在 `vmaInsts` | 后续版本 |
+
+---
+
+## 11. 修订记录
+
+只记录改变指令语义的修订；措辞、证据行号、实测数字回填等不改变语义的更新不在此列。
+
+| 日期 | 裁定 | 修订内容 | 触发者 | 本文受影响的章节 |
+|---|---|---|---|---|
+| P6 阶段 | S-7 → **S-7'** | `vdot4a.vv` 在 `vstart != 0` 时改为 Illegal Instruction（平台约束优先原则） | NEMU ↔ RTL 协同仿真（1946 条确定性分歧） | §1.5.2、§1.5.4、§9 R-06 / R-17 |
+| 2026-10-26 | S-3 → **S-3'** | `vdot.vv` / `vdotacc.vv` 在 `vstart < vl` 时 `vd[31:0]` 写结果、`vd[VLEN-1:32]` 恒为 0，与 `vta`/`vma` 无关；`vstart >= vl`（含 `vl = 0`）时 `vd` 不写（S-5 不变）；全部元素被掩掉时 `vd[31:0] = 0`（`vdotacc` 为原值），其余位清零；`vdot4a.vv` 不变 | 取得赛题官方语义图后的复核（伪代码 `vd[1..VLEN-1] = 0`） | §1 开头「赛题官方语义与逐行对照」（新增）、§1.3、§1.4.1、§1.5.1、§3.2–§3.4、§4.1、§4.5、§4.6、§5、§6 C3 / D2、§7、§9 R-13 / R-18、§10 第 8 条 |
+

@@ -17,16 +17,18 @@
 
 | 验收项（HANDOFF T1） | 结果 | 证据 |
 |---|---|---|
-| 全核 emu 构建（带 difftest） | **完成**。MinimalConfig，有效耗时约 23 分钟（精化 8:29 + verilate 12:57 + C++ 1:42），峰值内存 56.4 GiB（约 60.6 GB，Verilator 前端） | `build_time_breakdown.log:8,13,34,39,90`；`build_emu_3.log:38,57` |
-| 全部语料 0 mismatch | **完成**。30758 条（全部定向 + 3×10000 随机 + 55 条补充定向），其中 4834 条应 trap，6 批全部 HIT GOOD TRAP，difftest 失配 0 | `summary.log:1-9` |
+| 全核 emu 构建（带 difftest） | **完成**。MinimalConfig，S-3' 语义修订后由脚本重建：`make emu` 墙钟 24:31.63（精化约 8:36 + verilate 约 14:02 + C++ 约 1:54），峰值 RSS 56445000 KiB（约 53.8 GiB） | `build_emu.log:2429,2434,2448`；分阶段时刻 `build_emu.log:21,2385,2409,2449` |
+| 全部语料 0 mismatch | **完成**。30794 条（全部定向 + 3×10000 随机 + 55 条补充定向），其中 4834 条应 trap，6 批全部 HIT GOOD TRAP，difftest 失配 0 | `summary.log:1-9` |
 | 背靠背依赖（Level 1 证明不了的部分） | **完成**。10 个依赖内核 × 4 个随机种子 × 200 次迭代 × (背靠背 + fence 隔离) = 16000 次内核调用，自洽比较 0 失败，difftest 失配 0，4 次均 HIT GOOD TRAP | `summary.log:10-37`；`dep0.log:9-22` |
 | 异常投递与 mcause | **完成**。4834 条非法用例在全核上全部 trap 且 mcause=2；流水线中（前后有依赖指令）插入的非法 vdot/vdot4a/vstart≠0 每次恰好 trap 3 次（K8，`k8-trap-count-bad=0`）；REF 侧独立执行判定，CSR 每条提交比对 | `summary.log:8,12`；§2.2 |
-| 故障注入 | **完成**。VIMacU 的 vdot 结果 bit0 翻转后，3 个程序在**第一条** vdot 提交处被 difftest 中止（`v3_low` right/wrong 只差 bit0）；源码还原后与全核树逐字节一致 | `fault_summary.log:1-5` |
+| 故障注入 | **完成**。两种注入各 3/3 检出：① VIMacU 的 vdot 结果 bit0 翻转，3 个程序在**第一条** vdot 提交处被 difftest 中止（`v3_low` right/wrong 只差 bit0）；② 把 vdot / vdotacc 写回尾部退回旧裁定 S-3 的全 1（`s3old`），同样在第一条 vdot 处中止（`v3_low` / `v3_high` 高位失配）。源码还原后均与全核树逐字节一致 | `fault_summary.log:1-5`；`fault_summary_s3old.log:1-5` |
 | 全核波形（译码 → ROB 提交） | **完成**。文本轨迹 + 时序图；VCD 382 MB 不入库 | `wave_trace.txt:155-192`；`wave_fullcore_vdot.png`（嵌入 §7 图 8） |
 | Level 1 等价性论证是否成立 | **成立，且其 4 个缺口中的 G1–G4 已在全核上实测闭合**（§8） | §8 |
-| 发现 RTL / NEMU 补丁缺陷 | **未发现**。`rtl/patch/`、`nemu/patch/` 均未改动 | — |
+| 发现 RTL / NEMU 补丁缺陷 | **未发现**。全核 difftest 本身没有促成 `rtl/patch/`、`nemu/patch/` 的任何改动（两份补丁在 S-3' 语义修订中有改动，那是语义对齐，见提交 b16b58d，不是本报告发现的缺陷） | — |
 
-一句话：**打了 vdot 补丁的昆明湖V2 全核与打了 vdot 补丁的 NEMU 在 24,517,314 条逐条提交比对（27,090,115 个周期）上 0 失配；vdot 指令族在乱序流水线中的发射、物理寄存器旁路、提交与异常投递均与 NEMU 一致。**
+一句话：**打了 vdot 补丁的昆明湖V2 全核与打了 vdot 补丁的 NEMU 在 24,524,262 条逐条提交比对（27,104,437 个周期）上 0 失配；vdot 指令族在乱序流水线中的发射、物理寄存器旁路、提交与异常投递均与 NEMU 一致。**
+
+> **语义修订 S-3' 后已全部重跑**：`vdot.vv` / `vdotacc.vv` 在 `vstart < vl` 时 `vd[31:0]` 写结果、`vd[VLEN-1:32]` 恒为 0（与 vta/vma 无关），`vl = 0` 时 vd 不写；`vdot4a` 不变。修订理由与赛题官方伪代码的对照见 `docs/stage2/10` §1「赛题官方语义与逐行对照」。全核树、NEMU `.so`、emu 均按新补丁重建，本文所有数字均为重跑所得。
 
 ---
 
@@ -100,23 +102,32 @@ make emu CONFIG=MinimalConfig EMU_THREADS=16 EMU_TRACE=1 JVM_XMX=200G \
          WITH_CHISELDB=0 WITH_CONSTANTIN=0 CXX=clang++ LINK=clang++ -j128
 ```
 
-| 阶段 | 墙钟 | 峰值 RSS | 证据 |
-|---|---:|---:|---|
-| mill 精化 + firtool（含首次 Scala 编译） | 8:29 | 19.5 GiB（JVM） | `build_time_breakdown.log:8,13` |
-| Verilator 生成 C++（单线程前端） | 12:57 | **56.4 GiB** | `build_time_breakdown.log:34,39` |
-| C++ 编译 + 链接（clang++ 14，`-j128`） | 1:40 | 4.3 GiB（单进程） | `build_time_breakdown.log:90,95`；`build_emu_3.log:38,43,57` |
-| **合计（有效）** | **约 23 分钟** | 56.4 GiB | — |
+当前存档是 S-3' 语义修订后由 `bash scripts/50_run_fullcore_difftest.sh build` 重新生成全核树、重建私有 NEMU `.so`（`build_driver.log:20-27`）并完整重建 emu 的结果（`build_driver.log:29-32`，构建日志 `build_emu.log`）：
 
-说明：上表那次构建的 mill 精化与 Verilator 阶段运行期间，故障注入树（§6）的同一构建以 `nice -n 19` 并行进行，耗时偏保守。 单位说明：峰值 RSS 取自 GNU time 的 `Maximum resident set size (kbytes)`，该字段单位为 KiB（1024 字节）。例如 Verilator 前端 `59157676 kbytes`（`build_time_breakdown.log:39`）= 56.4 GiB = 约 60.6 GB（10^9 字节）；本仓库早期写作「59.2 GB」，是把该字段的 KiB 误当作 10^3 字节换算所得，已统一改为 GiB。
+| 阶段 | 墙钟 | 证据 |
+|---|---:|---|
+| mill 精化 + firtool | 约 8:36（15:41:57 → 15:50:33） | `build_emu.log:21,2385` |
+| Verilator 生成 C++ | 约 14:02（15:50:33 → 16:04:35） | `build_emu.log:2385,2409` |
+| C++ 编译 + 链接（clang++，`-j128`） | 约 1:54（16:04:35 → 16:06:29） | `build_emu.log:2409,2449` |
+| **`make emu` 合计** | **24:31.63**，`exit=0` | `build_emu.log:2429,2447-2448` |
+| **峰值 RSS** | **56445000 KiB（约 53.8 GiB，约 57.8 GB）** | `build_emu.log:2434` |
 
-**脚本从零复测**：之后在独立 `WORK_DIR`（只含指向 `XiangShan-kmhv2`、`NEMU` 的符号链接）里执行 `bash scripts/50_run_fullcore_difftest.sh build`，从生成全核树、复制并构建私有 NEMU `.so` 到 emu 链接一次通过：`make emu` 墙钟 23:15、峰值 RSS 56.4 GiB（`build_emu_scripted.log:19,2429,2434,2448`），脚本总耗时 23:31（`build_scripted_driver.log` 末尾）；分阶段为精化 8:44 / verilate 12:47 / C++ 1:39。该 emu 跑 `vdot_wave.bin` 同样 HIT GOOD TRAP（`instrCnt = 35, cycleCnt = 1588`，与存档 emu 相同）。
+说明：
 
-原机器 16 GB 内存做不了的根本原因由此量化：Verilator 前端峰值 56.4 GiB（约 60.6 GB），远超 16 GB。
+* 分阶段耗时由日志中各阶段起点打印的时间戳相减得到，不是 GNU time 的分阶段统计；峰值 RSS 是 GNU time 对整个 `make emu` 进程树记录的最大单进程 RSS（字段 `Maximum resident set size (kbytes)`，单位为 KiB = 1024 字节）。这次日志没有分阶段的 RSS；首次构建的分阶段统计显示峰值出现在 Verilator 单线程前端（59157676 KiB），该记录见 git 历史（提交 19a29ea 中的 `logs/stage3/fullcore/build_time_breakdown.log:34,39`）。
+* 这次构建期间，两棵故障注入树（§6）的 emu 构建同时进行（`build_emu_fault.log:1`、`build_emu_fault_s3old.log:1` 的起始时刻分别为 15:43:32、15:43:54），三份构建共享 128 核，耗时偏保守；两棵注入树各自为 27:34.11 / 27:18.77，峰值 RSS 56596284 / 56621028 KiB（`build_emu_fault.log:2429,2434`、`build_emu_fault_s3old.log:2426,2431`）。
+* 脚本自身的墙钟为 24m45s（`build_driver.log:40`），但该次脚本以 `exit=2` 结束（`build_driver.log:33,43`）：emu 已构建完成（`build_emu.log:2448` `exit=0`，`build_driver.log:32` 已列出 emu）之后，构建进行中脚本文件被就地改写（加入 `FAULT_KIND` 选项），bash 读到改写后的文件尾部报 `unexpected EOF`。日志中已附说明并在不改动任何东西的前提下重跑一次 `build` 模式，确认补丁状态、`.so` 与 emu 均已就绪、`exit=0`（`build_driver.log:45-65`）。构建产物不受影响：本 emu 正是 §5 各次运行使用的 emu（`corpus_b00.log:42` `emu compiled at Oct 26 2026, 16:04:36`）。
 
-### 3.3 构建中真实遇到的两次失败（如实记录）
+原机器 16 GB 内存做不了的根本原因由此量化：构建峰值 RSS 约 53.8 GiB（首次构建中 Verilator 前端约 56.4 GiB），远超 16 GB。
 
-1. **g++ 不认识 clang 专有选项**。difftest 子模块（`3729300`）把 `OPT_FAST ?= -O3 -fno-slp-vectorize` 写死（`work/XiangShan-fullcore/difftest/verilator.mk:76`），该选项只有 clang 认识；Verilator 默认用 g++，于是 C++ 阶段立即失败：`build_emu.log:2421-2423`（`g++: error: unrecognized command-line option '-fno-slp-vectorize'`），`build_emu.log:2484` `exit=2`。
-2. **g++ 编译超大单函数极慢**。改用 GCC 等价选项 `-fno-tree-slp-vectorize` 重编（`build_emu_2.log:3`）后，Verilator 生成的 `VSimTop___024root__DepSet_hd5918264__2.cpp`（15.9 MB，几乎全是一个函数 `nba_sequent__TOP__22`）在 g++ 11.4 `-O3` 下编译 85 分钟仍未结束。同一文件用 `clang++ -O3 -fno-slp-vectorize` 单独编译只需 1 分 48 秒，于是人工终止（`build_emu_2.log:38-61`），改用 clang++ 重编全部目标文件，1 分 42 秒完成（`build_emu_3.log`）。
+### 3.3 首次构建中真实遇到的两次失败（如实记录）
+
+以下发生在首次构建（S-3' 之前）。当时的 g++/clang 排查日志在 S-3' 重建时已从工作区删除（它们不再对应当前树），记录保留在 git 历史中（提交 19a29ea），下文行号均指该提交中的文件，可用 `git show 19a29ea:<路径>` 查看。
+
+1. **g++ 不认识 clang 专有选项**。difftest 子模块（`3729300`）把 `OPT_FAST ?= -O3 -fno-slp-vectorize` 写死（`work/XiangShan-fullcore/difftest/verilator.mk:76`，当前树仍然如此），该选项只有 clang 认识；Verilator 默认用 g++，于是 C++ 阶段立即失败：19a29ea 的 `logs/stage3/fullcore/build_emu.log:2421-2423`（`g++: error: unrecognized command-line option '-fno-slp-vectorize'`）、`:2484` `exit=2`。
+2. **g++ 编译超大单函数极慢**。改用 GCC 等价选项 `-fno-tree-slp-vectorize` 重编（19a29ea 的 `build_emu_2.log:3`）后，Verilator 生成的 `VSimTop___024root__DepSet_hd5918264__2.cpp`（15.9 MB，几乎全是一个函数 `nba_sequent__TOP__22`）在 g++ 11.4 `-O3` 下编译 85 分钟仍未结束。同一文件用 `clang++ -O3 -fno-slp-vectorize` 单独编译只需 1 分 48 秒，于是人工终止（同文件 `:38-61`），改用 clang++ 重编全部目标文件，1 分 42 秒完成（19a29ea 的 `build_emu_3.log:38,57`）。
+
+S-3' 重建直接使用 clang++（`build_emu.log:19` 的 `CXX=clang++ LINK=clang++`），一次通过。
 
 两者都是环境问题（编译器选择），与 vdot 无关。一键脚本已固化为默认使用 clang++，缺少 clang++ 时退回 g++ 并告警（`scripts/50_run_fullcore_difftest.sh` 的 `build_emu_in()`）。
 
@@ -129,8 +140,8 @@ make emu CONFIG=MinimalConfig EMU_THREADS=16 EMU_TRACE=1 JVM_XMX=200G \
 ### 4.1 语料批次（复用 P5 一致性测试程序，不做修改）
 
 * 程序：`tests/riscv/vdot/start.S`、`vdot_test.c`、`corpus.S` **原样复用**，只是 `nemu_config.h` 改由 `tests/riscv/fullcore/Makefile` 按香山 SoC 地址生成。程序自带 M 态 trap handler，对每条用例检查「该 trap 的是否 trap、mcause 是否为 2、vd 是否不变」（`tests/riscv/vdot/vdot_test.c:272-284`），并逐字节比对 vd 与语料期望值。
-* 语料：`tests/vectors/*.txt`（13 个 suite）+ `tests/riscv/vdot/extra_vectors/vstart_range.txt`，由 `pack_corpus.py` 打包成 30758 条，`slice_corpus.py` 切成 6 批（每批 5127 条，末批 5123 条）在 6 个 emu 进程上并行运行。
-* 规模：全部定向用例（正数 / 负数 / 边界 × 3 条指令、`vstart_relaxed` 130 条按 STRICT 语义重标为必须 trap、补充定向 55 条）+ 每条指令 10000 条随机，共 30758 条；其中 4834 条必须 trap（SEW 不符、`vstart≠0`）。
+* 语料：`tests/vectors/*.txt`（13 个 suite）+ `tests/riscv/vdot/extra_vectors/vstart_range.txt`，由 `pack_corpus.py` 打包成 30794 条（`fault_driver.log:26`，打包输出与 `run` 模式相同），`slice_corpus.py` 切成 6 批（每批 5133 条，末批 5129 条，`run_driver.log:12-17`）在 6 个 emu 进程上并行运行。
+* 规模：全部定向用例（正数 / 负数 / 边界 × 3 条指令、`vstart_relaxed` 130 条按 STRICT 语义重标为必须 trap、补充定向 55 条）+ 每条指令 10000 条随机，共 30794 条（S-3' 修订时 vdot 与 vdotacc 的正数 / 负数 / 边界共 6 个 suite 各补 6 条 vl=8 定向用例，30758 → 30794，见 `corpus_b00.log:22-27`）；其中 4834 条必须 trap（SEW 不符、`vstart≠0`）。
 * 这是**双重判定**：程序自身对照参考模型期望值；difftest 同时把每条提交与 NEMU 比对。
 
 ### 4.2 背靠背依赖测试（Level 1 证明不了的部分）
@@ -159,7 +170,7 @@ make emu CONFIG=MinimalConfig EMU_THREADS=16 EMU_TRACE=1 JVM_XMX=200G \
 
 ### 4.3 波形程序
 
-`vdot_wave.S`：`vadd.vv v1` → `vdot.vv v3, v10, v1` → `vdotacc.vv v3, v11, v8` → `vsetivli e32` → `vdot4a.vv v4, v3, v9`，一条 RAW 链，期望值写在文件头注释里（`vdot_wave.S:10-13`）。
+`vdot_wave.S`：`vadd.vv v1` → `vdot.vv v3, v10, v1` → `vdotacc.vv v3, v11, v8` → `vsetivli e32` → `vdot4a.vv v4, v3, v9`，一条 RAW 链，期望值写在文件头注释里（`vdot_wave.S:10-15`，按 S-3' 给出，并注明原裁定 S-3 下的旧值）。
 
 ---
 
@@ -169,18 +180,21 @@ make emu CONFIG=MinimalConfig EMU_THREADS=16 EMU_TRACE=1 JVM_XMX=200G \
 
 ```
 batch     cases     pass   fail  must-trap   trapped-ok  emu
-b00        5127     5127      0        811          811  HIT_GOOD_TRAP
-...
-b05        5123     5123      0        839          839  HIT_GOOD_TRAP
-CORPUS TOTAL cases=30758 pass=30758 fail=0 must-trap=4834 trapped-mcause2=4834 batches=6 hit-good-trap=6/6
+b00        5133     5133      0        809          809  HIT_GOOD_TRAP
+b01        5133     5133      0        787          787  HIT_GOOD_TRAP
+b02        5133     5133      0        761          761  HIT_GOOD_TRAP
+b03        5133     5133      0        862          862  HIT_GOOD_TRAP
+b04        5133     5133      0        774          774  HIT_GOOD_TRAP
+b05        5129     5129      0        841          841  HIT_GOOD_TRAP
+CORPUS TOTAL cases=30794 pass=30794 fail=0 must-trap=4834 trapped-mcause2=4834 batches=6 hit-good-trap=6/6
 difftest 失配报告行数（'different at' / 'ABORT'）：0
 ```
 
-单批明细见 `corpus_b00.log:19-41`（分 suite 表，与 P5 在 NEMU 上的结果口径相同），`corpus_b00.log:50-51` 为 `HIT GOOD TRAP` 与 `instrCnt = 1032599, cycleCnt = 1490596`。每批约 103 万条提交、149 万周期，emu 墙钟约 570 s（约 2.6 k 周期/秒）。
+单批明细见 `corpus_b00.log:19-41`（分 suite 表，与 P5 在 NEMU 上的结果口径相同），`corpus_b00.log:50-51` 为 `HIT GOOD TRAP` 与 `instrCnt = 1033683, cycleCnt = 1492000`。每批约 103 万条提交、149–151 万周期（各批 `corpus_b0[0-5].log:51`），6 批合计 6,191,702 条提交、9,000,638 个周期。本次 6 批与依赖测试的第一个种子同时运行（`run_driver.log:36`），每批 emu 墙钟 1283–1314 s（各批 `corpus_b0[0-5].log:55`，约 1.15 k 周期/秒）；`run` 模式总墙钟 60m33s（`run_driver.log:76`）。
 
 ### 5.2 依赖测试（`summary.log:10-37`）
 
-4 个种子全部 `DEP TOTAL runs=2000x2 fail=0 k8-trap-count-bad=0`、`RESULT: PASS`、`HIT GOOD TRAP`；每次约 458 万条提交、452 万周期（IPC≈1.01）。分内核明细见 `dep0.log:9-22`。
+4 个种子全部 `DEP TOTAL runs=2000x2 fail=0 k8-trap-count-bad=0`、`RESULT: PASS`、`HIT GOOD TRAP`；每次约 458 万条提交、452–454 万周期（IPC≈1.01，`dep[0-3].log:32`），4 个种子合计 18,332,560 条提交、18,103,799 个周期。分内核明细见 `dep0.log:9-22`。
 
 ### 5.3 异常投递与 mcause
 
@@ -192,8 +206,8 @@ difftest 失配报告行数（'different at' / 'ABORT'）：0
 
 | 项 | 数值 |
 |---|---|
-| 逐条比对的提交指令 | 24,517,314（6 批语料 + 4 个依赖种子的 `instrCnt` 之和） |
-| 仿真周期 | 27,090,115 |
+| 逐条比对的提交指令 | 24,524,262（6 批语料 6,191,702 + 4 个依赖种子 18,332,560，各次 `instrCnt` 之和：`corpus_b0[0-5].log:51`、`dep[0-3].log:32`） |
+| 仿真周期 | 27,104,437（9,000,638 + 18,103,799，同上各行的 `cycleCnt` 之和） |
 | difftest 失配 | 0 |
 | HIT GOOD TRAP | 10 / 10 次运行 |
 
@@ -201,24 +215,52 @@ difftest 失配报告行数（'different at' / 'ABORT'）：0
 
 ## 6. 故障注入（`logs/stage3/fullcore/fault_*`）
 
-在独立副本 `work/XiangShan-fullcore-fault` 中修改 `src/main/scala/xiangshan/backend/fu/wrapper/VIMacU.scala:181`（`fault_diff.txt`）：
+`bash scripts/50_run_fullcore_difftest.sh fault` 支持两种注入（`FAULT_KIND`，`scripts/50_run_fullcore_difftest.sh:384-401`），各自在独立的全核副本中改源码、重建 emu，再跑同样 3 个程序，结束时把源码改回并 `cmp` 核对与全核树逐字节一致。两种注入均在 S-3' 重建后执行（`fault_driver.log:46`、`fault_driver_s3old.log:31`）。
+
+### 6.1 结果总线 bit0 翻转（`FAULT_KIND=bit0`，默认）
+
+在独立副本 `work/XiangShan-fullcore-fault` 中修改 `src/main/scala/xiangshan/backend/fu/wrapper/VIMacU.scala:181`（`fault_diff.txt:1-4`）：
 
 ```scala
 -  private val dotVd = vdotTree.io.dotVd
 +  private val dotVd = vdotTree.io.dotVd ^ 1.U  // FAULT-INJECTION T1-F1: flip bit0 of the vdot result
 ```
 
-这是三条 vdot 指令共用的结果总线（归约写回 `redVd` 与 vdot4a 走 `Mgu` 的两条路径都取自它），即「改坏数据通路一位」。重新精化后生成的 `VIMacU.sv` 中可见 `{_vdotTree_io_dotVd[127:1], ~(_vdotTree_io_dotVd[0])}`，注入改动也被构建流程记录在 `build_emu_fault_3.log:265`。
+这是三条 vdot 指令共用的结果总线（归约写回 `redVd` 与 vdot4a 走 `Mgu` 的两条路径都取自它），即「改坏数据通路一位」。该树重新精化后生成的 `work/XiangShan-fullcore-fault/build/rtl/VIMacU.sv` 中可见两处翻转：vdot4a 送 `Mgu` 的 `{_vdotTree_io_dotVd[127:1], ~(_vdotTree_io_dotVd[0])}`（`:547`）与归约写回的 `{96'h0, _vdotTree_io_dotVd[31:1], ~(_vdotTree_io_dotVd[0])}`（`:621`）。该文件是构建产物，不入库。
 
 | 程序 | 结果 | 首个失配 | 被中止的提交 |
 |---|---|---|---|
-| `vdot_wave.bin` | **检出** | `v3_low right = 0xffffffffffffff58, wrong = 0xffffffffffffff59`（`fault_wave.log:178-179`） | 第一条 vdot `e6a081d7` @ `0x80000042`（`fault_wave.log:54`） |
-| `dep0/vdot_dep.bin` | **检出** | `right = 0xb85a792d00000468, wrong = …469`（`fault_summary.log:2`） | K1 的 vdot `e62081d7`（`fault_dep.log:67`） |
-| `b00/vdot_test.bin` | **检出** | `right = 0xffffffff000005d8, wrong = …5d9`（`fault_summary.log:3`） | 语料第一条 vdot `e62081d7` @ `0x8000092a` 所在提交组（`fault_corpus_b00.log:76-77`） |
+| `vdot_wave.bin` | **检出** | `v3_low right = 0x00000000ffffff58, wrong = 0x00000000ffffff59`（`fault_wave.log:178-179`） | 第一条 vdot `e6a081d7` @ `0x80000042`（`fault_wave.log:54`） |
+| `dep0/vdot_dep.bin` | **检出** | `right = 0x0000000000000468, wrong = …469`（`fault_summary.log:2`） | K1 的 vdot `e62081d7`（`fault_dep.log:67`） |
+| `b00/vdot_test.bin` | **检出** | `right = 0x00000000000005d8, wrong = …5d9`（`fault_summary.log:3`） | 语料第一条 vdot `e62081d7` @ `0x8000092a` 所在提交组（`fault_corpus_b00.log:76-77`） |
 
-`FAULT-INJECTION: 3 / 3 个程序检出`；随后源码改回，`cmp` 确认与全核树逐字节一致（`fault_summary.log:4-5`）。三处失配的 right/wrong 都**只差 bit0**，说明 difftest 比的确实是 VIMacU 写回的 vd，且粒度到位。
+`FAULT-INJECTION (bit0): 3 / 3 个程序检出`；随后源码改回，`cmp` 确认与全核树逐字节一致（`fault_summary.log:4-5`）。三处失配的 right/wrong 都**只差 bit0**，说明 difftest 比的确实是 VIMacU 写回的 vd，且粒度到位。三处 right 值的 `v3_low` 高 32 位都是 0，这正是 S-3' 下 REF（NEMU）给出的 `vd[63:32]`。
 
-注：difftest 报告里 `different at pc = …` 打印的 pc 不是出错 vdot 的地址，出错提交要看提交轨迹。轨迹中的 `<--` 标在出错**提交组**的最后一条指令上，而不一定是 vdot 本身：`vdot_wave.bin` 与 `dep0` 的出错提交组只有 1 条（`cmtcnt 1`，`fault_wave.log:29`、`fault_dep.log:33`），`<--` 正好落在 vdot 上（`fault_wave.log:54`、`fault_dep.log:67`）；`b00` 的出错提交组有 2 条（`fault_corpus_b00.log:43` 的 `cmtcnt 2`），`<--` 落在同组第二条 `j` 指令上（`:77`），vdot `e62081d7` 是同组第一条（`:76`）。上表最后一列按此判读。注入版 emu 留在 `work/XiangShan-fullcore-fault/build/`（源码已还原，二进制保留以便复查）。
+### 6.2 写回尾部退回旧语义（`FAULT_KIND=s3old`）
+
+为了证明全核 difftest 能区分新旧两种语义（而不只是能发现任意一位错误），第二种注入在独立副本 `work/XiangShan-fullcore-fault-s3old` 中把 vdot / vdotacc 的写回尾部从 S-3' 的「恒为 0」改回旧裁定 S-3 的「全 1」（`fault_diff_s3old.txt:1-4`，`VIMacU.scala:193`）：
+
+```scala
+-                      Cat(0.U((VLEN - 32).W), dotVd(31, 0)))              // 裁定 S-3'
++                      Cat(~0.U((VLEN - 32).W), dotVd(31, 0)))             // FAULT-INJECTION T1-F2: tail back to old S-3 (all ones)
+```
+
+生成的 `work/XiangShan-fullcore-fault-s3old/build/rtl/VIMacU.sv:621` 为 `{96'hFFFFFFFFFFFFFFFFFFFFFFFF, _vdotTree_io_dotVd[31:0]}`（对照全核树 `work/XiangShan-fullcore/build/rtl/VIMacU.sv:621` 的 `{96'h0, _vdotTree_io_dotVd[31:0]}`）。注入是无条件写全 1，对应的是旧 S-3 在 `vta=1` 时的行为（旧 S-3 在 `vta=0` 时保持尾部不变，这里没有再现那一支）；结果低 32 位不受影响。
+
+| 程序 | 结果 | 首个失配 | 被中止的提交 |
+|---|---|---|---|
+| `vdot_wave.bin` | **检出** | `v3_low right = 0x00000000ffffff58, wrong = 0xffffffffffffff58`；`v3_high right = 0x0000000000000000, wrong = 0xffffffffffffffff`（`fault_wave_s3old.log:178-179`） | 第一条 vdot `e6a081d7` @ `0x80000042`（`fault_wave_s3old.log:54`） |
+| `dep0/vdot_dep.bin` | **检出** | `v3_low wrong = 0xffffffff00000468`，`v3_high wrong = 0xffffffffffffffff`（`fault_dep_s3old.log:191-192`） | K1 的 vdot `e62081d7`（`fault_dep_s3old.log:67`） |
+| `b00/vdot_test.bin` | **检出** | `v3_low wrong = 0xffffffff000005d8`，`v3_high wrong = 0xffffffffffffffff`（`fault_corpus_b00_s3old.log:201-202`） | 语料第一条 vdot `e62081d7` @ `0x8000092a` 所在提交组（`fault_corpus_b00_s3old.log:76-77`） |
+
+`FAULT-INJECTION (s3old): 3 / 3 个程序检出`，源码还原后与全核树逐字节一致（`fault_summary_s3old.log:1-5`；驱动日志 `fault_driver_s3old.log:31-46`）。三处失配都是**结果值（低 32 位）完全正确、只有 `vd[127:32]` 不同**：right（NEMU，S-3'）为 0，wrong（注入后的 RTL）为全 1。这说明：
+
+* 全核 difftest 对 vd 的比对覆盖整个 128 位寄存器（`v3_low` 与 `v3_high` 两块都比），不只看元素 0；
+* RTL 若仍按旧语义写尾部，会在**第一条** vdot 提交时就被 REF 拦下；反过来，§5 的 0 失配说明当前 RTL 与 NEMU 在 `vd[127:32]` 上确实都按 S-3' 清零，二者没有「同时停留在旧语义」的可能（REF 侧语义另有 `logs/stage3/p5_vdot_tests.log` 的 30794 条语料独立核对）。
+
+### 6.3 判读说明
+
+注：difftest 报告里 `different at pc = …` 打印的 pc 不是出错 vdot 的地址，出错提交要看提交轨迹。轨迹中的 `<--` 标在出错**提交组**的最后一条指令上，而不一定是 vdot 本身：`vdot_wave.bin` 与 `dep0` 的出错提交组只有 1 条（`cmtcnt 1`，`fault_wave.log:29`、`fault_dep.log:33`），`<--` 正好落在 vdot 上（`fault_wave.log:54`、`fault_dep.log:67`）；`b00` 的出错提交组有 2 条（`fault_corpus_b00.log:43` 的 `cmtcnt 2`），`<--` 落在同组第二条 `j` 指令上（`:77`），vdot `e62081d7` 是同组第一条（`:76`）。`s3old` 各日志的对应行号与此相同（`fault_wave_s3old.log:29,54`、`fault_dep_s3old.log:33,67`、`fault_corpus_b00_s3old.log:43,76-77`）。上两表最后一列按此判读。注入版 emu 留在 `work/XiangShan-fullcore-fault/build/` 与 `work/XiangShan-fullcore-fault-s3old/build/`（源码已还原，二进制保留以便复查）；两棵树的 emu 构建日志为 `build_emu_fault.log`、`build_emu_fault_s3old.log`。
 
 ---
 
@@ -233,7 +275,7 @@ emu -i vdot_wave.bin --diff <ref .so> --dump-wave -b 0 -e 2000 --wave-path work/
 emu 在 `--dump-wave`（不加 `--dump-wave-full`）下每个周期只写一个时间点，VCD 时刻即周期号。整核 1594 个周期的 VCD 为 382 MB（`wave_dump.log:19`），**不入库**；入库的是：
 
 * `logs/stage3/fullcore/wave_trace.txt`：`tests/riscv/fullcore/wave_trace.py` 从 VCD 抽取 162 个信号（译码、重命名、ROB 入队、向量发射队列入/出、VialuFix 与 Vimac 的输入输出、ROB 提交）后得到的事件轨迹；
-* `logs/stage3/fullcore/wave_fullcore_vdot.png`：用 `scripts/tools/vcd_plot.py` 从同一 VCD 渲染的 13 路信号时序图（周期 1483–1516），文档内嵌的图 8 是它的逐字节副本 `docs/stage3/figures/fig8_fullcore_vdot_wave.png`； ![图 8　全核 MinimalConfig 中 vadd → vdot → vdotacc → vdot4a 背靠背的时序图](figures/fig8_fullcore_vdot_wave.png) 图 8　全核时序图（周期 1483–1516）。四条竖线标出 vdot（robIdx=22）的发射 1494、进 VIMacU 1497、写回 1499、提交 1501；`Vimac.in.valid` → `Vimac.out.valid` 三次都是 2 拍。图由 `scripts/50_run_fullcore_difftest.sh` 的 `run_wave()` 函数在抓完 VCD 后渲染；VCD 不入库，但只要 `work/build/fullcore/wave/vdot_wave.vcd` 还在，就可以只重画图、不重跑仿真：在 `PYTHON` 带 matplotlib 的环境中执行 `run_wave()` 里那条 `vcd_plot.py` 命令（`--vcd` 指向上述 VCD，`--from 1483 --to 1516`，13 个 `--signal` 原样照抄）。2026-10-25 按此重画到 `/tmp` 下核对过，信号与数值和存档图一致，只有字体渲染略有差别。
+* `logs/stage3/fullcore/wave_fullcore_vdot.png`：用 `scripts/tools/vcd_plot.py` 从同一 VCD 渲染的 13 路信号时序图（周期 1483–1516），文档内嵌的图 8 是它的逐字节副本 `docs/stage3/figures/fig8_fullcore_vdot_wave.png`； ![图 8　全核 MinimalConfig 中 vadd → vdot → vdotacc → vdot4a 背靠背的时序图](figures/fig8_fullcore_vdot_wave.png) 图 8　全核时序图（周期 1483–1516）。四条竖线标出 vdot（robIdx=22）的发射 1494、进 VIMacU 1497、写回 1499、提交 1501；`Vimac.in.valid` → `Vimac.out.valid` 三次都是 2 拍。图由 `scripts/50_run_fullcore_difftest.sh` 的 `run_wave()` 函数在抓完 VCD 后渲染；S-3' 重建后已重新抓取并重画（`wave_driver.log:23-27`），图 8 与 `wave_fullcore_vdot.png` 逐字节相同。VCD 不入库，但只要 `work/build/fullcore/wave/vdot_wave.vcd` 还在，就可以只重画图、不重跑仿真：在 `PYTHON` 带 matplotlib 的环境中执行 `run_wave()` 里那条 `vcd_plot.py` 命令（`--vcd` 指向上述 VCD，`--from 1483 --to 1516`，13 个 `--signal` 原样照抄）。
 * `logs/stage3/fullcore/wave_run.log`：同一程序带 `--dump-commit-trace` 的逐条提交记录，`wave_run.log:34,35,37` 是三条 vdot 族指令的提交，`:46` 为 `HIT GOOD TRAP`。
 
 ### 7.2 关键信号与时刻（`wave_trace.txt:155-192`）
@@ -248,13 +290,13 @@ emu 在 `--dump-wave`（不加 `--dump-wave-full`）下每个周期只写一个�
 | | 入 ROB `inner_ctrlBlock.rob.io_enq_req_0_*` | 1487 | 1488 | 1489 | 1491 |
 | | 出发射队列 `IQ*.io_deqDelay_0_*`（物理源 rf0/rf1/rf2） | 1488，pdest=59 | **1494**，robIdx=22，pdest=60，psrc=(**59**,52,56) | **1501**，robIdx=23，pdest=61，psrc=(48,54,**60**) | **1508**，robIdx=25，pdest=62，psrc=(50,**61**,58) |
 | | FU 输入 `exus_2.VialuFix.io_in_*` / `exus.Vimac.io_in_*` | 1491 | **1497**，vsew=0，`src0(vs1)=1211…0403`（= vadd 结果） | **1504**，`src2(oldVd)=…ffffff58`（= vdot 结果） | **1511**，vsew=2，`src1(vs2)=…00000310`（= vdotacc 结果） |
-| | FU 输出 `…io_out_*`（`res_data`） | 1492，`1211100f…0403` | **1499**，`…ffffff58` | **1506**，`…00000310` | **1513**，`fffffff8 fffffff8 fffffff8 00000026` |
+| | FU 输出 `…io_out_*`（`res_data`） | 1492，`1211100f…0403` | **1499**，`00000000 00000000 00000000 ffffff58` | **1506**，`00000000 00000000 00000000 00000310` | **1513**，`00000000 00000000 00000000 00000026` |
 | | ROB 提交 `inner_ctrlBlock.rob.io_commits_*` | 1494 | **1501** | **1508** | **1515** |
 
 读法：
 
 1. **RAW 旁路走的是物理寄存器号**：vadd 的 `pdest=59` 出现在 vdot 的 `psrc rf0`（vs1），vdot 的 `pdest=60` 出现在 vdotacc 的 `rf2`（旧 vd / 累加源），vdotacc 的 `pdest=61` 出现在 vdot4a 的 `rf1`（vs2）。三条消费者进入 VIMacU 时读到的源值正是生产者在 FU 输出端产生的值（`wave_trace.txt:179→182`，`183→186`，`187→190`）。
-2. **结果值与手算一致**：vdot = −(3+…+18) = −168 = `0xffffff58`；vdotacc 加上 −128×64 + 127×72 = 952 得 `0x310`；vdot4a 第 0 lane (0x10+0x03)×2 = 38 = `0x26`，其余 lane 4×(−1×2) = −8；tail 全 1（vta=1）。
+2. **结果值与手算一致**：vdot = −(3+…+18) = −168 = `0xffffff58`；vdotacc 加上 −128×64 + 127×72 = 952 得 `0x310`；vdot4a 第 0 lane (0x10+0x03)×2 = 38 = `0x26`。按 S-3'，vdot / vdotacc 的 `vd[127:32]` 为 0（虽然这里 `vta=1`，`wave_trace.txt:182,186`），因此 vdot4a 读到的 vs2 元素 1..3 为 0、其余 lane 结果为 0（`wave_trace.txt:183,187,191`；原裁定 S-3 下这三个 lane 为全 1 参与累加，得 `0xfffffff8`，见 `vdot_wave.S:15`）。语义修订只改变了数值，各级时刻与 S-3 时完全相同。
 3. **VIMacU 的 latency=2 在全核中得到确认**：Vimac `io_in_valid` 到 `io_out_valid` 恰为 2 拍（1497→1499、1504→1506、1511→1513），这是在真实流水线中、由 `VIMacU` 内部 `ctrlPipe/dataPipe` 驱动的结果，不再是 L1 平台的常量计数器（陷阱第 6 条）。
 4. **发射 → FU 输入固定 3 拍**（1494→1497 等，对应读物理寄存器堆的 OG0/OG1 两级）；**FU 输出 → 依赖者发射 2 拍**（1499→1501）。因此在 MinimalConfig 下，**相互依赖的两条 vdot 族指令的发射间隔是 7 拍**（1494→1501→1508）。这是本波形的实测，样本为一条依赖链，见 §9 第 3 条的讨论。
 
@@ -266,8 +308,8 @@ emu 在 `--dump-wave`（不加 `--dump-wave-full`）下每个周期只写一个�
 
 | Level 1 的论断 / 缺口 | 全核实测 | 结论 |
 |---|---|---|
-| 「一条 vdot 应该算出什么」两层结论一致 | 同一份 30758 条语料，Level 1（`VDotTop`）与全核（`VIMacU`）都是 0 失配 | **成立** |
-| **G1** 写回成形在 `VIMacU` 与 `VDotTop` 是两份代码，Level 1 只验了后者 | 全核里挂进流水线的是 `VIMacU`（波形 `exus.Vimac.*`）；全部 vl / vm / vta / vma 组合（含 vl=0、AVL>VLMAX）0 失配；故障注入证明比对确实落在 `VIMacU` 的输出上 | **闭合** |
+| 「一条 vdot 应该算出什么」两层结论一致 | 同一份 30794 条语料（S-3' 修订后），Level 1（`VDotTop`）与全核（`VIMacU`）都是 0 失配 | **成立** |
+| **G1** 写回成形在 `VIMacU` 与 `VDotTop` 是两份代码，Level 1 只验了后者 | 全核里挂进流水线的是 `VIMacU`（波形 `exus.Vimac.*`）；全部 vl / vm / vta / vma 组合（含 vl=0、AVL>VLMAX）0 失配；故障注入证明比对确实落在 `VIMacU` 的输出上，其中 `s3old` 注入（§6.2）专门改的就是 `VIMacU` 的写回成形（尾部），同样在第一条 vdot 处被检出 | **闭合** |
 | **G2** 没有背靠背流量 | K1–K10：RAW（经物理寄存器、经访存、跨整数域）、WAR/WAW、掩码依赖、8 条 vdot 同时在队列、分支冲刷；fast/slow 自洽 + difftest 双重 0 失配 | **闭合** |
 | **G3** `vcsr` / `mstatus.VS` 不比对 | difftest 每条提交比对 `vstart vl vtype vcsr…` 与 `mstatus`（`refproxy.cpp:185-230`） | **闭合** |
 | **G4** 异常只到译码打标 | 4834 条非法用例 + K8 流水线中注入的非法指令，均经 ROB 投递、`mcause=2`、`mepc` 正确，且 REF 独立判定（`traps.cpp:81-106`） | **闭合** |
@@ -282,8 +324,8 @@ emu 在 `--dump-wave`（不加 `--dump-wave-full`）下每个周期只写一个�
 
 ## 9. 发现与局限
 
-1. **未发现 RTL 或 NEMU 补丁缺陷**。`rtl/patch/`、`nemu/patch/` 未改动。
-2. **环境问题两处**（§3.3）：上游 difftest 的 `OPT_FAST` 写死 clang 专有选项；g++ 11.4 编译 Verilator 生成的超大函数不可接受地慢。已在脚本中固化为 clang++。
+1. **未发现 RTL 或 NEMU 补丁缺陷**。全核 difftest 没有促成 `rtl/patch/`、`nemu/patch/` 的任何改动（S-3' 语义修订对两份补丁的改动见提交 b16b58d，修订后全核已按新补丁重建并重跑，结果见 §5、§6）。
+2. **环境问题两处**（§3.3，首次构建时发现）：上游 difftest 的 `OPT_FAST` 写死 clang 专有选项；g++ 11.4 编译 Verilator 生成的超大函数不可接受地慢。已在脚本中固化为 clang++。
 3. **对 `docs/stage3/22` 遗留威胁的一条实测证据**：`22` 中 vdotacc 循环携带依赖按 FU 延迟记为 2 拍。全核波形显示，在 MinimalConfig 下相互依赖的 VIMacU 指令发射间隔是 **7 拍**（FU 2 拍 + 读寄存器堆 3 拍 + 写回唤醒到发射 2 拍，§7.2 第 4 条）。同样的唤醒 / 读寄存器开销也作用于基线里依赖 VIAluFix 的 `vwadd.wv` 链（本波形中 vadd 从发射到结果为 1488→1492，再到消费者发射 1494，共 6 拍）。所以「2 拍 vs 1 拍」在全核中会被稀释成约「7 拍 vs 6 拍」。这条波形本身只是一条依赖链上的观测，**不是吞吐测量**；之后的全核周期实测（`22` §5.5.3）证实了每跳 = FU 延迟 + 5 拍（`vdotacc` 7.000 拍、`vwadd.wv` 6.000 拍），长向量循环的稳态周期与加速比见 `22` §5.5.4（单累加器 1.81×、2 累加器 2.25×，均只对 MinimalConfig 成立）。仍未做的是真实 LLM 内核（int8 GEMM / attention）与默认配置上的周期测量。
 4. **配置**：只构建了 MinimalConfig（理由与影响见 §3.1）。默认配置、`KunminghuV2Config` 未运行。
 5. **随机性**：依赖测试的随机性在数据、vl、vta/vma 上；指令序列是 10 个固定模板，不是随机指令流生成器。乱序调度的交错由真实流水线自然产生，但没有刻意制造发射队列满、ROB 满等压力场景（K9 的 8 条独立 vdot 只部分覆盖）。
@@ -297,16 +339,18 @@ emu 在 `--dump-wave`（不加 `--dump-wave-full`）下每个周期只写一个�
 
 ```bash
 # 依赖：scripts/00_setup_env_host.sh 已生成 work/XiangShan-kmhv2 与 work/NEMU；clang++；≥64 GB 内存
-bash scripts/50_run_fullcore_difftest.sh build   # 全核树 + NEMU 私有副本 .so + emu（实测 23:31）
-bash scripts/50_run_fullcore_difftest.sh run     # 6 批语料 + 依赖测试 4 个种子（本机约 45 分钟）
+bash scripts/50_run_fullcore_difftest.sh build   # 全核树 + NEMU 私有副本 .so + emu（实测 24m45s，与两棵注入树并行构建）
+bash scripts/50_run_fullcore_difftest.sh run     # 6 批语料 + 依赖测试 4 个种子（实测 60m33s）
 PLOT_PYTHON=/path/to/python-with-matplotlib \
 bash scripts/50_run_fullcore_difftest.sh wave    # 波形 + 文本轨迹 + 时序图（约 1 分钟，VCD 382 MB）
-bash scripts/50_run_fullcore_difftest.sh fault   # 故障注入（首次需额外构建一次 emu）
+bash scripts/50_run_fullcore_difftest.sh fault   # 故障注入 bit0（首次需额外构建一次 emu）
+FAULT_KIND=s3old \
+bash scripts/50_run_fullcore_difftest.sh fault   # 故障注入：写回尾部退回旧 S-3（独立的注入树，同样需构建一次 emu）
 ```
 
-可调参数见脚本文件头（`FC_CONFIG`、`EMU_THREADS`、`JVM_XMX`、`BATCHES`、`DEP_ITERS`、`DEP_SEEDS`、`WAVE_BEGIN/END`）。日志写到 `${LOG_ROOT}/stage3/fullcore/`，已有同名日志时改写到 `rerun_<时间戳>/` 子目录，不覆盖存档。
+可调参数见脚本文件头（`FC_CONFIG`、`EMU_THREADS`、`JVM_XMX`、`BATCHES`、`DEP_ITERS`、`DEP_SEEDS`、`WAVE_BEGIN/END`；故障注入种类 `FAULT_KIND=bit0|s3old` 见 `scripts/50_run_fullcore_difftest.sh:20-24,384-401`）。日志写到 `${LOG_ROOT}/stage3/fullcore/`，已有同名日志时改写到 `rerun_<时间戳>/` 子目录，不覆盖存档。
 
-本报告的存档由以下命令产生：`build` 阶段为三次手工 `make emu`（`build_emu.log` / `build_emu_2.log` / `build_emu_3.log`，过程见 §3.3），脚本固化最终做法后又在独立 `WORK_DIR` 中从零复测一次（`build_emu_scripted.log`、`build_scripted_driver.log`）；`run` / `wave` / `fault` 为上述脚本原样运行（`run_driver.log`、`wave_driver.log`、`fault_driver.log`）。
+本报告的存档（S-3' 修订后重跑）由以下命令产生：`build`（`build_driver.log`、`build_emu.log`；脚本末尾 `exit=2` 的原因见 §3.2，emu 构建本身 `exit=0`）、`run`（`run_driver.log`）、`wave`（`wave_driver.log`）、`fault` 与 `FAULT_KIND=s3old fault`（`fault_driver.log`、`fault_driver_s3old.log`，注入树构建日志 `build_emu_fault.log`、`build_emu_fault_s3old.log`），均为上述脚本原样运行。首次构建（S-3' 之前）的三次手工 `make emu` 与脚本从零复测的日志不再对应当前树，已从工作区删除，见 git 历史（提交 19a29ea）。
 
 ---
 
@@ -320,8 +364,9 @@ bash scripts/50_run_fullcore_difftest.sh fault   # 故障注入（首次需额�
 | `tests/riscv/fullcore/vdot_dep.c`、`vdot_dep_kernels.S` | 背靠背依赖测试 |
 | `tests/riscv/fullcore/vdot_wave.S` | 波形抓取用最小程序 |
 | `tests/riscv/fullcore/wave_trace.py` | 从全核 VCD 抽取 vdot 事件轨迹 |
-| `logs/stage3/fullcore/build_emu*.log`、`build_time_breakdown.log` | 构建日志（含两次失败）与分阶段耗时；`build_emu_scripted.log`、`build_scripted_driver.log` 为脚本从零复测 |
-| `logs/stage3/fullcore/build_emu_fault_*.log` | 故障注入版 emu 的构建日志（同样经历 g++ → clang++） |
+| `logs/stage3/fullcore/build_driver.log`、`build_emu.log` | S-3' 重建的脚本驱动日志与 `make emu` 日志（§3.2）；首次构建的 g++/clang 排查记录（`build_emu_2/3.log`、`build_time_breakdown.log` 等）见 git 历史（提交 19a29ea） |
+| `logs/stage3/fullcore/build_emu_fault.log`、`build_emu_fault_s3old.log` | 两棵故障注入树的 emu 构建日志 |
 | `logs/stage3/fullcore/corpus_b0[0-5].log`、`dep[0-3].log`、`summary.log`、`run_driver.log` | difftest 运行日志与汇总 |
-| `logs/stage3/fullcore/fault_*.log`、`fault_diff.txt`、`fault_summary.log`、`fault_driver.log` | 故障注入 |
+| `logs/stage3/fullcore/fault_*.log`、`fault_diff.txt`、`fault_summary.log`、`fault_driver.log` | 故障注入 bit0（§6.1） |
+| `logs/stage3/fullcore/fault_*_s3old.log`、`fault_diff_s3old.txt`、`fault_summary_s3old.log`、`fault_driver_s3old.log` | 故障注入 s3old（§6.2） |
 | `logs/stage3/fullcore/wave_run.log`、`wave_dump.log`、`wave_trace.txt`、`wave_fullcore_vdot.png`、`wave_driver.log` | 波形（时序图副本：`docs/stage3/figures/fig8_fullcore_vdot_wave.png`） |

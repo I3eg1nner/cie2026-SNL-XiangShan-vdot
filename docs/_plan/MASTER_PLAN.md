@@ -23,22 +23,22 @@ VLEN=128。基础指令 `vdot.vv` 对应赛题要求；另两条为本方案的�
 
 | 指令 | 编码 (funct6 / funct3 / opcode) | 生效条件 | 语义 |
 |---|---|---|---|
-| `vdot.vv vd, vs2, vs1` | `111001` / `000` (OPIVV) / `1010111` | `vtype.vsew = 8` | **四倍宽全向量归约**：`vd.u32[0] = Σ_{i=0}^{vl-1} sext32(vs2.i8[i]) × sext32(vs1.i8[i])`；`vd` 的其余元素按 `vta` 作为 tail 处理。对应赛题语义（vl=16 时为 16 路点积）。 |
-| `vdotacc.vv vd, vs2, vs1` | `111010` / `000` (OPIVV) / `1010111` | `vtype.vsew = 8` | **累加变体**：`vd.u32[0] = vd.u32[0] + Σ ...`。`vd` 作为第三源读取（复用 `vmacc.vv` 已有的三源通路）。面向长向量 LLM 内积循环，消除循环内的独立累加指令。32 位回绕，不饱和。 |
+| `vdot.vv vd, vs2, vs1` | `111001` / `000` (OPIVV) / `1010111` | `vtype.vsew = 8` | **四倍宽全向量归约**：`vd.u32[0] = Σ_{i=0}^{vl-1} sext32(vs2.i8[i]) × sext32(vs1.i8[i])`；`vstart < vl` 时 `vd` 的其余位（`vd[VLEN-1:32]`）恒为 0，与 `vta`/`vma` 无关（裁定 S-3'，见 D2.4）。**`vl=8` 时与赛题官方伪代码逐位等价**，`vl=16` 为满寄存器版本。 |
+| `vdotacc.vv vd, vs2, vs1` | `111010` / `000` (OPIVV) / `1010111` | `vtype.vsew = 8` | **累加变体**：`vd.u32[0] = vd.u32[0] + Σ ...`，其余位同样清零（S-3'）。`vd` 作为第三源读取（复用 `vmacc.vv` 已有的三源通路）。面向长向量 LLM 内积循环，消除循环内的独立累加指令。32 位回绕，不饱和。 |
 | `vdot4a.vv vd, vs2, vs1` | `111011` / `000` (OPIVV) / `1010111` | `vtype.vsew = 32` | **分组点积累加**（Zvqdotq / ARM SDOT / x86 VPDPBUSD 风格）：`∀i<vl: vd.u32[i] += Σ_{j=0}^{3} sext(vs2.i8[4i+j]) × sext(vs1.i8[4i+j])`。VLEN=128 时产生 4 个结果。体现「向更高 SEW/VLEN 扩展」的能力。 |
 
 **溢出分析**：int8×int8 ∈ [-16256, 16384]，16 项求和 |sum| ≤ 262144 < 2^31，`vdot.vv` 无溢出可能，无需饱和逻辑。`vdotacc`/`vdot4a` 的累加按 32 位模运算回绕。
 
-**掩码/尾部**：遵循 RISC-V 归约指令惯例（参照 `vredsum.vs` / `vwredsum.vs`）。`vstart`、`vl`、`vm`、`vta` 行为在设计文档中逐项规定并实现。
+**掩码/尾部**：`vstart`、`vl`、`vm` 遵循 RISC-V 归约指令惯例（参照 `vredsum.vs` / `vwredsum.vs`）；`vdot.vv`/`vdotacc.vv` 的目的寄存器按赛题官方伪代码定义为整寄存器结果（低 32 位为点积、其余清零），**没有 tail**，`vta` 不参与写回（S-3'）；`vdot4a.vv` 的 tail 仍按 `vta` 处理。各项行为在设计文档中逐项规定并实现。
 
 #### D2.1 语义裁定（P3 参考模型阶段裁定，全项目强制遵守）
-下列裁定已在 C 参考模型中实现并经 30663 条用例（D2.3 S-7' 传播后语料为 30703 条）+ 故障注入验证，**RTL 与 NEMU 必须与之逐位一致**。完整论证见 `docs/stage2/13_参考模型与测试向量说明.md`「语义裁定记录」。
+下列裁定已在 C 参考模型中实现并经 30663 条用例（D2.3 S-7' 传播后语料为 30703 条，D2.4 S-3' 后为 30739 条）+ 故障注入验证，**RTL 与 NEMU 必须与之逐位一致**。完整论证见 `docs/stage2/13_参考模型与测试向量说明.md`「语义裁定记录」。
 
 | 编号 | 裁定 | 依据 |
 |---|---|---|
 | S-1 | `vdot.vv` / `vdotacc.vv` 在 `vstart != 0` 时**抛出 Illegal Instruction** | RVV 1.0 §14：归约类指令 vstart 非零即非法。三点支撑：① NEMU `reduction_instr` 本就如此；② 基线用的 `vwredsum.vs` 同样禁止，否则基线与 vdot 不再功能等价，加速比失去意义；③ 归约无法中途重启。备用策略 `VDOT_VSTART_SKIP` 与非规范语料 `vstart_relaxed.txt` 已备好 |
 | S-2 | 归约类（`vdot`/`vdotacc`）忽略 `vma` | 归约无 body-masked 目的元素 |
-| S-3 | tail 按 **EEW=32** 处理，即元素 1..3 为 tail | 目的 EEW 为 32 |
+| ~~S-3~~ → **S-3'** | ~~tail 按 **EEW=32** 处理，即元素 1..3 为 tail~~ **已由 D2.4 修订：`vdot`/`vdotacc` 在 `vstart < vl` 时 `vd[31:0]` 写结果、`vd[VLEN-1:32]` 恒为 0，与 `vta`/`vma` 无关**；目的元素 0 仍按 EEW=32 计 | 赛题官方伪代码 `vd[1..VLEN-1] = 0`，见 D2.4 |
 | S-4 | 全部源元素被掩掉时，仍写 `vd[0] = 0`（`vdotacc` 为原值） | 归约单位元为 0 |
 | S-5 | `vstart >= vl`（含 `vl = 0`）时**连 tail 都不写** | RVV 1.0 §5.4 |
 | S-6 | 本版本固定 **LMUL = 1** | 赛题场景 SEW=8/VLEN=128 恰为单 uop；LMUL>1 作为扩展方向论述 |
@@ -67,8 +67,22 @@ VLEN=128。基础指令 `vdot.vv` 对应赛题要求；另两条为本方案的�
 
 > 此修订由协同仿真发现。用自写黄金模型对比自写 RTL 永远发现不了这类冲突——这恰是软硬件协同验证的价值所在，应在报告中作为方法论结论呈现。
 
+#### D2.4 语义修订 S-3'（赛题官方语义复核裁定，**取代原 S-3**）
+
+**来源**：2026-10-26 经赛题页 https://rv.cie.org.cn/direction?id=8 的数据接口 `https://api.rv.cie.org.cn/api/subject/index?race_id=8` 取得官方语义图（`https://api.rv.cie.org.cn/storage/ueditor/20260615/bc72c5ea-d0b4-4f962e3cdd5feb916af2db486c8ec14c4353eb302.png`，访问日期 2026-10-26）。图上是一段 `vdot_vv(vs1, vs2, sew=8)` 的 Python 伪代码：取两个源寄存器各 8 个 int8，符号扩展相乘求和，`vd[0] = result`，`vd[1..VLEN-1] = 0  # 其他通道清零`。图上没有任何编码信息，也没有 vl / vm / vstart / vta / vma / LMUL 的规定。转录与逐行对照见 `docs/stage2/10_vdot指令设计文档.md` §1 开头。
+
+**裁定 S-3'**：`vdot.vv` / `vdotacc.vv` 在 `vstart < vl` 时 `vd[31:0]` 写结果、`vd[VLEN-1:32]` 恒为 0，与 `vta`/`vma` 无关；`vstart >= vl`（含 `vl = 0`）时 `vd` 不写（S-5 不变）；全部元素被掩掉时 `vd[31:0] = 0`（`vdotacc` 为原值），其余位清零。`vdot4a.vv` 不变。
+
+**理由**：
+1. 原 S-3 按 `vta` 处理元素 1..3，与官方伪代码不一致；修订后 `vl=8`、`vm=1`、`vstart=0` 时参考模型与官方伪代码的字面实现逐位等价（20570 条 0 失配，`logs/stage2/p3_official_pseudocode_equiv.log:40`；阴性对照：旧语料 532 条全部失配，同日志 `:62`）。
+2. 「清零」不能用 RVV 1.0 §3.4.3 的 tail-agnostic 解释（agnostic 只允许保留原值或写全 1），因此把 vdot 的目的定义为「整寄存器结果，无 tail」。先例：x86 `VPDPBUSD` 的 VEX/EVEX 编码清零 `DEST[MAX_VL-1:VL]`；AArch64 写窄视图时清零高位；南湖 VDOTU 写满整个 `rd`。
+3. 保留 `vl` 机制，作为字面语义的超集：`vl=8` 即官方伪代码，`vl=16` 为满寄存器版本。「8」来自题源 arXiv:2409.00661 的 VDOTU（64 位寄存器装 8 个 int8），昆明湖 V2 的 `VIMacU` 同样按 64 位切片组织乘法阵列。
+4. 伪代码未覆盖的 vl / vm / vstart / LMUL 属于工程化规定，S-1、S-2、S-4、S-5、S-6、S-7' 不变。
+
+**传播范围（已完成，提交 b16b58d / 9d3409e）**：`tests/golden/vdot_ref.c` → 重新生成 `tests/vectors/`（并为三项基础测试各补 6 条 `vl=8` 定向用例）→ `bench/baseline/` 基线序列 → NEMU `vdot.c` → RTL `VIMacU` / `VDotTop` 写回成形 → 重跑 golden 自检、FU 级功能测试、协同仿真与全核 difftest，各级故障注入新增「回退 S-3'」项。
+
 #### D2.2 基线选型（P3 裁定）
-单次点积基线选用**候选 D**（6 条指令）：`vsetvli e32` → `vmv.s.x` → `vsetvli e8` → `vwmul.vv` → `vsetvli e16` → `vwredsum.vs`，关键路径 3 级。长向量循环体基线刻意**不使用**会把归约放进循环的朴素候选 A，以免人为抬高加速比。详见 `bench/baseline/`。
+单次点积基线选用**候选 D**（6 条指令）：`vsetivli 4, e32` → `vmv.v.i`（整寄存器清零）→ `vsetvli e8` → `vwmul.vv` → `vsetvli e16, tu` → `vwredsum.vs`，关键路径 3 级（D2.4 S-3' 之前前两条为 `vsetvli e32` → `vmv.s.x`、第 5 条用 `ta`，条数不变）。长向量循环体基线刻意**不使用**会把归约放进循环的朴素候选 A，以免人为抬高加速比。详见 `bench/baseline/`。
 
 **编码占用核实要求**：实现前必须用脚本证明 funct6=`111001/111010/111011` 在 OPIVV 空间内未被 RVV 1.0 占用，证据存入 `docs/stage2/`。
 

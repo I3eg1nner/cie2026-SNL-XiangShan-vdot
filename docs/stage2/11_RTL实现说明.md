@@ -21,12 +21,12 @@
 | `mill -i YunSuan.compile`（mill 0.11.1） | **通过**，82 个 Scala 源文件 | `logs/stage2/p4_rtl_build.log` |
 | `mill -i xiangshan.compile`（mill 0.12.3） | **通过**，382 个 Scala 源文件，77 s | `logs/stage2/p4_rtl_build.log` |
 | `VDotTree` / `VDotTop` / `VIMac` Verilog 生成 | **通过** | `logs/stage2/p4_verilog_emit.log`、`rtl/verilog/vdot/` |
-| `VIMacU`（含 vdot）单 FU 精化出 Verilog | **通过**，4876 行 | `rtl/verilog/vdot/VIMacU.v` |
+| `VIMacU`（含 vdot）单 FU 精化出 Verilog | **通过**，4873 行（S-3' 后重新生成） | `rtl/verilog/vdot/VIMacU.v` |
 | `DecodeUnit`（含三条新指令）精化出 Verilog | **通过** | `rtl/verilog/vdot/DecodeUnit.v` |
 | 对既有 `vmul`/`vmacc`/`vsmul` 的影响 | **生成的 Verilog 逐字节相同**（去掉源码行号注释后 diff 为 0 行） | §7.1 |
 | L1 冒烟测试（三条指令各 20000 随机 + 混合 20000 + 定向语料 178 条，合计 80178 条） | **全部 PASS，0 失配** | `logs/stage2/p4_smoke_test.log` |
 | 故障注入自测（人为改坏一位） | **按预期 BADTRAP** | `logs/stage2/p4_fault_inject.log` |
-| P4 完整功能测试（含 `VIMacU` 直驱 26024 条、随机 235348 条、5 个故障注入；裁定 S-7' 传播后重跑的数字，修订前为 27529 / 236887） | **全部 PASS** | `docs/stage2/12_基础功能测试报告.md`、`logs/stage2/p5_*.log` |
+| P4 完整功能测试（含 `VIMacU` 直驱 26060 条、随机 235348 条、6 个故障注入；裁定 S-3' 修订后重跑的数字。S-3' 前为 26024 条 / 5 个故障注入，S-7' 前为 27529 / 236887） | **全部 PASS** | `docs/stage2/12_基础功能测试报告.md`、`logs/stage2/p5_*.log` |
 | `FuConfig` / `FuType` / `Parameters` / Dispatch / IQ / WbArbiter | **一行未改**（与设计文档 §5.1 第 15 项一致） | §6 文件清单 |
 
 ---
@@ -41,7 +41,7 @@ XiangShan backend（mill 工程 xiangshan，mill 0.12.3）
       ├── VIMac64b × 2            yunsuan      [仅加只读输出端口 prod16]
       ├── ByteMaskTailGen(128)                 [复用，新例化一份做乘积门控]
       ├── VDotTree                yunsuan      [新建，161 行]
-      ├── RedTailGen（3 行组合逻辑，内联在 VIMacU）[新]
+      ├── RedTailGen（1 个 2 选 1，内联在 VIMacU；S-3'）[新]
       └── Mgu(128)                             [复用，未改；vdot4a 走这条路]
 
 YunSuan（mill 工程 YunSuan，mill 0.11.1）
@@ -49,12 +49,12 @@ YunSuan（mill 工程 YunSuan，mill 0.11.1）
 ├── package.scala / object VimacType      [改 +17]  新增 vdot/vdotacc/vdot4a 及 5 个判定
 ├── vectorIMAC/VIMac64b.scala             [改 +7]   新增 prod16 输出端口（纯读出）
 ├── vectorIMAC/VDotTree.scala             [新 161]  可重构蝶形折叠加法树 + Verilog 出口
-└── vectorIMAC/VDotTop.scala              [新 150]  L1 平台用的 YunSuan 侧 FU 顶层 + Verilog 出口
+└── vectorIMAC/VDotTop.scala              [新 149]  L1 平台用的 YunSuan 侧 FU 顶层 + Verilog 出口
 
 译码链路（全部在 xiangshan 工程）
 ├── decode/Instructions.scala             [改 +11]  object Xsvdot 的三条 BitPat
 ├── decode/VecDecoder.scala               [改 +9]   opivv 表三行
-├── decode/DecodeUnit.scala               [改 +5]   vmaInsts 登记三条
+├── decode/DecodeUnit.scala               [改 +6]   vmaInsts 登记三条
 └── decode/VecExceptionGen.scala          [改 +34/-4]  dotRedInst/dot4aInst、SEW/LMUL 判定、vdIsSingleElem、vdEew
 ```
 
@@ -263,17 +263,18 @@ for (g <- 0 until 4) {
 #### (d) `RedTailGen` 与输出复用
 
 ```scala
-private val redVdTailOne = Cat(~0.U(96.W),            dotVd(31, 0))
-private val redVdTailOld = Cat(outOldVd(127, 32),     dotVd(31, 0))
-private val redVd = Mux(outVstart >= outVl, outOldVd,                 // S-5
-                    Mux(outVecCtrl.vta, redVdTailOne, redVdTailOld))  // S-3
+// rtl/chisel/xiangshan/VIMacU.scala:192-193（补丁 rtl/patch/0001-xiangshan-vdot.patch:276-277）
+private val redVd = Mux(outVstart >= outVl, outOldVd,                   // 裁定 S-5
+                    Cat(0.U((VLEN - 32).W), dotVd(31, 0)))              // 裁定 S-3'
 
 mgu.io.in.vd              := Mux(outIsDot, dotVd, outVd)
 io.out.bits.res.data      := Mux(outIsDotRed, redVd, mgu.io.out.vd)
 io.out.bits.res.vxsat.get := Mux(outIsDot, false.B, (outVxsat & mgu.io.out.active).orR)
 ```
 
-- 归约类**绕过 `Mgu`**：`Mgu` 的逐字节 active/tail 模型表达不了「只写元素 0，其余按 `vta`」（裁定 R-13，`VIPU` 面对同样的问题也是绕过 `Mgu`）。上面三行是 `Reduction.scala:644-647` 的 `red_vd_tail` 惯用法在「目的 EEW 固定 32」下的特化（用 `Cat` 代替移位，综合结果等价且更直白）。
+- 写回规则（裁定 S-3'，与赛题官方伪代码 `vd[0] = result; vd[1..VLEN-1] = 0` 一致）：`vstart < vl` 时 `vd[31:0]` 为点积结果、`vd[127:32]` 恒为 0，与 `vta`、`vma` 都无关；`vstart >= vl`（含 `vl = 0`）时整寄存器保持 `outOldVd`（S-5）。依据与取舍见设计文档 §1 开头「赛题官方语义与逐行对照」。
+- 归约类**绕过 `Mgu`**：`Mgu` 的逐字节 active/tail 模型表达不了「只写元素 0，其余清零」（裁定 R-13，`VIPU` 面对同样的问题也是绕过 `Mgu`）。
+- **S-3' 之前的写法**（已删除，供对照）：原先照 `Reduction.scala:644-647` 的 `red_vd_tail` 惯用法写成三行，按 `outVecCtrl.vta` 在 `Cat(~0.U(96.W), dotVd(31, 0))`（高 96 位全 1）与 `Cat(outOldVd(127, 32), dotVd(31, 0))`（高 96 位保持）之间选择。S-3' 去掉了 `vta` 分支，`RedTailGen` 化简为一个 2 选 1。
 - `vdot4a` 是标准的逐元素三源指令，**继续走 `Mgu`**，只是 `vd` 来源换成 `dotVd`，`eew` 由 `outEew` 给出 e32，`Mgu` 内部 `VecDataToMaskDataVec(mask, e32)` 自动给出 32 位掩码粒度 —— 正是 S-7 要的，零额外代码。
 - `vxsat` 对三条 vdot 指令恒 0（设计文档 §1.6 的溢出证明：`|Σ p_i| ≤ 16 × 2^14 = 2^18 < 2^31`）。
 
@@ -291,14 +292,15 @@ T2             : vdS2 / vsmul（vdot 不用）                 | Fold L2 + Acc +
 
 **FU 延迟 = 2 周期，与 `vmul.vv`/`vmacc.vv` 完全相同。**
 
-### 2.6 `VDotTop`（YunSuan 侧 L1 顶层，新建 150 行）
+### 2.6 `VDotTop`（YunSuan 侧 L1 顶层，新建 149 行）
 
 `VIMacU` 依赖 `xiangshan.backend.fu.vector` 包的 `ByteMaskTailGen` / `Mgu`，YunSuan 独立测试平台看不见它们。
 因此为 L1 验证新建了 `VDotTop`：**算术通路与 `VIMacU` 完全相同**（同样的 2 片 `VIMac64b` + `prod16` 抽头 + 同一个 `VDotTree` + 同样的 `accOperand` 选择 + 同样的 latency=2），**只有掩码/尾部成形**改为按 `vdot_ref.c` 的行为表直接实现：
 
 ```scala
 // 归约：active(i) = (vstart <= i < vl) && (vm || v0.mask[i])
-// 写回：vstart>=vl -> oldVd；否则 [31:0]=dotVd[31:0]，[127:32] 按 vta 取全 1 / oldVd
+// 写回：vstart>=vl -> oldVd；否则 [31:0]=dotVd[31:0]，[127:32] 恒为 0（S-3'，与 vta 无关）
+//       实现：rtl/chisel/yunsuan/VDotTop.scala:128（补丁 rtl/patch/0002-yunsuan-vdot.patch:181-184）
 // vdot4a：逐 32 位元素的 prestart / tail / inactive / active 四分支
 ```
 
@@ -310,7 +312,7 @@ T2             : vdS2 / vsmul（vdot 不用）                 | Fold L2 + Acc +
 |---|---|---|
 | C1 | `decode/Instructions.scala` | 新增 `object Xsvdot`，三条 `BitPat("b1110xx???????????000?????1010111")` |
 | C2 | `decode/VecDecoder.scala` | `opivv` 表三行 `-> OPIVV(FuType.vimac, VimacType.vdotXxx, T, F, F)`；`uopSplitType` 用默认 `VEC_VVV`（LMUL=1 ⇒ `numOfUop = 1`，`csBundle(0)` 给出 `lsrc(0)=vs1 / lsrc(1)=vs2 / lsrc(2)=vd / ldest=vd`）；OPIVV 的 `src3` 默认就是 `SrcType.vp`，三源读取零成本 |
-| C3 | `decode/DecodeUnit.scala` | 三条指令登记进 `vmaInsts`，使 `vpu.isDependOldVd = 1`。不登记的话 `NewDispatch` 会在 `vlIsVlmax && (vm\|\|vma) && !isWritePartVd` 时丢弃对旧 `vd` 的依赖，`vdotacc`/`vdot4a` 的累加器与 `vdot` 的 tail-undisturbed 都会读到不可信值 |
+| C3 | `decode/DecodeUnit.scala` | 三条指令登记进 `vmaInsts`，使 `vpu.isDependOldVd = 1`。不登记的话 `NewDispatch` 会在 `vlIsVlmax && (vm\|\|vma) && !isWritePartVd` 时丢弃对旧 `vd` 的依赖，`vdotacc`/`vdot4a` 的累加器会读到不可信值；`vdot` 在 `vstart >= vl`（含 `vl = 0`）时须原样保留旧 `vd`（S-5），同样依赖这一位（S-3' 之前还用于 `vta=0` 的 tail-undisturbed，现已不需要） |
 | C4 | `decode/VecExceptionGen.scala` | ① 新增 `dotRedInst`/`dot4aInst`；② `eewIllegal` 增加 `dotEewIllegal = dotRedInst && SEW=/=0 \|\| dot4aInst && SEW=/=2`；③ `vdIsSingleElem` 加 `dotRedInst`（`vdot4a` **不加**）；④ `vdEew` 对三条指令取 `2.U`(e32)。`vs1IsSingleElem` **刻意不加**（裁定 R-15：`vdot` 的 `vs1` 是完整向量操作数，不是标量种子）。`vstartIllegal` **保持不动** —— 现有 `isVArith && vstart =/= 0` 恰好实现裁定 S-1（R-05） |
 | C5 | — | 确认三条指令在 LMUL=1 下均为单 uop，`UopSplitType`/`UopInfoGen`/`DecodeUnitComp` **零改动** |
 
@@ -349,8 +351,8 @@ T2             : vdS2 / vsmul（vdot 不用）                 | Fold L2 + Acc +
 | `src/main/scala/yunsuan/package.scala` | +17 / −0 | `VimacType.vdot/vdotacc/vdot4a` + 5 个判定 |
 | `src/main/scala/yunsuan/vector/vectorIMAC/VIMac64b.scala` | +7 / −0 | `prod16` 只读抽头 |
 | `src/main/scala/yunsuan/vector/vectorIMAC/VDotTree.scala` | **新建 161 行** | 可重构蝶形折叠加法树 + Verilog 出口 |
-| `src/main/scala/yunsuan/vector/vectorIMAC/VDotTop.scala` | **新建 150 行** | L1 平台用的 FU 顶层 + Verilog 出口 |
-| **小计** | 3 文件改动 **+28 / −0**，2 文件新建 **311 行** —— 全补丁合计 **339 插入 / 0 删除** | |
+| `src/main/scala/yunsuan/vector/vectorIMAC/VDotTop.scala` | **新建 149 行** | L1 平台用的 FU 顶层 + Verilog 出口 |
+| **小计** | 3 文件改动 **+28 / −0**，2 文件新建 **310 行** —— 全补丁合计 **338 插入 / 0 删除**（S-3' 前 `VDotTop.scala` 为 150 行，合计 339） | |
 
 ### 3.2 `rtl/patch/0001-xiangshan-vdot.patch`（XiangShan）
 
@@ -360,11 +362,11 @@ T2             : vdS2 / vsmul（vdot 不用）                 | Fold L2 + Acc +
 | `src/main/scala/xiangshan/backend/decode/VecExceptionGen.scala` | +34 / −4 | SEW 判定、**LMUL 判定（P4 阶段补）**、`vdIsSingleElem`、`vdEew` |
 | `src/main/scala/xiangshan/backend/decode/Instructions.scala` | +11 / −0 | `object Xsvdot` |
 | `src/main/scala/xiangshan/backend/decode/VecDecoder.scala` | +9 / −0 | `opivv` 三行 |
-| `src/main/scala/xiangshan/backend/decode/DecodeUnit.scala` | +5 / −0 | `vmaInsts` |
+| `src/main/scala/xiangshan/backend/decode/DecodeUnit.scala` | +6 / −0 | `vmaInsts`（S-3' 后注释多 1 行） |
 | `src/test/scala/xiangshan/backend/fu/VIMacUTest.scala` | **新建 49 行** | `VIMacUMain` 精化/Verilog 出口 |
 | `src/test/scala/xiangshan/backend/fu/VIMacUHarness.scala` | **新建 164 行**（P4 阶段补） | `VIMacU` 直驱验证用的窄 IO 包装 + Verilog 出口 |
 | `src/test/scala/xiangshan/backend/decode/VecExceptionGenTest.scala` | **新建 89 行**（P4 阶段补） | `VecExceptionGen` 定向测试用的窄 IO 包装 + Verilog 出口 |
-| **小计** | 5 文件改动 **+143 / −13**（5+11+9+34+84 = 143，0+0+0+4+9 = 13），3 文件新建 **302 行**（49+164+89）—— 全补丁合计 **445 插入 / 13 删除** | |
+| **小计** | 5 文件改动 **+144 / −13**（6+11+9+34+84 = 144，0+0+0+4+9 = 13），3 文件新建 **302 行**（49+164+89）—— 全补丁合计 **446 插入 / 13 删除** | |
 
 > **P4 阶段的后续改动**：`VecExceptionGen.scala` 增加了 `dotEmulIllegal`（拦截 `vlmul != 0`，
 > 见下方 §10 第 8 条的更新），并新增两个测试入口。`rtl/patch/0001-xiangshan-vdot.patch`
@@ -580,13 +582,13 @@ LMUL>1 的方案（新增 `UopSplitType.VEC_VDOT`）见设计文档 §8.3，**�
 
 | # | 集成项 | 设计文档写法 | 实际实现 | 理由 |
 |---|---|---|---|---|
-| 1 | A6（可选） | 「若希望 YunSuan 独立测试平台也能测顶层，在 `VIMac.scala` 的 `vIMac64bs` 循环之后例化 `VDotTree`」 | **没有改 `VIMac.scala`**，而是**新建了独立的 `VDotTop.scala`**（150 行） | ① 改 `VIMac` 会改变既有顶层的网表，§7.1 的「生成 Verilog 逐位相同」这条零回退证据就没了；② `VIMac` 的 tail/mask 逻辑（`TailGen`/`MaskReorg`，`VIMac.scala:58-87`）是按 `eewVd` 逐元素的模型，表达不了归约类「只写元素 0」，硬塞进去要改既有逻辑；③ 独立模块让 L1 的 DUT 边界与 `VIMacU` 的算术通路一一对应，更容易比对。**代价见 §10 第 1 条** |
-| 2 | §4.6 `RedTailGen` | 「`Mux(outVl === 0.U, outOldVd, …)`，S-1 保证 `vstart>=vl` 退化为 `vl==0`」 | 实现为 `Mux(outVstart >= outVl, outOldVd, …)` | 与参考模型 `vdot_ref.c:94` 的 `if (vstart >= vl) return;` 逐字对应。在 XiangShan 上 `vstart` 架构上恒为 0，两者等价；在 L1 平台 `vstart` 是可自由驱动的输入端口，用完整判据才能与参考模型对齐。代价是一个 8 位比较器 |
+| 1 | A6（可选） | 「若希望 YunSuan 独立测试平台也能测顶层，在 `VIMac.scala` 的 `vIMac64bs` 循环之后例化 `VDotTree`」 | **没有改 `VIMac.scala`**，而是**新建了独立的 `VDotTop.scala`**（149 行） | ① 改 `VIMac` 会改变既有顶层的网表，§7.1 的「生成 Verilog 逐位相同」这条零回退证据就没了；② `VIMac` 的 tail/mask 逻辑（`TailGen`/`MaskReorg`，`VIMac.scala:58-87`）是按 `eewVd` 逐元素的模型，表达不了归约类「只写元素 0」，硬塞进去要改既有逻辑；③ 独立模块让 L1 的 DUT 边界与 `VIMacU` 的算术通路一一对应，更容易比对。**代价见 §10 第 1 条** |
+| 2 | §4.6 `RedTailGen` | 「`Mux(outVl === 0.U, outOldVd, …)`，S-1 保证 `vstart>=vl` 退化为 `vl==0`」 | 实现为 `Mux(outVstart >= outVl, outOldVd, …)` | 与参考模型 `vdot_ref.c:100` 的 `if (vstart >= vl) return VDOT_OK;` 逐字对应。在 XiangShan 上 `vstart` 架构上恒为 0，两者等价；在 L1 平台 `vstart` 是可自由驱动的输入端口，用完整判据才能与参考模型对齐。代价是一个 8 位比较器 |
 | 3 | §4.5 掩码 | 只描述了归约形态的 `ByteMaskTailGen` 接线 | 额外加了 `dotActiveEn = Mux(isDot4a, ~0.U(16.W), …)` | 文档没写 `vdot4a` 的 activeEn 取值。`vdot4a` 的掩码粒度是 32 位目的元素、由 `Mgu` 处理，若复用 SEW=8 的 activeEn 会把乘积错误地按源元素掩掉。全 1 是唯一正确取值 |
 | 4 | §4.4.3 / §8.1 | 「建议在 P3 实现冗余 lane 门控与 `prod` 输入端操作数门控」 | **未实现** | 纯功耗优化，不影响功能，且会给 S1 增加 1 级 AND。本机没有功耗分析工具（D3 分层验证），做了也无法量化收益。留给 P7 综合后按实测决定，已登记在 §10 |
 | 5 | §6 D1/D3 | 「新建 `VDotSpec.scala` chiseltest 用例」「`DecodeTest.scala` 新增译码断言」 | **未实现**（改为 L1 Verilator 差分 + 语料回放） | 上游 chiseltest 6.0.0 在本机不可用：它生成的 C++ 用 `WData`，而 Verilator 5.052 已移除该类型（`docs/stage1/03_仿真平台搭建报告.md` §8.1 已记录，`make test` 本就不通过）。L1 平台（Verilator + C++ golden model）覆盖面更广（已跑 80000 随机 + 178 定向），是等价且更强的替代 |
 | 6 | §6 A5 | 只要求 `VerilogVDotTree` | 额外加了 `VerilogVDotTop` 与 `xiangshan.backend.fu.VIMacUMain` | 前者是 L1 DUT 的顶层，后者让 XiangShan 侧的 vdot 改动能真正**精化**（而不只是通过 Scala 类型检查）并产出可读 Verilog，直接支撑 P3 验收标准第 1、2 条 |
-| 7 | §9 测试平台 | 只要求随机激励 | 额外实现了 `YS_VDOT_VECTORS` 定向语料回放 | P4 的共享语料（当时 30663 条，S-7' 后 30703 条）需要能直接喂给 RTL；没有这个通道，定向用例只能手写 hex，既易错又无法与 `tests/vectors/` 对齐 |
+| 7 | §9 测试平台 | 只要求随机激励 | 额外实现了 `YS_VDOT_VECTORS` 定向语料回放 | P4 的共享语料（当时 30663 条，S-7' 后 30703 条，S-3' 后 30739 条）需要能直接喂给 RTL；没有这个通道，定向用例只能手写 hex，既易错又无法与 `tests/vectors/` 对齐 |
 | 8 | §6 C2 | `uopSplitType` 用默认 `VEC_VVV` | 一致，但**`vl` 随机范围在 L1 驱动里放宽到 `[0, vlmax]`** | 上游 `gen_random_vecinfo` 用 `rand()%vlmax + 1`，永远取不到 `vl=0`。裁定 S-5 对 `vl=0` 有明确规定（连 tail 都不写），参考模型和 RTL 都实现了，应该测到 |
 
 **没有发现设计文档的错误。** §6 的集成点清单可以逐条施工，§4.2 的抽头点正确性证明、§4.4 的蝶形折叠正确性、§3.6.3 的流水切分方案 B 在实现中全部成立，一次通过（首次 L1 随机测试即 PASS，无需调试数据通路）。
@@ -597,7 +599,7 @@ LMUL>1 的方案（新增 `UopSplitType.VEC_VDOT`）见设计文档 §8.3，**�
 
 1. ~~**掩码/尾部成形在两处分别实现**~~ —— **已在 P4 阶段关闭**。
    原问题：`VIMacU`（XiangShan 侧）用 `ByteMaskTailGen` + `Mgu` + `RedTailGen`；`VDotTop`（YunSuan 侧，L1 用）用手写的等价逻辑，L1 验证的只是 `VDotTop` 这一侧，「被验证的东西不等于被集成的东西」。
-   P4 的做法：新增 `VIMacUHarness`（只做连线的窄 IO 包装，`VIMacU.scala` 一行未改）+ `tests/unit/vimacu_tb.cpp`，把同一批共享语料**直接灌进 `VIMacU` 本体**，实测 **26024 条执行、0 失配**（裁定 S-7' 传播后重跑；修订前为 27529 条：1545 条 `vdot4a` + `vstart != 0` 用例转为非法、不再投放，另有 `vstart_relaxed.txt` 补入的 40 条 vdot4a 用例，27529 − 1545 + 40 = 26024，见第 3 条）；并核对两条路径共享的 `VDotTree` / `CSA4to2` / `CSA3to2` / `ByteMaskTailGen` 网表**逐字节相同**。详见 `docs/stage2/12_基础功能测试报告.md` §8 与 `logs/stage2/p5_vimacu_equiv.log`。
+   P4 的做法：新增 `VIMacUHarness`（只做连线的窄 IO 包装，`VIMacU.scala` 一行未改）+ `tests/unit/vimacu_tb.cpp`，把同一批共享语料**直接灌进 `VIMacU` 本体**，实测 **26060 条执行、0 失配**（`logs/stage2/p5_vimacu_equiv.log:86`，裁定 S-3' 修订后重跑；比 S-3' 前的 26024 条多出的 36 条是 positive / negative / boundary 三类 × `vdot`/`vdotacc` 两条指令各补的 6 条 `vl=8` 定向用例。S-7' 前为 27529 条：1545 条 `vdot4a` + `vstart != 0` 用例转为非法、不再投放，另有 `vstart_relaxed.txt` 补入的 40 条 vdot4a 用例，27529 − 1545 + 40 = 26024，见第 3 条）；并核对两条路径共享的 `VDotTree` / `CSA4to2` / `CSA3to2` / `ByteMaskTailGen` 网表**逐字节相同**。详见 `docs/stage2/12_基础功能测试报告.md` §8 与 `logs/stage2/p5_vimacu_equiv.log`。
    **剩余**：全核 difftest 仍未执行（见第 2 条）。**后续更新**：阶段三已补做（`docs/stage3/23_全核difftest验证报告.md`）。
 
 2. **全核层面未验证**。`mill xiangshan.runMain top.TopMain`（全 SoC 精化）与 `make emu`（全核 Verilator）在本机 16 GB 内存下不可行（官方要求 `-Xmx40G`，见 `docs/stage1/03_仿真平台搭建报告.md` §7.1、`MASTER_PLAN.md` D3）。因此：
@@ -616,7 +618,7 @@ LMUL>1 的方案（新增 `UopSplitType.VEC_VDOT`）见设计文档 §8.3，**�
 
 5. **时序是估算，不是综合结果**。设计文档 §3.6 的逻辑级数估算（S1 ≈ 24 级、S2 ≈ 21 级）**本阶段没有也无法验证**——本机没有综合工具与工艺库。`latency = 2` 的可行性目前只有「结构上与 SEW=64 工况同量级」这一静态论证支撑。风险登记 R-TIMING 仍然有效，保底方案 C（`latency = 3`）的切换成本是 1 行 `FuConfig` + 1 级寄存器。P7 必须回填真实数据。
 
-6. **面积/功耗未量化**。设计文档（`10_vdot指令设计文档.md`）§5.3 的 13.7% 新增逻辑占比是「全加器等价」结构计数，不是面积报告。`VDotTree.sv` 有 419 行 Verilog、`VDotTop.sv` 1444 行、`VIMacU.v` 4876 行，可作为规模的粗略参照，但不能当面积结论。
+6. **面积/功耗未量化**。设计文档（`10_vdot指令设计文档.md`）§5.3 的 13.7% 新增逻辑占比是「全加器等价」结构计数，不是面积报告。`VDotTree.sv` 有 419 行 Verilog、`VDotTop.sv` 1441 行、`VIMacU.v` 4873 行（S-3' 后重新生成），可作为规模的粗略参照，但不能当面积结论。
 
 7. **未实现的优化**：冗余 lane 操作数门控、非 vdot 指令执行时对 `VDotTree.prod` 输入端的门控（设计文档 §8.1）。两者都是纯功耗项。
 
@@ -627,7 +629,7 @@ LMUL>1 的方案（新增 `UopSplitType.VEC_VDOT`）见设计文档 §8.3，**�
    验证：新增 `VecExceptionGenHarness` + `tests/unit/vecexcgen_tb.cpp`，51 条定向用例全 PASS（日志 `logs/stage2/p5_decode_illegal.log`）；撤掉该守卫后 13 条立即变红（`PROVE_FAIL=1 bash scripts/tools/run_decode_tb.sh`，由 `scripts/20_run_func_tests.sh` 5.6 步自动执行，日志 `logs/stage2/p5_decode_prove_fail.log`）。
    **仍然不支持 LMUL>1 的正确执行**，只是从「静默算错」变成「明确报非法」。
 
-9. **`.insn` 汇编宏未验证**。本机无 RISC-V 工具链，三条指令的机器码只由位域拼接算得（设计文档 §1.2 已标注 UNVERIFIED），P4/P5 需用 `objdump -d` 回读确认。 **后续已闭合（阶段三）**：交叉工具链 `riscv64-linux-gnu-gcc` 13 已就位，P5 语料用它把 `.word` 形式的机器码汇编进镜像，`objdump -d` 回读出 6 个编码（`logs/stage3/p5_vdot_tests.log:42-49`），并在打了补丁的 NEMU 上 30758 条全部通过（同文件 `:87`）；全核 difftest 中香山译码单元把 `.4byte` 宏生成的编码译为 `vdot.vv` / `vdotacc.vv` / `vdot4a.vv`（`logs/stage3/fullcore/wave_trace.txt:159,162,170`）。`.insn r` 宏本身始终没有被任何测试程序使用，仍未实测，但已不影响编码的正确性。
+9. **`.insn` 汇编宏未验证**。本机无 RISC-V 工具链，三条指令的机器码只由位域拼接算得（设计文档 §1.2 已标注 UNVERIFIED），P4/P5 需用 `objdump -d` 回读确认。 **后续已闭合（阶段三）**：交叉工具链已就位（S-3' 后重跑的日志使用 `riscv64-unknown-elf-gcc` 15.2.0，`logs/stage3/p5_vdot_tests.log:5-6`），P5 语料用它把 `.word` 形式的机器码汇编进镜像，`objdump -d` 回读出 6 个编码（`logs/stage3/p5_vdot_tests.log:45-52`），并在打了补丁的 NEMU 上 30794 条全部通过（同文件 `:90`，S-3' 修订后重跑）；全核 difftest 中香山译码单元把 `.4byte` 宏生成的编码译为 `vdot.vv` / `vdotacc.vv` / `vdot4a.vv`（`logs/stage3/fullcore/wave_trace.txt:159,162,170`）。`.insn r` 宏本身始终没有被任何测试程序使用，仍未实测，但已不影响编码的正确性。
 
 ---
 
