@@ -25,7 +25,7 @@
 #
 #   用法：
 #     ./scripts/30_run_cosim.sh                 # 构建 + 跑完整协同仿真
-#     ./scripts/30_run_cosim.sh fault           # 故障注入自测（RTL 侧 3 次 + NEMU 侧 3 次）
+#     ./scripts/30_run_cosim.sh fault           # 故障注入自测（RTL 侧 3 次 + NEMU 侧 4 次）
 #     FORCE_NEMU=1 ./scripts/30_run_cosim.sh    # 强制重建 NEMU 参考共享库
 #
 #     KEEP_NEMU_REF=1 ./scripts/30_run_cosim.sh # 退出时不把 NEMU 切回独立解释器形态
@@ -386,6 +386,28 @@ PY
         detected=$((detected + 1))
     else
         echo ">>> T3-NEMU-3 未被检出  => FAIL"
+    fi
+
+    cp -f "${BUILD}/vdot.c.orig" "${VDOTC}"
+
+    # ------- NEMU 侧注入 4：回退裁定 S-3'（归约形态元素 1..3 改回按 vta 处理）-------
+    # 守护本次语义修订：NEMU 一侧若退回旧 S-3（vta=1 写全 1、vta=0 保持原值），
+    # 与按 S-3' 清零的 RTL 必然出现值失配。
+    banner "[T3-NEMU-4] 把 vdot_reduce() 的元素 1..3 清零改回按 vta 处理，回退裁定 S-3'"
+    inject "${VDOTC}" \
+        "    for (int idx = 1; idx < vlmax_d; idx++) {
+      set_vreg(id_dest->reg, idx, 0, VDOT_DEST_VSEW, vtype->vlmul, 0);
+    }" \
+        "    (void)vlmax_d;  /* injected: S-3' reverted to S-3 */
+    if (RVV_AGNOSTIC && vtype->vta) set_vreg_tail(id_dest->reg);" 1
+    rebuild_nemu_so
+    injections=$((injections + 1))
+    echo "--- 注入后实跑（期望 RESULT(VALUE): FAIL）---"
+    if small_run; then
+        echo ">>> T3-NEMU-4 未被检出  => FAIL"
+    else
+        echo ">>> T3-NEMU-4 被检出  => OK"
+        detected=$((detected + 1))
     fi
 
     # ---------------- 恢复 ----------------

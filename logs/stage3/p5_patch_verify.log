@@ -1,12 +1,12 @@
 ==============================================================
- [V] 在干净副本上验证 patch 可应用   2026-10-24T15:27:11Z UTC
+ [V] 在干净副本上验证 patch 可应用   2026-10-26T15:12:00Z UTC
 ==============================================================
-$ git clone --shared --no-checkout /work/work/NEMU NEMU-fresh
+$ git clone --shared --no-checkout /data/my/cie2026-vdot-xiangshan/work/NEMU NEMU-fresh
 $ git checkout 9090839 -- . （检出干净的上游 commit，不带任何本地改动）
 $ git log --oneline -1
-9090839 feat(difftest): support fast shared reference execution (#1247)
+90908390 feat(difftest): support fast shared reference execution (#1247)
 $ git status --short  （应为空）
-$ git apply --check --verbose /work/nemu/patch/0001-add-vdot-instruction-family.patch
+$ git apply --check --verbose /data/my/cie2026-vdot-xiangshan/nemu/patch/0001-add-vdot-instruction-family.patch
 Checking patch configs/riscv64-xs-kmhv2-ref_defconfig...
 Checking patch configs/riscv64-xs-kmhv2_defconfig...
 Checking patch src/isa/riscv64/Kconfig...
@@ -15,8 +15,8 @@ Checking patch src/isa/riscv64/instr/rvv/decode.h...
 Checking patch src/isa/riscv64/instr/rvv/vcompute.h...
 Checking patch src/isa/riscv64/instr/rvv/vcompute_impl.h...
 Checking patch src/isa/riscv64/instr/rvv/vdot.c...
-$ git apply /work/nemu/patch/0001-add-vdot-instruction-family.patch
-$ git apply --stat /work/nemu/patch/0001-add-vdot-instruction-family.patch
+$ git apply /data/my/cie2026-vdot-xiangshan/nemu/patch/0001-add-vdot-instruction-family.patch
+$ git apply --stat /data/my/cie2026-vdot-xiangshan/nemu/patch/0001-add-vdot-instruction-family.patch
  configs/riscv64-xs-kmhv2-ref_defconfig    |    1 
  configs/riscv64-xs-kmhv2_defconfig        |    1 
  src/isa/riscv64/Kconfig                   |   11 +
@@ -24,8 +24,8 @@ $ git apply --stat /work/nemu/patch/0001-add-vdot-instruction-family.patch
  src/isa/riscv64/instr/rvv/decode.h        |    8 +
  src/isa/riscv64/instr/rvv/vcompute.h      |   17 ++
  src/isa/riscv64/instr/rvv/vcompute_impl.h |   11 +
- src/isa/riscv64/instr/rvv/vdot.c          |  221 +++++++++++++++++++++++++++++
- 8 files changed, 278 insertions(+), 1 deletion(-)
+ src/isa/riscv64/instr/rvv/vdot.c          |  228 +++++++++++++++++++++++++++++
+ 8 files changed, 285 insertions(+), 1 deletion(-)
 $ git status --short
  M configs/riscv64-xs-kmhv2-ref_defconfig
  M configs/riscv64-xs-kmhv2_defconfig
@@ -38,13 +38,13 @@ $ git status --short
 
 --- 在这份全新副本上实际构建一次（独立解释器形态） ---
 （已从现有工作区复制 resource/，避免重复联网浅克隆）
-/tmp/tmp.ld5Y9viIuS/NEMU-fresh/scripts/config.mk:20: [1;31mWarning: .config does not exists![0m
-/tmp/tmp.ld5Y9viIuS/NEMU-fresh/scripts/config.mk:21: [1;31mTo build the project, first run 'make menuconfig'.[0m
+/tmp/tmp.5hM8D7sjWh/NEMU-fresh/scripts/config.mk:20: [1;31mWarning: .config does not exists![0m
+/tmp/tmp.5hM8D7sjWh/NEMU-fresh/scripts/config.mk:21: [1;31mTo build the project, first run 'make menuconfig'.[0m
 113:#define CONFIG_CUSTOM_XVDOT 1
--rwxr-xr-x 1 root root 589312 Oct 24 15:27 build/riscv64-nemu-interpreter
+-rwxrwxr-x 1 user user 537496 Oct 26 15:12 build/riscv64-nemu-interpreter
 
 --- 用干净副本的解释器重跑全部语料 ---
-TOTAL cases=30758 pass=30758 fail=0
+TOTAL cases=30794 pass=30794 fail=0
   must-trap cases (status != OK) = 4834 , trapped with mcause=2 = 4834
   missing-trap=0  unexpected-trap=0  wrong-mcause=0  value-mismatch=0  vl-readback-mismatch=0
 RESULT: PASS

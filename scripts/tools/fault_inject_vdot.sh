@@ -2,7 +2,7 @@
 # =============================================================================
 # fault_inject_vdot.sh —— vdot RTL 故障注入自测
 #
-# 目的：证明 P4 的功能测试「真的会失败」。依次在 RTL 上人为制造 5 个语义不同的
+# 目的：证明 P4 的功能测试「真的会失败」。依次在 RTL 上人为制造 6 个语义不同的
 # 缺陷，每次重建 emu 并回放全部定向语料 + 随机激励，要求每个缺陷都被检出
 # （至少一个 suite 报 EMU BADTRAP）。每轮结束后自动还原源码。
 #
@@ -94,6 +94,10 @@ inject() {   # $1=编号 $2=描述 $3=文件 $4..=sed 表达式
   for e in "$@"; do
     if ! perl -0777 -i -pe "${e}" "${file}"; then echo "  perl 替换失败"; return 1; fi
   done
+  if cmp -s "${BK}/$(basename "${file}")" "${file}"; then
+    echo "  [注入失败] 源码没有任何变化（替换模式未命中），本故障计为未检出"
+    return 1
+  fi
   echo "  --- 注入后的源码差异 ---"
   diff -u "${BK}/$(basename "${file}")" "${file}" | sed -n '3,40p' | sed 's/^/  /'
   echo "  --- 重建 emu ---"
@@ -122,8 +126,10 @@ inject 4 "加法树第 2 级蝶形折叠（Fold L2，S2 级）永久关闭" "${T
   's{csNodeS2 = foldStage\(csNodeS2, 1 << k, foldLevelsS2 > k\.U\)}{csNodeS2 = foldStage(csNodeS2, 1 << k, false.B)  /* FAULT#4 */}'
 
 inject 5 "归约结果取错 lane（元素 0 由 lane0 改成 lane1）" "${TOP}" \
-  's{private val redVdTailOne = Cat\(~0\.U\(\(VLEN - 32\)\.W\), dotVd\(31, 0\)\)}{private val redVdTailOne = Cat(~0.U((VLEN - 32).W), dotVd(63, 32))  /* FAULT#5 */}' \
-  's{private val redVdTailOld = Cat\(oldVdS2\(VLEN - 1, 32\), dotVd\(31, 0\)\)}{private val redVdTailOld = Cat(oldVdS2(VLEN - 1, 32), dotVd(63, 32))  /* FAULT#5 */}'
+  's{private val redVd = Mux\(vstartGeVlS2, oldVdS2, Cat\(0\.U\(\(VLEN - 32\)\.W\), dotVd\(31, 0\)\)\)}{private val redVd = Mux(vstartGeVlS2, oldVdS2, Cat(0.U((VLEN - 32).W), dotVd(63, 32)))  /* FAULT#5 */}'
+
+inject 6 "回退裁定 S-3'：归约形态元素 1..3 改回按 vta 处理（vta=1 写全 1，vta=0 保持 oldVd）" "${TOP}" \
+  's{private val redVd = Mux\(vstartGeVlS2, oldVdS2, Cat\(0\.U\(\(VLEN - 32\)\.W\), dotVd\(31, 0\)\)\)}{private val redVd = Mux(vstartGeVlS2, oldVdS2, Cat(Mux(vtaS2, ~0.U((VLEN - 32).W), oldVdS2(VLEN - 1, 32)), dotVd(31, 0)))  /* FAULT#6 */}'
 
 echo ""
 echo "============================================================================"

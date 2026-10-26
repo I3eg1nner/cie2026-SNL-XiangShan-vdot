@@ -33,6 +33,7 @@
  * 寄存器分配（固定）：
  *      v0 = 掩码, v1 = vs1, v2 = vs2, v3 = vdot 侧的 vd, v8 = 基线侧的 vd
  *      v4:v5 = 基线的中间结果（vwmul 的加宽积 / vdot4a 的移位临时量）
+ *      v9 = 基线 vdotacc 的滑动临时量
  * ========================================================================= */
 
 #include "nemu_config.h"   /* 构建期由 Makefile 从 NEMU 实际构建配置生成 */
@@ -206,11 +207,22 @@ static u64 run_vdot(const rec_t *r, u8 *vd_out) {
  * baseline_vdotacc_vv / baseline_vdot4a_vv（那是宿主端的微型 RVV 解释器，
  * 本函数是同一序列的**真机汇编**版本）：
  *
- *   vdot.vv   : vsetvli e32,m1 -> vmv.s.x v8,x0
+ *   vdot.vv   : vsetvli(AVL=vl<<2) e32,m1 -> vmv.v.i v8,0
  *               vsetvli e8 ,m1 -> vwmul.vv v4,v2,v1
- *               vsetvli e16,m2 -> vwredsum.vs v8,v4,v8[,v0.t]      共 6 条
- *   vdotacc.vv: 去掉前两条                                          共 4 条
+ *               vsetvli e16,m2,tu -> vwredsum.vs v8,v4,v8[,v0.t]   共 6 条
+ *   vdotacc.vv: vsetvli(AVL=vl<<2) e32,m1 -> vslideup.vi v9,v8,3
+ *               -> vslidedown.vi v8,v9,3（保留 v8[0]、清零 v8[1..3]）
+ *               + 与 vdot 相同的后 4 条                              共 7 条
  *   vdot4a.vv : vsetvli e32,m1 + 4 组「移位抽子字节 + vmacc」        共 19 条
+ *
+ * vdot / vdotacc 的写回按裁定 S-3'：vl!=0 时 vd = {结果, 0, 0, 0}，与 vta/vma
+ * 无关；vl==0 时 vd 不写。基线为此：
+ *   - 第 1 条 vsetvli 用 AVL = vl<<2：vl==0 时 vl32=0（其后 e32 指令全部不写），
+ *     vl>=1 时 AVL ∈ {4,8,...,64}，按 RVV §6.3 必得 vl32 = VLMAX = 4（AVL 不会落在
+ *     实现可自定的 (VLMAX, 2*VLMAX) 区间），于是清零覆盖整个寄存器、没有 tail；
+ *   - 归约 vwredsum.vs 强制 tu（vtype 的 vta 位清 0），元素 1..3 保持上一步清出的 0。
+ *   修订前（原裁定 S-3）vdotacc 只需 4 条；RVV 1.0 没有「保留元素 0、其余清零」的
+ *   单条指令，多出的 3 条（vsetvli + 两条滑动）是新语义的真实代价。
  *
  * 返回执行过的**向量指令条数**（不含操作数装载/回读），供指令数对照使用。
  * ======================================================================= */
@@ -219,7 +231,7 @@ static int run_baseline(const rec_t *r, u8 *vd_out) {
     const u64 vta = (r->flags >> 1) & 1;
     const u64 vm  =  r->flags       & 1;
     const u64 vtype8   = (vma << 7) | (vta << 6) | (0ul << 3) | 0ul;  /* e8 , LMUL=1 */
-    const u64 vtype16  = (vma << 7) | (vta << 6) | (1ul << 3) | 1ul;  /* e16, LMUL=2 */
+    const u64 vtype16tu = (vma << 7) | (1ul << 3) | 1ul;              /* e16, LMUL=2, tu（S-3'） */
     const u64 vtype32  = (vma << 7) | (vta << 6) | (2ul << 3) | 0ul;  /* e32, LMUL=1 */
     int nvec = 0;
 
@@ -227,15 +239,18 @@ static int run_baseline(const rec_t *r, u8 *vd_out) {
     vdot_trap_flag = 0; vdot_trap_mcause = 0;
 
     if (r->op == 0 || r->op == 1) {              /* vdot / vdotacc */
+        /* AVL = vl<<2：vl==0 -> vl32=0；vl>=1 -> vl32=VLMAX=4（见函数头注释），
+         * 与参考模型 baseline_ref.c 的 vl32_of() 一致 */
+        set_vtype((u64)r->vl << 2, vtype32);     nvec++;
         if (r->op == 0) {
-            /* vl32 = min(vl, VLMAX(e32)=4)，与参考模型 baseline_ref.c 一致 */
-            u64 vl32 = r->vl < 4 ? r->vl : 4;
-            set_vtype(vl32, vtype32);            nvec++;
-            __asm__ volatile("vmv.s.x v8, x0" ::: "memory");  nvec++;
+            __asm__ volatile("vmv.v.i v8, 0" ::: "memory");          nvec++;
+        } else {
+            __asm__ volatile("vslideup.vi v9, v8, 3" ::: "memory");   nvec++;
+            __asm__ volatile("vslidedown.vi v8, v9, 3" ::: "memory"); nvec++;
         }
         set_vtype(r->vl, vtype8);                nvec++;
         __asm__ volatile("vwmul.vv v4, v2, v1" ::: "memory"); nvec++;
-        set_vtype(r->vl, vtype16);               nvec++;
+        set_vtype(r->vl, vtype16tu);             nvec++;
         if (vm) __asm__ volatile("vwredsum.vs v8, v4, v8"      ::: "memory");
         else    __asm__ volatile("vwredsum.vs v8, v4, v8, v0.t" ::: "memory");
         nvec++;
@@ -415,7 +430,8 @@ int main(void) {
     }
     put_str("   corpus           : "); put_dec(n_suites); put_str(" suites, ");
     put_dec(n_cases); put_str(" cases\n");
-    put_str("   baseline         : RVV 1.0 only (vmv.s.x / vwmul.vv / vwredsum.vs,\n");
+    put_str("   baseline         : RVV 1.0 only (vmv.v.i / vslideup.vi / vslidedown.vi /\n");
+    put_str("                      vwmul.vv / vwredsum.vs,\n");
     put_str("                      vsll.vi / vsra.vi / vmacc.vv for vdot4a)\n");
     put_str("   vdot encodings   : vdot "); put_hex(VENC(F6_VDOT, 1), 8);
     put_str("  vdotacc ");         put_hex(VENC(F6_VDOTACC, 1), 8);

@@ -276,7 +276,11 @@ vdot4a_dot_i8:
  * 用于「单条 vdot 对 N 条基线指令」的指令条数对照。
  * ================================================================== */
 
-/* 基线：装载 2 条 + 序列 A 本体 4 条（不含装载与取回）*/
+/* 基线：装载 2 条 + 序列 A 本体 6 条 + 取回 2 条
+ * 本体与 vdot.vv 的完整写回逐位相同（裁定 S-3'：v8 = {Σ, 0, 0, 0}）：
+ *   vsetivli 4 / vmv.v.i 把 v8 整体清零（本函数约定 a2 >= 1，故无需处理 vl=0；
+ *   要处理 vl=0 时改用 AVL = a2<<2，见 baseline_ref.c 与 baseline_test.c），
+ *   vwredsum.vs 用 tu，元素 1..3 保持 0。 */
     .globl baseline_vdot_single
     .type  baseline_vdot_single, @function
 baseline_vdot_single:
@@ -284,11 +288,11 @@ baseline_vdot_single:
     vle8.v      v1, (a0)
     vle8.v      v2, (a1)
     /* ---- 序列 A 本体：6 条 ---- */
-    vsetvli     zero, a2, e32, m1, ta, ma
-    vmv.s.x     v8, x0
+    vsetivli    zero, 4, e32, m1, ta, ma
+    vmv.v.i     v8, 0
     vsetvli     zero, a2, e8,  m1, ta, ma
     vwmul.vv    v4, v2, v1
-    vsetvli     zero, a2, e16, m2, ta, ma
+    vsetvli     zero, a2, e16, m2, tu, ma
     vwredsum.vs v8, v4, v8
     /* ------------------------- */
     vsetvli     t1, x0, e32, m1, ta, ma

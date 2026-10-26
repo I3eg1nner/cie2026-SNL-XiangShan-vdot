@@ -1,70 +1,70 @@
 ==============================================================
- [T3-RTL-1 补充重跑] 私有副本：/data/my/cosim-faultinj-copy   2026-10-25T03:57:18Z UTC
+ [T3-RTL-1 补充重跑] 私有副本：/tmp/cosim-faultinj-copy   2026-10-26T15:25:08Z UTC
 ==============================================================
 host      : Linux x86_64
 verilator : Verilator 5.024 2024-04-05 rev v5.024
 g++       : g++ (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0
 输入 md5：
-efe058b18a660d4d4598208327ec1f13  VDotTop.sv.orig
-f65bbd75bce5ddf49bf598cb8361eda1  VdotDecodeProbe.v
-3dd542e3094d6c1bb644d39d446f84bd  riscv64-nemu-interpreter-so
+6104a8dfc18780d6ff55abb48b6ee26e  VDotTop.sv.orig
+f5a7aa147e68bdca21aa9b850045ec98  VdotDecodeProbe.v
+c003b9a6f70a6bf7e6999fe4eaaf6cda  riscv64-nemu-interpreter-so
 ==============================================================
- [BASE] 注入前基线（期望 RESULT(VALUE): PASS）   2026-10-25T03:57:19Z UTC
+ [BASE] 注入前基线（期望 RESULT(VALUE): PASS）   2026-10-26T15:25:09Z UTC
 ==============================================================
-cosim md5: 5553e59dfe470318973cb36d268bb21b
-TOTAL  attempted = 8405
-  [A] 值比对（REF 与 RTL 都判合法）: 比对 6378 条, PASS 6378, FAIL 0
-  [B] 非法指令判定一致性          : 合法一致 6378, 非法一致 2027, 分歧 0
+cosim md5: b1eb8d5214fca93b80c18189448c3138
+TOTAL  attempted = 8429
+  [A] 值比对（REF 与 RTL 都判合法）: 比对 6402 条, PASS 6402, FAIL 0
+  [B] 非法指令判定一致性          : 合法一致 6402, 非法一致 2027, 分歧 0
 RESULT(VALUE)   : PASS   (值比对失配 0 条)
 RESULT(LEGALITY): PASS   (判定分歧 0 条)
 cosim exit code = 0
 ==============================================================
- [T3-RTL-1] 原注入（与 30 号脚本相同）：实际效果是 io_vd 输出格式选择取反   2026-10-25T03:57:40Z UTC
+ [T3-RTL-1] 原注入（与 30 号脚本相同）：实际效果是 io_vd 输出格式选择取反   2026-10-26T15:25:31Z UTC
 ==============================================================
 注入成功（1 处）：assign io_vd = -> assign io_vd = 128'h1 ^
 --- src/VDotTop.sv:1409 起 3 行 ---
   assign io_vd = 128'h1 ^
     isDot4aS2
       ? {vstartGeVlS2 | (|(vstartS2[6:2]))
---- 表达式结束于 :1442 ---
-             _vdotTree_io_dotVd[31:0]};	// src/main/scala/yunsuan/vector/vectorIMAC/VDotTop.scala:27:7, :88:{10,29}, :95:32, :103:37, :105:37, :106:37, :107:37, :108:37, :109:37, :110:37, :111:37, :115:53, :116:56, :123:39, :127:{33,34,60}, :128:{33,41}, :129:{26,53}, :133:28, :135:25, :136:25, :137:37, :138:{8,22}, :139:{8,22,30}, :140:{8,22}, :141:24, :144:15
+--- 表达式结束于 :1439 ---
+      : vstartGeVlS2 ? oldVdS2 : {96'h0, _vdotTree_io_dotVd[31:0]};	// src/main/scala/yunsuan/vector/vectorIMAC/VDotTop.scala:27:7, :88:{10,29}, :95:32, :103:37, :105:37, :106:37, :107:37, :108:37, :109:37, :110:37, :111:37, :115:53, :116:56, :123:39, :128:{26,53,79}, :132:28, :134:25, :135:25, :136:37, :137:{8,22}, :138:{8,22,30}, :139:{8,22}, :140:24, :143:15
 %Warning-WIDTHEXPAND: src/VDotTop.sv:1409:25: Operator XOR expects 128 bits on the RHS, but RHS's VARREF 'isDot4aS2' generates 1 bits.
 %Warning-WIDTHTRUNC: src/VDotTop.sv:1411:7: Logical operator COND expects 1 bit on the Conditional Test, but Conditional Test's XOR generates 128 bits.
-cosim md5: bec32e7ebd3dc62c034e3295f746e604
-TOTAL  attempted = 8405
-  [A] 值比对（REF 与 RTL 都判合法）: 比对 6378 条, PASS 1262, FAIL 5116
-  [B] 非法指令判定一致性          : 合法一致 6378, 非法一致 2027, 分歧 0
-RESULT(VALUE)   : FAIL   (值比对失配 5116 条)
+cosim md5: 13f897dc203da53a1926cdb7b3b7f881
+TOTAL  attempted = 8429
+  [A] 值比对（REF 与 RTL 都判合法）: 比对 6402 条, PASS 699, FAIL 5703
+  [B] 非法指令判定一致性          : 合法一致 6402, 非法一致 2027, 分歧 0
+RESULT(VALUE)   : FAIL   (值比对失配 5703 条)
 RESULT(LEGALITY): PASS   (判定分歧 0 条)
 cosim exit code = 1
 >>> T3-RTL-1 被检出 => OK
 ==============================================================
- [T3-RTL-1b] 真正的写回结果 bit0 翻转：assign io_vd = 128'h1 ^ ( <原表达式> );   2026-10-25T03:58:03Z UTC
+ [T3-RTL-1b] 真正的写回结果 bit0 翻转：assign io_vd = 128'h1 ^ ( <原表达式> );   2026-10-26T15:25:52Z UTC
 ==============================================================
 注入成功（1 处）：整个 io_vd 表达式加括号后与 128'h1 异或
 --- src/VDotTop.sv:1409 起 3 行 ---
   assign io_vd = 128'h1 ^ (
     isDot4aS2
       ? {vstartGeVlS2 | (|(vstartS2[6:2]))
---- 表达式结束于 :1442 ---
-             _vdotTree_io_dotVd[31:0]});	// src/main/scala/yunsuan/vector/vectorIMAC/VDotTop.scala:27:7, :88:{10,29}, :95:32, :103:37, :105:37, :106:37, :107:37, :108:37, :109:37, :110:37, :111:37, :115:53, :116:56, :123:39, :127:{33,34,60}, :128:{33,41}, :129:{26,53}, :133:28, :135:25, :136:25, :137:37, :138:{8,22}, :139:{8,22,30}, :140:{8,22}, :141:24, :144:15
-cosim md5: f89a0f01954e1c8f808ec3efba881f59
-TOTAL  attempted = 8405
-  [A] 值比对（REF 与 RTL 都判合法）: 比对 6378 条, PASS 0, FAIL 6378
-  [B] 非法指令判定一致性          : 合法一致 6378, 非法一致 2027, 分歧 0
-RESULT(VALUE)   : FAIL   (值比对失配 6378 条)
+--- 表达式结束于 :1439 ---
+      : vstartGeVlS2 ? oldVdS2 : {96'h0, _vdotTree_io_dotVd[31:0]});	// src/main/scala/yunsuan/vector/vectorIMAC/VDotTop.scala:27:7, :88:{10,29}, :95:32, :103:37, :105:37, :106:37, :107:37, :108:37, :109:37, :110:37, :111:37, :115:53, :116:56, :123:39, :128:{26,53,79}, :132:28, :134:25, :135:25, :136:37, :137:{8,22}, :138:{8,22,30}, :139:{8,22}, :140:24, :143:15
+cosim md5: 60661441c84c9eebe0819f491f0f37c2
+TOTAL  attempted = 8429
+  [A] 值比对（REF 与 RTL 都判合法）: 比对 6402 条, PASS 0, FAIL 6402
+  [B] 非法指令判定一致性          : 合法一致 6402, 非法一致 2027, 分歧 0
+RESULT(VALUE)   : FAIL   (值比对失配 6402 条)
 RESULT(LEGALITY): PASS   (判定分歧 0 条)
 cosim exit code = 1
 >>> T3-RTL-1b 被检出 => OK
 ==============================================================
- [RESTORE] 还原后复测（期望 RESULT(VALUE): PASS）   2026-10-25T03:58:24Z UTC
+ [RESTORE] 还原后复测（期望 RESULT(VALUE): PASS）   2026-10-26T15:26:13Z UTC
 ==============================================================
 私有副本 VDotTop.sv 已还原（cmp 一致）
 私有副本与共享源 VDotTop.sv 一致（共享源未被改动）
-cosim md5: 5553e59dfe470318973cb36d268bb21b
-TOTAL  attempted = 8405
-  [A] 值比对（REF 与 RTL 都判合法）: 比对 6378 条, PASS 6378, FAIL 0
-  [B] 非法指令判定一致性          : 合法一致 6378, 非法一致 2027, 分歧 0
+cosim md5: b1eb8d5214fca93b80c18189448c3138
+TOTAL  attempted = 8429
+  [A] 值比对（REF 与 RTL 都判合法）: 比对 6402 条, PASS 6402, FAIL 0
+  [B] 非法指令判定一致性          : 合法一致 6402, 非法一致 2027, 分歧 0
 RESULT(VALUE)   : PASS   (值比对失配 0 条)
 RESULT(LEGALITY): PASS   (判定分歧 0 条)
 cosim exit code = 0

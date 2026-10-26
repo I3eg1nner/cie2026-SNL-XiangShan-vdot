@@ -601,9 +601,12 @@ int main(int argc, char **argv) {
     RefResult rr;
     ref_run(ref, s, &rr);
     uint32_t got = (uint32_t)(rr.vd.lo & 0xffffffffu);
+    // 裁定 S-3'：vd[127:32] 必须清零（即使 vta=1 也不写全 1）
+    bool upper_zero = (rr.vd.lo >> 32) == 0 && rr.vd.hi == 0;
     say("[REF] 自检 vdot.vv (vs1=vs2=1..16, vl=16, vta=1): trap=%d  vd.u32[0]=0x%08x "
-        "(期望 0x%08x = Σ i^2, i=1..16)\n", (int)rr.trapped, got, 1496u);
-    if (rr.trapped || got != 1496u) {
+        "(期望 0x%08x = Σ i^2, i=1..16)  vd[127:32]=%s（期望全 0，裁定 S-3'）\n",
+        (int)rr.trapped, got, 1496u, upper_zero ? "全 0" : "非 0");
+    if (rr.trapped || got != 1496u || !upper_zero) {
       say("[REF] FATAL: 该共享库没有实现 vdot（或语义不符），拒绝继续。\n");
       return 3;
     }

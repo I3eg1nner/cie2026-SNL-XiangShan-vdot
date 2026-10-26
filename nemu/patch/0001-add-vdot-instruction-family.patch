@@ -154,10 +154,10 @@ index 07406f6..ae04d9d 100644
  
 diff --git a/src/isa/riscv64/instr/rvv/vdot.c b/src/isa/riscv64/instr/rvv/vdot.c
 new file mode 100644
-index 0000000..9811a84
+index 0000000..86b84b5
 --- /dev/null
 +++ b/src/isa/riscv64/instr/rvv/vdot.c
-@@ -0,0 +1,221 @@
+@@ -0,0 +1,228 @@
 +/***************************************************************************************
 +* vdot.c —— 非标准 int8 点积指令族（Xvdot）的执行引擎
 +*
@@ -167,12 +167,14 @@ index 0000000..9811a84
 +*   -------- ----------------- ---------- ----------------------------------------
 +*   111001   vdot.vv    vd,vs2,vs1   8     vd.u32[0]  = Σ_{i∈active} sext32(vs2.i8[i])*sext32(vs1.i8[i])
 +*   111010   vdotacc.vv vd,vs2,vs1   8     vd.u32[0] += Σ ...                （vd 作为第三源）
++*            （vdot / vdotacc 的 vd.u32[1..3] 一律写 0，与 vta / vma 无关，裁定 S-3'）
 +*   111011   vdot4a.vv  vd,vs2,vs1  32     ∀i∈active: vd.u32[i] += Σ_{j<4} sext32(vs2.i8[4i+j])*sext32(vs1.i8[4i+j])
 +*
-+* 设计原则：vl / vstart / vm / vta / vma 全部沿用 NEMU 既有框架，不另起炉灶。
++* 设计原则：vl / vstart / vm / vta / vma 的处理沿用 NEMU 既有框架，不另起炉灶；
++*   唯一例外是 vdot / vdotacc 的元素 1..3 固定写 0、不看 vta / vma（裁定 S-3'）。
 +*   - vdot / vdotacc 是归约形态，整体结构对照 reduction_instr()
 +*     （vcompute_impl.c:1529）：vector_reduction_check → check_vstart_exception
-+*     → check_vstart_ignore → 主循环 → set_vreg_tail → 只写元素 0。
++*     → check_vstart_ignore → 主循环 → 元素 1..3 清零 + 写元素 0（裁定 S-3'）。
 +*   - vdot4a 是逐元素形态，整体结构对照 arithmetic_instr()
 +*     （vcompute_impl.c:488）：vector_vvv_check → check_vstart_exception
 +*     → check_vstart_ignore → 主循环（含 vma 处理）→ tail 循环（vta）→ 清 vstart。
@@ -256,11 +258,14 @@ index 0000000..9811a84
 + *   - check_vstart_exception()：vstart != 0 → Illegal Instruction（裁定 S-1，
 + *     RVV 1.0 §14「Vector reduction operations raise an illegal instruction
 + *     exception if vstart is non-zero」）；
-+ *   - check_vstart_ignore()：vstart >= vl（含 vl == 0）→ 连 tail 都不写（S-5）；
++ *   - check_vstart_ignore()：vstart >= vl（含 vl == 0）→ vd 完全不写（S-5）；
 + *   - 掩码为 0 的源元素直接 continue，排除出求和（§14 / S-2：归约无 inactive
 + *     目的元素，故 vma 不参与）；
-+ *   - vta=1 时先 set_vreg_tail() 把整个目的寄存器置全 1，再写元素 0，
-+ *     净效果为「元素 1..3 全 1（tail，EEW=32，裁定 S-3）+ 元素 0 为结果」。
++ *   - 写回（裁定 S-3'，与赛题官方伪代码「vd[0] = result; vd[1..] = 0」一致）：
++ *     元素 0（EEW=32）写结果，元素 1..3 无条件写 0，与 vta / vma 无关，
++ *     也不依赖 RVV_AGNOSTIC 配置，因此这里不调用 set_vreg_tail()。
++ *     能走到写回的前提是 vstart < vl：上面的 check_vstart_ignore() 已排除
++ *     vstart >= vl（含 vl == 0），那种情况 vd 完全不写（裁定 S-5）。
 + * ------------------------------------------------------------------------ */
 +static void vdot_reduce(Decode *s, int accumulate) {
 +  check_vstart_exception(s);
@@ -270,7 +275,7 @@ index 0000000..9811a84
 +  }
 +
 +  /* 累加器：在 64 位上累加，写回时由 set_vreg 截断到 32 位（模 2^32 回绕）。
-+   * vdotacc 把 vd 作为第三源读取，必须在 set_vreg_tail() 之前读。 */
++   * vdotacc 把 vd 作为第三源读取，必须在写回（元素 1..3 清零）之前读。 */
 +  uint64_t acc = 0;
 +  if (accumulate) {
 +    get_vreg(id_dest->reg, 0, s1, VDOT_DEST_VSEW, vtype->vlmul, UNSIGNED, 0);
@@ -287,10 +292,12 @@ index 0000000..9811a84
 +    acc += (uint64_t)(a * b);
 +  }
 +
-+  if (RVV_AGNOSTIC) {
-+    if (vtype->vta && vl->val != 0) set_vreg_tail(id_dest->reg);
-+  }
++  /* 裁定 S-3'：vd[31:0] = 结果，vd[VLEN-1:32] = 0，与 vta / vma 无关 */
 +  if (vl->val != 0) {
++    int vlmax_d = get_vlen_max(VDOT_DEST_VSEW, vtype->vlmul, 0);
++    for (int idx = 1; idx < vlmax_d; idx++) {
++      set_vreg(id_dest->reg, idx, 0, VDOT_DEST_VSEW, vtype->vlmul, 0);
++    }
 +    set_vreg(id_dest->reg, 0, acc, VDOT_DEST_VSEW, vtype->vlmul, 0);
 +  }
 +  vp_set_dirty();

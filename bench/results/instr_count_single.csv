@@ -1,13 +1,13 @@
 variant,metric,description,value,kind,evidence
 baseline,static_instr_function,函数整体静态指令数（含装载、取回与 ret）,12,"静态计数(反汇编逐条, 日志解析)",p7_baseline_equiv.log 「单次点积两个 kernel 的静态指令数」段
-baseline,instr_per_call_nemu,每次调用的动态指令数（minstret 斜率，含调用开销）,18,实测(NEMU minstret 斜率),"p7_baseline_equiv.log CSVROW,single16"
+baseline,instr_per_call_nemu,每次调用的动态指令数（minstret 斜率，含调用开销）,20,实测(NEMU minstret 斜率),"p7_baseline_equiv.log CSVROW,single16"
 baseline,sequence_instr,序列本体指令数（操作数已在寄存器；含必需的 vsetvli）,6,实测(全核 MinimalConfig minstret 窗口差),logs/stage3/fullcore/perf_cycles.log:19-23
-baseline,sequence_vector_arith_instr,序列本体中的向量算术指令数（不含 vsetvli）,3,静态计数(源码宏),tests/riscv/fullcore/perf_kernels.S:100 BASE_BODY
-baseline,sequence_vsetvli,序列本体中的 vsetvli 条数,3,静态计数(源码宏),tests/riscv/fullcore/perf_kernels.S:100 BASE_BODY
-baseline,sequence_decoded_uops,序列本体的译码级 uop 条数,14,"源码推导(UopInfoGen 查找表, 非实测)",uop_count.csv：vsetvli 2 + vmv.s.x 2 + vsetvli 2 + vwmul.vv 2 + vsetvli 2 + vwredsum.vs 4
+baseline,sequence_vector_arith_instr,序列本体中的向量算术指令数（不含 vsetvli）,3,静态计数(源码宏),tests/riscv/fullcore/perf_kernels.S:102 BASE_BODY
+baseline,sequence_vsetvli,序列本体中的 vsetvli 条数,3,静态计数(源码宏),tests/riscv/fullcore/perf_kernels.S:102 BASE_BODY
+baseline,sequence_decoded_uops,序列本体的译码级 uop 条数,14,"源码推导(UopInfoGen 查找表, 非实测)",uop_count.csv：vsetvli 2 + vmv.v.i 2 + vsetvli 2 + vwmul.vv 2 + vsetvli 2 + vwredsum.vs 4
 vdot,static_instr_function,函数整体静态指令数（含装载、取回与 ret）,7,"静态计数(反汇编逐条, 日志解析)",p7_baseline_equiv.log 「单次点积两个 kernel 的静态指令数」段
-vdot,instr_per_call_nemu,每次调用的动态指令数（minstret 斜率，含调用开销）,13,实测(NEMU minstret 斜率),"p7_baseline_equiv.log CSVROW,single16"
+vdot,instr_per_call_nemu,每次调用的动态指令数（minstret 斜率，含调用开销）,15,实测(NEMU minstret 斜率),"p7_baseline_equiv.log CSVROW,single16"
 vdot,sequence_instr,序列本体指令数（操作数已在寄存器；含必需的 vsetvli）,2,实测(全核 MinimalConfig minstret 窗口差),logs/stage3/fullcore/perf_cycles.log:24-28
-vdot,sequence_vector_arith_instr,序列本体中的向量算术指令数（不含 vsetvli）,1,静态计数(源码宏),tests/riscv/fullcore/perf_kernels.S:109 VDOT_BODY
-vdot,sequence_vsetvli,序列本体中的 vsetvli 条数,1,静态计数(源码宏),tests/riscv/fullcore/perf_kernels.S:109 VDOT_BODY
+vdot,sequence_vector_arith_instr,序列本体中的向量算术指令数（不含 vsetvli）,1,静态计数(源码宏),tests/riscv/fullcore/perf_kernels.S:111 VDOT_BODY
+vdot,sequence_vsetvli,序列本体中的 vsetvli 条数,1,静态计数(源码宏),tests/riscv/fullcore/perf_kernels.S:111 VDOT_BODY
 vdot,sequence_decoded_uops,序列本体的译码级 uop 条数,3,"源码推导(UopInfoGen 查找表, 非实测)",uop_count.csv：vsetvli 2 + vdot.vv 1

@@ -56,14 +56,19 @@ uint32_t vdot_vlmax(int op)
  *   2) vstart != 0                    -> Illegal Instruction（§14），
  *                                        STRICT 策略；SKIP 策略下按 §5.4
  *                                        跳过 i < vstart 的源元素
- *   3) vstart >= vl（含 vl==0）       -> 不写回任何元素，连 tail 也不写（§5.4）
+ *   3) vstart >= vl（含 vl==0）       -> vd 完全不写，保持原值（§5.4，裁定 S-5）
  *   4) body 内 mask=0 的源元素        -> 排除出归约（§14 "Inactive elements
  *                                        from the source vector register group
  *                                        are excluded from the reduction"）
- *   5) 目的元素 0（EEW=32）           -> vl!=0 时总是写回，不受掩码影响
- *                                        （§14 标量操作数始终参与）
- *   6) 目的元素 1..3（EEW=32）        -> tail：vta=1 写全 1，vta=0 保持不变（§3.4.3）
- *   7) vma                            -> 对归约无意义（无 inactive 目的元素），忽略
+ *   5) 目的元素 0（EEW=32）           -> vstart<vl 时总是写回，不受掩码影响
+ *                                        （§14 标量操作数始终参与；全部源元素
+ *                                        被掩掉时 vdot 写 0、vdotacc 写原值）
+ *   6) 目的元素 1..3（EEW=32）        -> vstart<vl 时无条件写 0，与 vta、vma 无关
+ *                                        （裁定 S-3'，取代原 S-3 的「按 vta 处理」：
+ *                                        与赛题官方伪代码 vd[0] = result;
+ *                                        vd[1..VLEN-1] = 0「其他通道清零」一致）
+ *   7) vma / vta                      -> 均不参与（vma：归约无 inactive 目的元素；
+ *                                        vta：见规则 6）
  *   8) 执行结束 vstart 置 0           -> 由调用方（NEMU/RTL）负责，模型不持有 CSR
  * ================================================================== */
 static int vdot_reduce_common(vreg128_t *vd, const vreg128_t *vs2,
@@ -78,6 +83,7 @@ static int vdot_reduce_common(vreg128_t *vd, const vreg128_t *vs2,
     int st;
 
     (void)vma;   /* 归约指令无 inactive 目的元素，vma 不参与 */
+    /* vta 同样不参与写回（规则 6，裁定 S-3'），只在 check_common 里做取值合法性校验 */
 
     st = check_common(vd, vs2, vs1, vta, vma, policy);
     if (st != VDOT_OK) return st;
@@ -100,10 +106,8 @@ static int vdot_reduce_common(vreg128_t *vd, const vreg128_t *vs2,
         sum += (uint32_t)(vreg_i8(vs2, (int)i) * vreg_i8(vs1, (int)i));
     }
 
-    /* 规则 6：先铺 tail 再写元素 0（两者不相交，顺序无影响） */
-    if (vta) {
-        for (i = 1; i < VDOT_VLEN / 32; i++) vreg_set_u32(vd, (int)i, 0xFFFFFFFFu);
-    }
+    /* 规则 6：元素 1..3 无条件清零（与 vta 无关；两者不相交，顺序无影响） */
+    for (i = 1; i < VDOT_VLEN / 32; i++) vreg_set_u32(vd, (int)i, 0u);
     /* 规则 5 */
     vreg_set_u32(vd, 0, sum);
     return VDOT_OK;

@@ -122,11 +122,10 @@ class VDotTop extends Module {
   // ---------------------------------------------------------------------------
   private val vstartGeVlS2 = vstartS2 >= vlS2
 
-  // (1) 归约形态：只写目的元素 0（EEW=32），元素 1..3 按 vta 处理；vma 被忽略（裁定 S-2）。
-  //     照抄 Reduction.scala:644-647 的 red_vd_tail 惯用法，目的 EEW 固定为 32。
-  private val redVdTailOne = Cat(~0.U((VLEN - 32).W), dotVd(31, 0))
-  private val redVdTailOld = Cat(oldVdS2(VLEN - 1, 32), dotVd(31, 0))
-  private val redVd = Mux(vstartGeVlS2, oldVdS2, Mux(vtaS2, redVdTailOne, redVdTailOld))
+  // (1) 归约形态（裁定 S-3'，与赛题官方伪代码 vd[0] = result; vd[1..VLEN-1] = 0 一致）：
+  //     vstart < vl 时目的元素 0（EEW=32）写结果、vd[VLEN-1:32] 恒为 0，与 vta、vma 无关
+  //     （vma 本就被忽略，裁定 S-2）；vstart >= vl（含 vl = 0）时保持 oldVd（裁定 S-5）。
+  private val redVd = Mux(vstartGeVlS2, oldVdS2, Cat(0.U((VLEN - 32).W), dotVd(31, 0)))
 
   // (2) 逐元素形态（vdot4a）：prestart / body-active / body-inactive / tail 四分支，
   //     掩码粒度为 32 位目的元素，逐条对应 vdot_ref.c:141-176。

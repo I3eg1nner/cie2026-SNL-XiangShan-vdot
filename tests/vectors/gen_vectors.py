@@ -151,12 +151,37 @@ def write_suite(path, name, policy, seed, cases, results, rationale):
         f.write("# hex layout: 32 chars per register, v[0] leftmost "
                 "(see tests/golden/vdot_ref.h)\n")
         for line in rationale.strip().splitlines():
-            f.write("# rationale: %s\n" % line.strip())
+            if line.strip():
+                f.write("# rationale: %s\n" % line.strip())
         f.write(FIELDS + "\n")
         for c, vd_exp, status in results:
             f.write("%s %d %d %d %d %d %d %s %s %s %s %s %s\n" % (
                 c.op, c.vsew, c.vstart, c.vl, c.vm, c.vta, c.vma,
                 hx(c.vs1), hx(c.vs2), hx(c.vd_in), vd_exp, hx(c.v0), status))
+
+
+# ----------------------------------------------------------------------
+# vl=8 定向用例（赛题官方伪代码 for i in range(8) 的直接演示）
+#
+# 官方伪代码：取 vs1/vs2 前 8 个 int8，vd[0] = Σ sext*sext，vd[1..] = 0。
+# 本组用例 vl=8、vm=1、vstart=0，源寄存器第 8..15 个元素填 0x55/0x33 无关值
+# （vl 之外，不得参与求和），vd 初值四个字都非零、vta 取 0 和 1 各一次，
+# 使「元素 1..3 无条件清零、与 vta 无关」（裁定 S-3'）在语料里直接可见。
+# 只追加给 vdot / vdotacc，且追加在各 suite 末尾、不消耗 RNG，
+# 因此既有用例逐条不变，vdot4a 语料完全不变。
+# ----------------------------------------------------------------------
+VL8_VD_IN = (0xA5A5A5A5, 0xDEADBEEF, 0xCAFEBABE, 0x12345678)
+
+
+def vl8_cases(op, pairs, note):
+    cases = []
+    for name, lo1, lo2 in pairs:
+        a = bytes(lo1) + bytes([0x55] * 8)
+        b = bytes(lo2) + bytes([0x33] * 8)
+        for vta in (0, 1):
+            cases.append(Case(op, 8, 0, 8, 1, vta, vta, a, b, u32le(VL8_VD_IN),
+                              note="%s vl=8 %s vta=%d" % (note, name, vta)))
+    return cases
 
 
 # ----------------------------------------------------------------------
@@ -190,6 +215,13 @@ def build_positive(op, rng):
         vd = u32le([rng.randint(0, 0xFFFF) for _ in range(4)])
         cases.append(Case(op, vsew, 0, vl, 1, vta, 1, a, b, vd,
                           note="random positive"))
+    # 3) vl=8 定向（只给归约形态；不消耗 rng，追加在末尾）
+    if op != "vdot4a":
+        cases += vl8_cases(op, [
+            ("all-1 x all-1",  [1] * 8,          [1] * 8),           # Σ = 8
+            ("127 x 127",      [127] * 8,        [127] * 8),         # Σ = 129032
+            ("1..8 x 1..8",    list(range(1, 9)), list(range(1, 9))),  # Σ = 204
+        ], "positive")
     return cases
 
 
@@ -238,6 +270,13 @@ def build_negative(op, rng):
         cases.append(Case(op, vsew, 0, vlmax, 1, 1, 1,
                           bytes(a), bytes(b), ZERO16,
                           note="single 0x80*0x80 at lane %d" % i))
+    # vl=8 定向（只给归约形态；不消耗 rng，追加在末尾）
+    if op != "vdot4a":
+        cases += vl8_cases(op, [
+            ("0x80 x 0x80",    [0x80] * 8,       [0x80] * 8),        # Σ = +131072
+            ("0x80 x 0x7F",    [0x80] * 8,       [0x7F] * 8),        # Σ = -130048
+            ("0xFF x 0x01",    [0xFF] * 8,       [0x01] * 8),        # Σ = -8
+        ], "negative")
     return cases
 
 
@@ -266,7 +305,7 @@ def build_boundary(op, rng):
                       note="max magnitude sum 0x40000"))
     cases.append(Case(op, vsew, 0, vlmax, 1, 0, 0, all80, all80,
                       u32le([0, 0xDEADBEEF, 0xCAFEBABE, 0x12345678]),
-                      note="max magnitude, vta=0 tail undisturbed"))
+                      note="max magnitude, vta=0 (vdot/vdotacc: elems 1..3 cleared anyway, S-3')"))
 
     # C. vl 全扫描（vdot/vdotacc: 0..16；vdot4a: 0..4）
     vls = list(range(0, vlmax + 1))
@@ -337,6 +376,13 @@ def build_boundary(op, rng):
         cases.append(Case(op, s, 0, 1, 1, 1, 1,
                           bytes(range(1, 17)), bytes(range(1, 17)),
                           u32le([0x5A5A5A5A] * 4), note="illegal vsew=%d" % s))
+    # H. vl=8 定向（只给归约形态；不消耗 rng，追加在末尾）
+    if op != "vdot4a":
+        cases += vl8_cases(op, [
+            ("0x7F/0x80 mixed", [0x7F, 0x80] * 4, [0x80, 0x7F] * 4),  # Σ = -130048
+            ("0x7F/0x80 x 0x80", [0x7F, 0x80] * 4, [0x80] * 8),       # Σ = 512
+            ("zero x 0x80",    [0x00] * 8,       [0x80] * 8),        # Σ = 0
+        ], "boundary")
     return cases
 
 
@@ -453,6 +499,25 @@ RATIONALE = {
 }
 
 
+# 只附加给 vdot / vdotacc 语料的说明（vdot4a 语料的文件头保持不变）
+RATIONALE_RED_EXTRA = {
+    "positive": """
+        末尾 6 条 vl=8 定向用例（全 1×全 1、127×127、1..8 自乘，vta=0/1 各一），
+        直接对照赛题官方伪代码 for i in range(8)。
+    """,
+    "negative": """
+        末尾 6 条 vl=8 定向用例（0x80×0x80、0x80×0x7F、0xFF×0x01，vta=0/1 各一）。
+    """,
+    "boundary": """
+        H 末尾 6 条 vl=8 定向用例（0x7F/0x80 混合等，vta=0/1 各一）。
+    """,
+}
+RATIONALE_RED_COMMON = """
+        写回规则（裁定 S-3'）：vstart<vl 时 vd.u32[0] 写结果、vd.u32[1..3] 一律
+        清零，与 vta/vma 无关；vstart>=vl（含 vl=0）时 vd 保持原值。
+"""
+
+
 def main():
     ap = argparse.ArgumentParser(description="generate vdot shared test vectors")
     ap.add_argument("--cli", required=True,
@@ -484,7 +549,10 @@ def main():
             cases = fn(op, rng)
         results = evaluate(cli, cases, policy)
         path = os.path.join(args.outdir, name + ".txt")
-        write_suite(path, name, policy, seed, cases, results, RATIONALE[rkey])
+        rationale = RATIONALE[rkey]
+        if op != "vdot4a":
+            rationale += RATIONALE_RED_EXTRA.get(rkey, "") + RATIONALE_RED_COMMON
+        write_suite(path, name, policy, seed, cases, results, rationale)
         total += len(cases)
         print("  %-22s %6d cases -> %s" % (name, len(cases), path))
 

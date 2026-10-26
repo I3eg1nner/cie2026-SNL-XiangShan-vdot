@@ -1,4 +1,4 @@
-=== 随机差分测试  2026-10-24 23:21:51 CST ===
+=== 随机差分测试  2026-10-26 15:28:58 UTC ===
 === 参考模型 = tests/golden/vdot_ref.c（直接 #include，禁止重写）===
 
 --- (A) 共享随机语料回放（tests/vectors/*_random.txt，期望值由同一份参考模型现场复算）---
@@ -9,15 +9,15 @@
 # 用例数 : 总 10000，可执行 8459，跳过 1541 （ILLEGAL_VSTART×1541 ）
 # 命令   : YS_VDOT_VECTORS=tests/vectors/random.txt ./build/emu -O 8459 -s 7
 ########################################################################
-Emu compiled at Oct 24 2026, 22:24:04
-[vdot-vectors] loaded 8459 cases from /Users/i3eg1nner/code/cie/tests/vectors/random.txt (skipped 1541 non-OK, 0 unparsed)
+Emu compiled at Oct 26 2026, 15:15:16
+[vdot-vectors] loaded 8459 cases from /data/my/cie2026-vdot-xiangshan/tests/vectors/random.txt (skipped 1541 non-OK, 0 unparsed)
 [vdot-vectors] run with -O 8459 to execute every case exactly once
 Set Test Type Res: fuType:7 fuOpType:225 (pick_fuType=0 pick_fuOpType=0)
 Using seed = 7
 [vdot-vectors] all 8459 cases consumed
 EMU EXCEEDED LIMIT
 HAS Executed Cycles:33855 Operations:8459
-EMU has executed 309 ms.
+EMU has executed 1830 ms.
 # 判定   : PASS（attempted=8459 passed=8459 failed=0 skipped=1541）
 
 ########################################################################
@@ -26,15 +26,15 @@ EMU has executed 309 ms.
 # 用例数 : 总 10000，可执行 8428，跳过 1572 （ILLEGAL_VSTART×1572 ）
 # 命令   : YS_VDOT_VECTORS=tests/vectors/vdotacc_random.txt ./build/emu -O 8428 -s 7
 ########################################################################
-Emu compiled at Oct 24 2026, 22:24:04
-[vdot-vectors] loaded 8428 cases from /Users/i3eg1nner/code/cie/tests/vectors/vdotacc_random.txt (skipped 1572 non-OK, 0 unparsed)
+Emu compiled at Oct 26 2026, 15:15:16
+[vdot-vectors] loaded 8428 cases from /data/my/cie2026-vdot-xiangshan/tests/vectors/vdotacc_random.txt (skipped 1572 non-OK, 0 unparsed)
 [vdot-vectors] run with -O 8428 to execute every case exactly once
 Set Test Type Res: fuType:7 fuOpType:225 (pick_fuType=0 pick_fuOpType=0)
 Using seed = 7
 [vdot-vectors] all 8428 cases consumed
 EMU EXCEEDED LIMIT
 HAS Executed Cycles:33731 Operations:8428
-EMU has executed 308 ms.
+EMU has executed 1892 ms.
 # 判定   : PASS（attempted=8428 passed=8428 failed=0 skipped=1572）
 
 ########################################################################
@@ -43,15 +43,15 @@ EMU has executed 308 ms.
 # 用例数 : 总 10000，可执行 8461，跳过 1539 （ILLEGAL_VSTART×1539 ）
 # 命令   : YS_VDOT_VECTORS=tests/vectors/vdot4a_random.txt ./build/emu -O 8461 -s 7
 ########################################################################
-Emu compiled at Oct 24 2026, 22:24:04
-[vdot-vectors] loaded 8461 cases from /Users/i3eg1nner/code/cie/tests/vectors/vdot4a_random.txt (skipped 1539 non-OK, 0 unparsed)
+Emu compiled at Oct 26 2026, 15:15:16
+[vdot-vectors] loaded 8461 cases from /data/my/cie2026-vdot-xiangshan/tests/vectors/vdot4a_random.txt (skipped 1539 non-OK, 0 unparsed)
 [vdot-vectors] run with -O 8461 to execute every case exactly once
 Set Test Type Res: fuType:7 fuOpType:225 (pick_fuType=0 pick_fuOpType=0)
 Using seed = 7
 [vdot-vectors] all 8461 cases consumed
 EMU EXCEEDED LIMIT
 HAS Executed Cycles:33863 Operations:8461
-EMU has executed 325 ms.
+EMU has executed 1747 ms.
 # 判定   : PASS（attempted=8461 passed=8461 failed=0 skipped=1539）
 
 --- (B) 测试平台随机激励（每次重新随机，与语料文件互相独立）---
@@ -59,109 +59,109 @@ EMU has executed 325 ms.
 ########################################################################
 # driver/vdot.vv seed=11：命令 YS_FUTYPE=10 YS_FUOPTYPE=0 ./build/emu -O 20000 -s 11
 ########################################################################
-Emu compiled at Oct 24 2026, 22:24:04
+Emu compiled at Oct 26 2026, 15:15:16
 Set Test Type Res: fuType:10 fuOpType:0 (pick_fuType=1 pick_fuOpType=1)
 Using seed = 11
 EMU EXCEEDED LIMIT
 HAS Executed Cycles:80019 Operations:20000
-EMU has executed 729 ms.
+EMU has executed 4569 ms.
 # 判定   : PASS（attempted=20000 passed=20000 failed=0）
 
 ########################################################################
 # driver/vdot.vv seed=12：命令 YS_FUTYPE=10 YS_FUOPTYPE=0 ./build/emu -O 20000 -s 12
 ########################################################################
-Emu compiled at Oct 24 2026, 22:24:04
+Emu compiled at Oct 26 2026, 15:15:16
 Set Test Type Res: fuType:10 fuOpType:0 (pick_fuType=1 pick_fuOpType=1)
 Using seed = 12
 EMU EXCEEDED LIMIT
 HAS Executed Cycles:80019 Operations:20000
-EMU has executed 744 ms.
+EMU has executed 4569 ms.
 # 判定   : PASS（attempted=20000 passed=20000 failed=0）
 
 ########################################################################
 # driver/vdot.vv seed=13：命令 YS_FUTYPE=10 YS_FUOPTYPE=0 ./build/emu -O 20000 -s 13
 ########################################################################
-Emu compiled at Oct 24 2026, 22:24:04
+Emu compiled at Oct 26 2026, 15:15:16
 Set Test Type Res: fuType:10 fuOpType:0 (pick_fuType=1 pick_fuOpType=1)
 Using seed = 13
 EMU EXCEEDED LIMIT
 HAS Executed Cycles:80019 Operations:20000
-EMU has executed 739 ms.
+EMU has executed 4499 ms.
 # 判定   : PASS（attempted=20000 passed=20000 failed=0）
 
 ########################################################################
 # driver/vdotacc.vv seed=11：命令 YS_FUTYPE=10 YS_FUOPTYPE=1 ./build/emu -O 20000 -s 11
 ########################################################################
-Emu compiled at Oct 24 2026, 22:24:04
+Emu compiled at Oct 26 2026, 15:15:16
 Set Test Type Res: fuType:10 fuOpType:1 (pick_fuType=1 pick_fuOpType=1)
 Using seed = 11
 EMU EXCEEDED LIMIT
 HAS Executed Cycles:80019 Operations:20000
-EMU has executed 731 ms.
+EMU has executed 4521 ms.
 # 判定   : PASS（attempted=20000 passed=20000 failed=0）
 
 ########################################################################
 # driver/vdotacc.vv seed=12：命令 YS_FUTYPE=10 YS_FUOPTYPE=1 ./build/emu -O 20000 -s 12
 ########################################################################
-Emu compiled at Oct 24 2026, 22:24:04
+Emu compiled at Oct 26 2026, 15:15:16
 Set Test Type Res: fuType:10 fuOpType:1 (pick_fuType=1 pick_fuOpType=1)
 Using seed = 12
 EMU EXCEEDED LIMIT
 HAS Executed Cycles:80019 Operations:20000
-EMU has executed 737 ms.
+EMU has executed 4366 ms.
 # 判定   : PASS（attempted=20000 passed=20000 failed=0）
 
 ########################################################################
 # driver/vdotacc.vv seed=13：命令 YS_FUTYPE=10 YS_FUOPTYPE=1 ./build/emu -O 20000 -s 13
 ########################################################################
-Emu compiled at Oct 24 2026, 22:24:04
+Emu compiled at Oct 26 2026, 15:15:16
 Set Test Type Res: fuType:10 fuOpType:1 (pick_fuType=1 pick_fuOpType=1)
 Using seed = 13
 EMU EXCEEDED LIMIT
 HAS Executed Cycles:80019 Operations:20000
-EMU has executed 745 ms.
+EMU has executed 4557 ms.
 # 判定   : PASS（attempted=20000 passed=20000 failed=0）
 
 ########################################################################
 # driver/vdot4a.vv seed=11：命令 YS_FUTYPE=10 YS_FUOPTYPE=2 ./build/emu -O 20000 -s 11
 ########################################################################
-Emu compiled at Oct 24 2026, 22:24:04
+Emu compiled at Oct 26 2026, 15:15:16
 Set Test Type Res: fuType:10 fuOpType:2 (pick_fuType=1 pick_fuOpType=1)
 Using seed = 11
 EMU EXCEEDED LIMIT
 HAS Executed Cycles:80019 Operations:20000
-EMU has executed 725 ms.
+EMU has executed 3976 ms.
 # 判定   : PASS（attempted=20000 passed=20000 failed=0）
 
 ########################################################################
 # driver/vdot4a.vv seed=12：命令 YS_FUTYPE=10 YS_FUOPTYPE=2 ./build/emu -O 20000 -s 12
 ########################################################################
-Emu compiled at Oct 24 2026, 22:24:04
+Emu compiled at Oct 26 2026, 15:15:16
 Set Test Type Res: fuType:10 fuOpType:2 (pick_fuType=1 pick_fuOpType=1)
 Using seed = 12
 EMU EXCEEDED LIMIT
 HAS Executed Cycles:80019 Operations:20000
-EMU has executed 746 ms.
+EMU has executed 4233 ms.
 # 判定   : PASS（attempted=20000 passed=20000 failed=0）
 
 ########################################################################
 # driver/vdot4a.vv seed=13：命令 YS_FUTYPE=10 YS_FUOPTYPE=2 ./build/emu -O 20000 -s 13
 ########################################################################
-Emu compiled at Oct 24 2026, 22:24:04
+Emu compiled at Oct 26 2026, 15:15:16
 Set Test Type Res: fuType:10 fuOpType:2 (pick_fuType=1 pick_fuOpType=1)
 Using seed = 13
 EMU EXCEEDED LIMIT
 HAS Executed Cycles:80019 Operations:20000
-EMU has executed 751 ms.
+EMU has executed 4149 ms.
 # 判定   : PASS（attempted=20000 passed=20000 failed=0）
 
 ########################################################################
 # driver/三条混合 seed=14：命令 YS_FUTYPE=10 ./build/emu -O 30000 -s 14
 ########################################################################
-Emu compiled at Oct 24 2026, 22:24:04
+Emu compiled at Oct 26 2026, 15:15:16
 Set Test Type Res: fuType:10 fuOpType:225 (pick_fuType=1 pick_fuOpType=0)
 Using seed = 14
 EMU EXCEEDED LIMIT
 HAS Executed Cycles:120019 Operations:30000
-EMU has executed 1146 ms.
+EMU has executed 6277 ms.
 # 判定   : PASS（attempted=30000 passed=30000 failed=0）

@@ -145,12 +145,15 @@ static inline int vreg_mask_bit(const vreg128_t *v0, int i) {
  * ------------------------------------------------------------------ */
 
 /* vdot.vv vd, vs2, vs1, vm —— SEW=8，四倍宽全向量归约，不累加
- *   vd.u32[0] = Σ_{i∈active} sext32(vs2.i8[i]) * sext32(vs1.i8[i])   */
+ *   vd.u32[0] = Σ_{i∈active} sext32(vs2.i8[i]) * sext32(vs1.i8[i])
+ *   vd.u32[1..3] = 0（vstart < vl 时无条件清零，与 vta/vma 无关，裁定 S-3'）；
+ *   vstart >= vl（含 vl == 0）时 vd 完全不写   */
 int vdot_vv(vreg128_t *vd, const vreg128_t *vs2, const vreg128_t *vs1,
             uint32_t vstart, uint32_t vl, const vreg128_t *vm_mask,
             int vta, int vma);
 
-/* vdotacc.vv vd, vs2, vs1, vm —— 同上，但以 vd.u32[0] 原值为累加初值 */
+/* vdotacc.vv vd, vs2, vs1, vm —— 同上，但以 vd.u32[0] 原值为累加初值
+ *   （32 位回绕；vd.u32[1..3] 同样清零） */
 int vdotacc_vv(vreg128_t *vd, const vreg128_t *vs2, const vreg128_t *vs1,
                uint32_t vstart, uint32_t vl, const vreg128_t *vm_mask,
                int vta, int vma);

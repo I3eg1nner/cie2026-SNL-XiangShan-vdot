@@ -1,7 +1,7 @@
-=== 补丁可应用性验证  2026-10-24 23:22:04 CST ===
-pristine 基线 : /Users/i3eg1nner/code/cie/work/XiangShan-kmhv2  @ a4eeaab
+=== 补丁可应用性验证  2026-10-26 15:30:08 UTC ===
+pristine 基线 : /data/my/cie2026-vdot-xiangshan/work/XiangShan-kmhv2  @ a4eeaabb4
                yunsuan @ 9559211
-实现工作树     : /Users/i3eg1nner/code/cie/work/XiangShan-vdot  @ a4eeaab
+实现工作树     : /data/my/cie2026-vdot-xiangshan/work/XiangShan-vdot  @ a4eeaabb4
                yunsuan @ 9559211
 （pristine 工作树只用 git archive 导出只读副本，全程不写入）
 
@@ -19,22 +19,25 @@ pristine 基线 : /Users/i3eg1nner/code/cie/work/XiangShan-kmhv2  @ a4eeaab
 
 PATCH-VERIFY: PASS
 
-=== VecExceptionGen 译码级合法性定向测试  2026-10-24 23:22:04 CST ===
+=== VecExceptionGen 译码级合法性定向测试  2026-10-26 15:30:08 UTC ===
 
 --- (1) 精化 VecExceptionGenHarness ---
-[mill-state-guard] /Users/i3eg1nner/code/cie/work/XiangShan-vdot: 清理了 0 个失效的增量编译状态
+[mill-state-guard] /data/my/cie2026-vdot-xiangshan/work/XiangShan-vdot: 清理了 0 个失效的增量编译状态
 [860/860] xiangshan.test.runMain
 [860] ImmUnion max len: 22
-[860/860] =============== xiangshan.test.runMain xi...ild/vdot --target verilog =============== 4s
+[860/860] =============== xiangshan.test.runMain xi...ild/vdot --target verilog =============== 6s
 ==================================================================================================
     VecExceptionGenHarness.v : 257 行
 
 --- (2) Verilator 构建 ---
-c++  -I.  -MMD -I/opt/homebrew/Cellar/verilator/5.052/share/verilator/include -I/opt/homebrew/Cellar/verilator/5.052/share/verilator/include/vltstd -DVERILATOR=1 -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TIMING=0 -DVM_TRACE=0 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=0 -DVM_TRACE_SAIF=0 -DVM_VPI=0 -faligned-new -fbracket-depth=4096 -fcf-protection=none -Xclang -fno-pch-timestamp -Qunused-arguments -Wno-bool-operation -Wno-c++11-narrowing -Wno-constant-logical-operand -Wno-int-in-bool-context -Wno-non-pod-varargs -Wno-parentheses-equality -Wno-shadow -Wno-sign-compare -Wno-tautological-bitwise-compare -Wno-tautological-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable -Wno-vla-cxx-extension    -std=c++17 -O2   -Os  -c -o vecexcgen_tb.o /Users/i3eg1nner/code/cie/work/XiangShan-vdot/build/decode-tb/vecexcgen_tb.cpp
-c++  -Wl,-U,__Z15vl_time_stamp64v,-U,__Z13sc_time_stampv,-U,_vlog_startup_routines   vecexcgen_tb.o verilated.o verilated_threads.o VVecExceptionGenHarness__ALL.a    -pthread -lpthread   -o /Users/i3eg1nner/code/cie/work/XiangShan-vdot/build/decode-tb/vecexcgen_tb
-- V e r i l a t i o n   R e p o r t: Verilator 5.052 2026-09-05 rev vUNKNOWN-built20260905
-- Verilator: Built from 0.000 MB sources in 0 modules, into 0.000 MB in 0 C++ files needing 0.000 MB
-- Verilator: Walltime 0.635 s (elab=0.000, cvt=0.000, bld=0.633); cpu 0.001 s on 10 threads; allocated 3.094 MB
+echo "" > VVecExceptionGenHarness__ALL.verilator_deplist.tmp
+Archive ar -rcs VVecExceptionGenHarness__ALL.a VVecExceptionGenHarness__ALL.o
+g++ -fuse-ld=mold   vecexcgen_tb.o verilated.o verilated_threads.o VVecExceptionGenHarness__ALL.a    -pthread -lpthread -latomic   -o /data/my/cie2026-vdot-xiangshan/work/XiangShan-vdot/build/decode-tb/vecexcgen_tb
+rm VVecExceptionGenHarness__ALL.verilator_deplist.tmp
+make: Leaving directory '/data/my/cie2026-vdot-xiangshan/work/XiangShan-vdot/build/decode-tb/obj'
+- V e r i l a t i o n   R e p o r t: Verilator 5.024 2024-04-05 rev v5.024
+- Verilator: Built from 0.025 MB sources in 3 modules, into 0.114 MB in 7 C++ files needing 0.000 MB
+- Verilator: Walltime 0.315 s (elab=0.002, cvt=0.012, bld=0.272); cpu 0.000 s on 128 threads; alloced 275.754 MB
 
 --- (3) 运行定向用例 ---
 DUT: VecExceptionGenHarness（内部例化真正的 VecExceptionGen）

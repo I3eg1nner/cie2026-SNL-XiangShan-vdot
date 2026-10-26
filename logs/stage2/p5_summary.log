@@ -1,15 +1,15 @@
-=== vdot 功能测试汇总  2026-10-24 23:23:02 CST ===
+=== vdot 功能测试汇总  2026-10-26 15:31:27 UTC ===
 
 分类         suite                              attempted    passed   failed  skipped 结果
 --------------------------------------------------------------------------------------------------
-2.3.1 正数   positive(vdot.vv)                         40        40        0        0   PASS
-2.3.1 正数   positive(vdotacc.vv)                      40        40        0        0   PASS
+2.3.1 正数   positive(vdot.vv)                         46        46        0        0   PASS
+2.3.1 正数   positive(vdotacc.vv)                      46        46        0        0   PASS
 2.3.1 正数   positive(vdot4a.vv)                       40        40        0        0   PASS
-2.3.2 负数   negative(vdot.vv)                         44        44        0        0   PASS
-2.3.2 负数   negative(vdotacc.vv)                      44        44        0        0   PASS
+2.3.2 负数   negative(vdot.vv)                         50        50        0        0   PASS
+2.3.2 负数   negative(vdotacc.vv)                      50        50        0        0   PASS
 2.3.2 负数   negative(vdot4a.vv)                       44        44        0        0   PASS
-2.3.3 边界   boundary(vdot.vv)                         94        94        0        9   PASS
-2.3.3 边界   boundary(vdotacc.vv)                      94        94        0        9   PASS
+2.3.3 边界   boundary(vdot.vv)                        100       100        0        9   PASS
+2.3.3 边界   boundary(vdotacc.vv)                     100       100        0        9   PASS
 2.3.3 边界   boundary(vdot4a.vv)                      106       106        0        9   PASS
 2.3.3 边界   vstart_relaxed(三条指令)             130       130        0        0   PASS
 随机差分   random.txt(vdot.vv)                     8459      8459        0     1541   PASS
@@ -38,9 +38,9 @@
 译码级      反向验证(撤守卫应变红)           1         1        0        0   PASS
 译码级      VecExceptionGen 定向                    51        51        0        0   PASS
 交付物      三份补丁干净应用到 pristine         3         3        0        0   PASS
-VIMacU 等价  VIMacU 直驱语料回放              26024     26024        0     4679   PASS
+VIMacU 等价  VIMacU 直驱语料回放              26060     26060        0     4679   PASS
 --------------------------------------------------------------------------------------------------
-合计                                               290103    290103        0     9358
+合计                                               290175    290175        0     9358
 
 失败的 suite 数：0
 
@@ -50,8 +50,8 @@ VIMacU 等价  VIMacU 直驱语料回放              26024     26024        0  
   p5_func_boundary.log       179 行
   p5_func_random.log         167 行
   p5_regression.log          56 行
-  p5_decode_illegal.log      121 行
-  p5_decode_prove_fail.log   138 行
-  p5_vimacu_equiv.log        102 行
-  p5_fault_injection.log     202 行
+  p5_decode_illegal.log      124 行
+  p5_decode_prove_fail.log   148 行
+  p5_vimacu_equiv.log        112 行
+  p5_fault_injection.log     274 行
   p5_waveform.log            71 行

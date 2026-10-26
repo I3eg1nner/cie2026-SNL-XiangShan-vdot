@@ -1,8 +1,11 @@
 ==============================================================
- [3] 独立解释器上跑完整共享语料   2026-10-24T15:26:28Z UTC
+ [3] 独立解释器上跑完整共享语料   2026-10-26T15:11:39Z UTC
 ==============================================================
-$ make clean && make NEMU_HOME=/work/work/NEMU
-NEMU_HOME            = /work/work/NEMU
+（构建目录：/data/my/cie2026-vdot-xiangshan/work/build/src/tests/riscv/vdot，为 tests/riscv/vdot 的同步副本）
+$ /opt/riscv/bin/riscv64-unknown-elf-gcc --version
+riscv64-unknown-elf-gcc () 15.2.0
+$ make clean && make NEMU_HOME=/data/my/cie2026-vdot-xiangshan/work/NEMU CROSS=/opt/riscv/bin/riscv64-unknown-elf-
+NEMU_HOME            = /data/my/cie2026-vdot-xiangshan/work/NEMU
 NEMU_COMMIT          = 90908390002f
 CONFIG_MBASE         = 0x80000000
 CONFIG_UARTLITE_MMIO = 0x40600000
@@ -11,12 +14,12 @@ VLEN                 = 128
 GEN  build/nemu_config.h
 GEN  build/vdot_test.ld
 PACK build/corpus.bin
-  positive.txt                 40 cases   policy=strict  (../../vectors)
-  negative.txt                 44 cases   policy=strict  (../../vectors)
-  boundary.txt                103 cases   policy=strict  (../../vectors)
-  vdotacc_positive.txt         40 cases   policy=strict  (../../vectors)
-  vdotacc_negative.txt         44 cases   policy=strict  (../../vectors)
-  vdotacc_boundary.txt        103 cases   policy=strict  (../../vectors)
+  positive.txt                 46 cases   policy=strict  (../../vectors)
+  negative.txt                 50 cases   policy=strict  (../../vectors)
+  boundary.txt                109 cases   policy=strict  (../../vectors)
+  vdotacc_positive.txt         46 cases   policy=strict  (../../vectors)
+  vdotacc_negative.txt         50 cases   policy=strict  (../../vectors)
+  vdotacc_boundary.txt        109 cases   policy=strict  (../../vectors)
   vdot4a_positive.txt          40 cases   policy=strict  (../../vectors)
   vdot4a_negative.txt          44 cases   policy=strict  (../../vectors)
   vdot4a_boundary.txt         115 cases   policy=strict  (../../vectors)
@@ -25,28 +28,28 @@ PACK build/corpus.bin
   vdotacc_random.txt        10000 cases   policy=strict  (../../vectors)
   vdot4a_random.txt         10000 cases   policy=strict  (../../vectors)
   vstart_range.txt             55 cases   policy=strict  (extra_vectors)
-  -> build/corpus.bin  (14 suites, 30758 cases, 2707176 bytes)
-riscv64-linux-gnu-gcc -march=rv64gcv_zve64x -mabi=lp64d -mcmodel=medany -ffreestanding -nostdlib -nostartfiles -fno-builtin -fno-pic -fno-tree-vectorize -O2 -g -Wall -Wextra -Ibuild -nostdlib -nostartfiles -no-pie -Wl,--build-id=none -Wl,-Map,build/vdot_test.map -T build/vdot_test.ld -o build/vdot_test.elf start.S vdot_test.c corpus.S
-/usr/lib/gcc-cross/riscv64-linux-gnu/13/../../../../riscv64-linux-gnu/bin/ld: warning: build/vdot_test.elf has a LOAD segment with RWX permissions
+  -> build/corpus.bin  (14 suites, 30794 cases, 2710344 bytes)
+/opt/riscv/bin/riscv64-unknown-elf-gcc -march=rv64gcv_zve64x -mabi=lp64d -mcmodel=medany -ffreestanding -nostdlib -nostartfiles -fno-builtin -fno-pic -fno-tree-vectorize -O2 -g -Wall -Wextra -Ibuild -DCORPUS_BIN='"/data/my/cie2026-vdot-xiangshan/work/build/src/tests/riscv/vdot/build/corpus.bin"' -nostdlib -nostartfiles -no-pie -Wl,--build-id=none -Wl,-Map,build/vdot_test.map -T build/vdot_test.ld -o build/vdot_test.elf start.S vdot_test.c corpus.S
+/opt/riscv/riscv64-unknown-elf/bin/ld: warning: build/vdot_test.elf has a LOAD segment with RWX permissions
 LD   build/vdot_test.elf
-riscv64-linux-gnu-objcopy -O binary build/vdot_test.elf build/vdot_test.bin
-BIN  build/vdot_test.bin  (2713352 bytes)
-riscv64-linux-gnu-objdump -d -M no-aliases --section=.text --section=.text.init build/vdot_test.elf > build/vdot_test.dis
+/opt/riscv/bin/riscv64-unknown-elf-objcopy -O binary build/vdot_test.elf build/vdot_test.bin
+BIN  build/vdot_test.bin  (2717320 bytes)
+/opt/riscv/bin/riscv64-unknown-elf-objdump -d -M no-aliases --section=.text --section=.text.init build/vdot_test.elf > build/vdot_test.dis
 DIS  build/vdot_test.dis
-riscv64-linux-gnu-gcc -march=rv64gcv_zve64x -mabi=lp64d -mcmodel=medany -ffreestanding -nostdlib -nostartfiles -fno-builtin -fno-pic -fno-tree-vectorize -O2 -g -Wall -Wextra -Ibuild -DVDOT_QUIET -nostdlib -nostartfiles -no-pie -Wl,--build-id=none -Wl,-Map,build/vdot_test.map -T build/vdot_test.ld -o build/vdot_test_quiet.elf start.S vdot_test.c corpus.S
-/usr/lib/gcc-cross/riscv64-linux-gnu/13/../../../../riscv64-linux-gnu/bin/ld: warning: build/vdot_test_quiet.elf has a LOAD segment with RWX permissions
+/opt/riscv/bin/riscv64-unknown-elf-gcc -march=rv64gcv_zve64x -mabi=lp64d -mcmodel=medany -ffreestanding -nostdlib -nostartfiles -fno-builtin -fno-pic -fno-tree-vectorize -O2 -g -Wall -Wextra -Ibuild -DCORPUS_BIN='"/data/my/cie2026-vdot-xiangshan/work/build/src/tests/riscv/vdot/build/corpus.bin"' -DVDOT_QUIET -nostdlib -nostartfiles -no-pie -Wl,--build-id=none -Wl,-Map,build/vdot_test.map -T build/vdot_test.ld -o build/vdot_test_quiet.elf start.S vdot_test.c corpus.S
+/opt/riscv/riscv64-unknown-elf/bin/ld: warning: build/vdot_test_quiet.elf has a LOAD segment with RWX permissions
 LD   build/vdot_test_quiet.elf
-riscv64-linux-gnu-objcopy -O binary build/vdot_test_quiet.elf build/vdot_test_quiet.bin
-BIN  build/vdot_test_quiet.bin  (2713016 bytes)
+/opt/riscv/bin/riscv64-unknown-elf-objcopy -O binary build/vdot_test_quiet.elf build/vdot_test_quiet.bin
+BIN  build/vdot_test_quiet.bin  (2717128 bytes)
 
 --- 证据：6 条被测指令确实以 OPIVV 自定义编码出现在镜像的 .text 里 ---
 $ grep -E 'e62081d7|e42081d7|ea2081d7|e82081d7|ee2081d7|ec2081d7' build/vdot_test.dis
-    80000754:	ec2081d7          	.word	0xec2081d7
-    800007f0:	e82081d7          	.word	0xe82081d7
-    800007f6:	ea2081d7          	.word	0xea2081d7
-    800007fc:	e42081d7          	.word	0xe42081d7
-    80000802:	ee2081d7          	.word	0xee2081d7
-    80000808:	e62081d7          	.word	0xe62081d7
+    8000086a:	ec2081d7          	.word	0xec2081d7
+    80000912:	e82081d7          	.word	0xe82081d7
+    80000918:	ea2081d7          	.word	0xea2081d7
+    8000091e:	e42081d7          	.word	0xe42081d7
+    80000924:	ee2081d7          	.word	0xee2081d7
+    8000092a:	e62081d7          	.word	0xe62081d7
 
 --- 实跑 ---
 $ $NEMU_HOME/build/riscv64-nemu-interpreter -b --log=build/nemu-run.log build/vdot_test.bin
@@ -58,7 +61,7 @@ $ $NEMU_HOME/build/riscv64-nemu-interpreter -b --log=build/nemu-run.log build/vd
    NEMU commit      : 90908390002f
    NEMU VLEN macro  : 128 bit
    csrr vlenb       : 16 byte -> VLEN = 128 bit (MATCH)
-   corpus           : 14 suites, 30758 cases, 2707176 bytes
+   corpus           : 14 suites, 30794 cases, 2710344 bytes
    instr encodings  : vd=v3 vs2=v2 vs1=v1 (OPIVV, funct3=000)
        vdot.vv    vm=1 0xe62081d7   vm=0 0xe42081d7
        vdotacc.vv vm=1 0xea2081d7   vm=0 0xe82081d7
@@ -69,12 +72,12 @@ $ $NEMU_HOME/build/riscv64-nemu-interpreter -b --log=build/nemu-run.log build/vd
 ---------------------------------------------------------------------
 suite                      cases    pass    fail   must-trap
 ---------------------------------------------------------------------
-positive                       40      40       0           0
-negative                       44      44       0           0
-boundary                      103     103       0           9
-vdotacc_positive               40      40       0           0
-vdotacc_negative               44      44       0           0
-vdotacc_boundary              103     103       0           9
+positive                       46      46       0           0
+negative                       50      50       0           0
+boundary                      109     109       0           9
+vdotacc_positive               46      46       0           0
+vdotacc_negative               50      50       0           0
+vdotacc_boundary              109     109       0           9
 vdot4a_positive                40      40       0           0
 vdot4a_negative                44      44       0           0
 vdot4a_boundary               115     115       0           9
@@ -84,7 +87,7 @@ vdotacc_random              10000   10000       0        1572
 vdot4a_random               10000   10000       0        1539
 vstart_range(extra)            55      55       0          47
 ---------------------------------------------------------------------
-TOTAL cases=30758 pass=30758 fail=0
+TOTAL cases=30794 pass=30794 fail=0
   must-trap cases (status != OK) = 4834 , trapped with mcause=2 = 4834
   missing-trap=0  unexpected-trap=0  wrong-mcause=0  value-mismatch=0  vl-readback-mismatch=0
 RESULT: PASS
@@ -95,33 +98,33 @@ For help, type "help"
 NEMU 进程退出码 = 0
 
 --- NEMU 自身运行日志（尾部） ---
-[1;34m[/work/work/NEMU/src/isa/riscv64/include/../instr/special.h:38,execute] nemu_trap case 0[0m
+[1;34m[/data/my/cie2026-vdot-xiangshan/work/NEMU/src/isa/riscv64/include/../instr/special.h:38,execute] nemu_trap case 0[0m
 [1;34m[src/cpu/cpu-exec.c:1080,cpu_exec] nemu: [1;32mHIT GOOD TRAP[0m at pc = 0x0000000080000042[0m
 [1;34m[src/cpu/cpu-exec.c:1086,cpu_exec] trap code:0[0m
-[1;34m[src/cpu/cpu-exec.c:178,monitor_statistic] host time spent = 74293 us[0m
-[1;34m[src/cpu/cpu-exec.c:180,monitor_statistic] total guest instructions = 5573813[0m
-[1;34m[src/cpu/cpu-exec.c:186,monitor_statistic] vst count = 30758, vst unit count = 30758, vst unit optimized count = 0[0m
-[1;34m[src/cpu/cpu-exec.c:189,monitor_statistic] simulation frequency = 75024739 instr/s[0m
+[1;34m[src/cpu/cpu-exec.c:178,monitor_statistic] host time spent = 78102 us[0m
+[1;34m[src/cpu/cpu-exec.c:180,monitor_statistic] total guest instructions = 6130692[0m
+[1;34m[src/cpu/cpu-exec.c:186,monitor_statistic] vst count = 30794, vst unit count = 30794, vst unit optimized count = 0[0m
+[1;34m[src/cpu/cpu-exec.c:189,monitor_statistic] simulation frequency = 78495966 instr/s[0m
 [1;34m[src/utils/state.c:30,is_exit_status_bad] NEMU exit with good state: 2, halt ret: 0[0m
 ==============================================================
- [4] difftest 参考共享库上跑同一套共享语料   2026-10-24T15:26:37Z UTC
+ [4] difftest 参考共享库上跑同一套共享语料   2026-10-26T15:11:43Z UTC
 ==============================================================
 ref 配置关掉了全部串口设备，故使用静默变体 vdot_test_quiet.bin：
   计算与比对逻辑完全相同，只是不输出，结果以 main 的返回值
   （失败条数）经 nemu_trap 作为 halt_ret 报告。
 $ $NEMU_HOME/tools/ref-so-runner/runner --so $NEMU_HOME/build/riscv64-nemu-interpreter-so -b build/vdot_test_quiet.bin
 ------------------- 以下为 .so 实际输出 -------------------
-[1;34m[/work/work/NEMU/src/isa/riscv64/include/../instr/special.h:38,exec_nemu_trap] nemu_trap case 0[0m
+[1;34m[/data/my/cie2026-vdot-xiangshan/work/NEMU/src/isa/riscv64/include/../instr/special.h:38,exec_nemu_trap] nemu_trap case 0[0m
 [1;34m[src/cpu/cpu-exec.c:1080,cpu_exec] nemu: [1;32mHIT GOOD TRAP[0m at pc = 0x0000000080000042[0m
 [1;34m[src/cpu/cpu-exec.c:1086,cpu_exec] trap code:0[0m
 [1;34m[src/cpu/cpu-exec.c:178,monitor_statistic] host time spent = 0 us[0m
-[1;34m[src/cpu/cpu-exec.c:180,monitor_statistic] total guest instructions = 5573579[0m
-[1;34m[src/cpu/cpu-exec.c:186,monitor_statistic] vst count = 30758, vst unit count = 30758, vst unit optimized count = 0[0m
+[1;34m[src/cpu/cpu-exec.c:180,monitor_statistic] total guest instructions = 6130602[0m
+[1;34m[src/cpu/cpu-exec.c:186,monitor_statistic] vst count = 30794, vst unit count = 30794, vst unit optimized count = 0[0m
 [1;34m[src/cpu/cpu-exec.c:192,monitor_statistic] Finish running in less than 1 us and can not calculate the simulation frequency[0m
-host time spent = 408376 us
-total guest instructions = 5573579
-vst count = 30758, vst unit count = 30758, vst unit optimized count = 0
-simulation frequency = 13648155 instr/s
+host time spent = 596775 us
+total guest instructions = 6130602
+vst count = 30794, vst unit count = 30794, vst unit optimized count = 0
+simulation frequency = 10272886 instr/s
 ------------------- .so 输出结束 -------------------
 runner 退出码 = 0  （0 = HIT GOOD TRAP = 失败条数为 0）
 

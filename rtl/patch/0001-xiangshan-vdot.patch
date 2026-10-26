@@ -1,5 +1,5 @@
 diff --git a/src/main/scala/xiangshan/backend/decode/DecodeUnit.scala b/src/main/scala/xiangshan/backend/decode/DecodeUnit.scala
-index 2285d69..55bb0a0 100644
+index 2285d69..b5109e1 100644
 --- a/src/main/scala/xiangshan/backend/decode/DecodeUnit.scala
 +++ b/src/main/scala/xiangshan/backend/decode/DecodeUnit.scala
 @@ -34,6 +34,7 @@ import xiangshan.backend.decode.isa.bitfield.{InstVType, OPCODE5Bit, XSInstBitFi
@@ -10,12 +10,13 @@ index 2285d69..55bb0a0 100644
  import yunsuan.{VfaluType, VfcvtType}
  
  /**
-@@ -976,6 +977,10 @@ class DecodeUnit(implicit p: Parameters) extends XSModule with DecodeUnitConstan
+@@ -976,6 +977,11 @@ class DecodeUnit(implicit p: Parameters) extends XSModule with DecodeUnitConstan
    private val vmaInsts = Seq(
      VMACC_VV, VMACC_VX, VNMSAC_VV, VNMSAC_VX, VMADD_VV, VMADD_VX, VNMSUB_VV, VNMSUB_VX,
      VWMACCU_VV, VWMACCU_VX, VWMACC_VV, VWMACC_VX, VWMACCSU_VV, VWMACCSU_VX, VWMACCUS_VX,
-+    // vdot 指令族：三条都要读旧 vd —— vdotacc/vdot4a 用它做累加器，vdot 在 vta=0 时
-+    // 用它的 [127:32] 做 tail-undisturbed。不登记的话 isDependOldVd 为 0，
++    // vdot 指令族：三条都要读旧 vd —— vdotacc/vdot4a 用它做累加器；vdot 在 vstart >= vl
++    // （含 vl = 0）时必须原样写回旧 vd（裁定 S-5；vstart < vl 时 vd[127:32] 恒清零，
++    // 裁定 S-3'，不再依赖 vta）。不登记的话 isDependOldVd 为 0，
 +    // NewDispatch 会在 vlIsVlmax && (vm||vma) && !isWritePartVd 时丢弃对旧 vd 的依赖。
 +    VDOT_VV, VDOTACC_VV, VDOT4A_VV,
    )
@@ -148,7 +149,7 @@ index b885c68..1494279 100644
    private val vdEmul = LookupTreeDefault(vdEmulSel, LMUL, List(
      "b10000".U  -> "b100".U,
 diff --git a/src/main/scala/xiangshan/backend/fu/wrapper/VIMacU.scala b/src/main/scala/xiangshan/backend/fu/wrapper/VIMacU.scala
-index 27eb801..50f7bb4 100644
+index 27eb801..722347f 100644
 --- a/src/main/scala/xiangshan/backend/fu/wrapper/VIMacU.scala
 +++ b/src/main/scala/xiangshan/backend/fu/wrapper/VIMacU.scala
 @@ -3,17 +3,17 @@ package xiangshan.backend.fu.wrapper
@@ -266,14 +267,14 @@ index 27eb801..50f7bb4 100644
 +  /**
 +    * vdot / vdotacc 的写回成形（RedTailGen）
 +    *
-+    * 归约类不走 Mgu —— Mgu 的逐字节 active/tail 模型表达不了「只写元素 0，其余按 vta」
-+    * （裁定 R-13，VIPU 面对同样的问题也是绕过 Mgu）。这里照抄 Reduction.scala:644-647
-+    * 的 red_vd_tail 惯用法，目的 EEW 固定为 32（裁定 S-3），vma 被忽略（裁定 S-2）。
++    * 归约类不走 Mgu —— Mgu 的逐字节 active/tail 模型表达不了「只写元素 0，其余清零」
++    * （裁定 R-13，VIPU 面对同样的问题也是绕过 Mgu）。写回规则（裁定 S-3'，与赛题官方
++    * 伪代码 vd[0] = result; vd[1..VLEN-1] = 0 一致）：vstart < vl 时 vd[31:0] 为结果、
++    * vd[VLEN-1:32] 恒为 0，与 vta、vma 都无关（vma 本就被忽略，裁定 S-2）；
++    * vstart >= vl（含 vl = 0）时整寄存器保持 oldVd（裁定 S-5）。
 +    */
-+  private val redVdTailOne = Cat(~0.U((VLEN - 32).W), dotVd(31, 0))
-+  private val redVdTailOld = Cat(outOldVd(VLEN - 1, 32), dotVd(31, 0))
-+  private val redVd = Mux(outVstart >= outVl, outOldVd,                 // 裁定 S-5
-+                      Mux(outVecCtrl.vta, redVdTailOne, redVdTailOld))  // 裁定 S-3
++  private val redVd = Mux(outVstart >= outVl, outOldVd,                   // 裁定 S-5
++                      Cat(0.U((VLEN - 32).W), dotVd(31, 0)))              // 裁定 S-3'
 +
    /**
      * [[mgu]]'s in connection

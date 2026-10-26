@@ -183,14 +183,14 @@ class VIMacU(cfg: FuConfig)(implicit p: Parameters) extends VecPipedFuncUnit(cfg
   /**
     * vdot / vdotacc 的写回成形（RedTailGen）
     *
-    * 归约类不走 Mgu —— Mgu 的逐字节 active/tail 模型表达不了「只写元素 0，其余按 vta」
-    * （裁定 R-13，VIPU 面对同样的问题也是绕过 Mgu）。这里照抄 Reduction.scala:644-647
-    * 的 red_vd_tail 惯用法，目的 EEW 固定为 32（裁定 S-3），vma 被忽略（裁定 S-2）。
+    * 归约类不走 Mgu —— Mgu 的逐字节 active/tail 模型表达不了「只写元素 0，其余清零」
+    * （裁定 R-13，VIPU 面对同样的问题也是绕过 Mgu）。写回规则（裁定 S-3'，与赛题官方
+    * 伪代码 vd[0] = result; vd[1..VLEN-1] = 0 一致）：vstart < vl 时 vd[31:0] 为结果、
+    * vd[VLEN-1:32] 恒为 0，与 vta、vma 都无关（vma 本就被忽略，裁定 S-2）；
+    * vstart >= vl（含 vl = 0）时整寄存器保持 oldVd（裁定 S-5）。
     */
-  private val redVdTailOne = Cat(~0.U((VLEN - 32).W), dotVd(31, 0))
-  private val redVdTailOld = Cat(outOldVd(VLEN - 1, 32), dotVd(31, 0))
-  private val redVd = Mux(outVstart >= outVl, outOldVd,                 // 裁定 S-5
-                      Mux(outVecCtrl.vta, redVdTailOne, redVdTailOld))  // 裁定 S-3
+  private val redVd = Mux(outVstart >= outVl, outOldVd,                   // 裁定 S-5
+                      Cat(0.U((VLEN - 32).W), dotVd(31, 0)))              // 裁定 S-3'
 
   /**
     * [[mgu]]'s in connection

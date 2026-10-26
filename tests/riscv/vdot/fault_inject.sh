@@ -167,6 +167,17 @@ assert s.count(old) == 1, "pattern not found"
 open(p, "w").write(s.replace(old, new))
 '
 
+# ---- #7 回退裁定 S-3'：归约形态元素 1..3 不再无条件清零，改回旧 S-3（按 vta 处理）----
+TOTAL=$((TOTAL + 1))
+run_inject 7 "[回退裁定 S-3'：vdot/vdotacc 元素 1..3 改回按 vta 处理（vta=1 写全 1，vta=0 保持）]" '
+import sys
+p = sys.argv[1]; s = open(p).read()
+old = "    for (int idx = 1; idx < vlmax_d; idx++) {\n      set_vreg(id_dest->reg, idx, 0, VDOT_DEST_VSEW, vtype->vlmul, 0);\n    }"
+new = "    (void)vlmax_d;  /* FAULT #7 */\n    if (RVV_AGNOSTIC && vtype->vta) set_vreg_tail(id_dest->reg);"
+assert s.count(old) == 1, "pattern not found"
+open(p, "w").write(s.replace(old, new))
+'
+
 # ---- 还原并重新编译，确认回到干净状态 ----
 echo
 echo "=============================================================="

@@ -1,10 +1,10 @@
 ==============================================================
- [1] 应用 vdot patch（幂等）   2026-10-24T15:26:25Z UTC
+ [1] 应用 vdot patch（幂等）   2026-10-26T15:11:37Z UTC
 ==============================================================
 $ git log --oneline -1
-9090839 feat(difftest): support fast shared reference execution (#1247)
-$ sha256sum /work/nemu/patch/0001-add-vdot-instruction-family.patch
-fb003c54c813c91916cd31738a0d3d1d27b6f937f31bdcc728b0564f45008838  /work/nemu/patch/0001-add-vdot-instruction-family.patch
+90908390 feat(difftest): support fast shared reference execution (#1247)
+$ sha256sum /data/my/cie2026-vdot-xiangshan/nemu/patch/0001-add-vdot-instruction-family.patch
+cb9194f8050d8594d8a5cea6fdc7f67dec05ef0b47c7289742ff6b6ea8319503  /data/my/cie2026-vdot-xiangshan/nemu/patch/0001-add-vdot-instruction-family.patch
 patch 已处于已应用状态（git apply --check --reverse 通过），跳过
 $ git status --short
  M configs/riscv64-xs-kmhv2-ref_defconfig
@@ -16,144 +16,145 @@ $ git status --short
  M src/isa/riscv64/instr/rvv/vcompute_impl.h
 ?? src/isa/riscv64/instr/rvv/vdot.c
 $ git log --oneline -1   （上游 git 历史未被改写）
-9090839 feat(difftest): support fast shared reference execution (#1247)
+90908390 feat(difftest): support fast shared reference execution (#1247)
 
 ==============================================================
- [2A] 构建独立解释器 riscv64-xs-kmhv2_defconfig   2026-10-24T15:26:25Z UTC
+ [2A] 构建独立解释器 riscv64-xs-kmhv2_defconfig   2026-10-26T15:11:37Z UTC
 ==============================================================
 $ uname -m
-aarch64
+x86_64
 $ gcc --version
-gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+gcc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0
 $ make riscv64-xs-kmhv2_defconfig
 Makefile:40: You have set CONFIG_FLASH_IMG_PATH option, but the specified path '""' does not exist!
 --- 确认 CONFIG_CUSTOM_XVDOT 进入生成配置 ---
 113:#define CONFIG_CUSTOM_XVDOT 1
-$ make -j$(nproc)
+$ make -j128
 Makefile:40: You have set CONFIG_FLASH_IMG_PATH option, but the specified path '""' does not exist!
-+ g++ /work/work/NEMU/build/riscv64-nemu-interpreter
--rwxr-xr-x 1 root root 589272 Oct 24 15:26 build/riscv64-nemu-interpreter
-build/riscv64-nemu-interpreter: ELF 64-bit LSB pie executable, ARM aarch64, version 1 (SYSV), dynamically linked, interpreter /lib/ld-linux-aarch64.so.1, BuildID[sha1]=79a52521881d3ae96545743ee009855ff7814803, for GNU/Linux 3.7.0, not stripped
++ CC src/isa/riscv64/instr/rvv/vdot.c
++ ccache g++ /data/my/cie2026-vdot-xiangshan/work/NEMU/build/riscv64-nemu-interpreter
+-rwxrwxr-x 1 user user 537496 Oct 26 15:11 build/riscv64-nemu-interpreter
+build/riscv64-nemu-interpreter: ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, BuildID[sha1]=9214eb096cf8690f0c55376f54d98e1a73b45833, for GNU/Linux 3.2.0, not stripped
 --- vdot.c 确实被编译进这一形态 ---
--rw-r--r-- 1 root root 20264 Oct 24 15:23 build/obj-riscv64-nemu-interpreter/src/isa/riscv64/instr/rvv/vdot.o
+-rw-rw-r-- 1 user user 20640 Oct 26 15:11 build/obj-riscv64-nemu-interpreter/src/isa/riscv64/instr/rvv/vdot.o
 ==============================================================
- [2B] 构建 difftest 参考共享库 riscv64-xs-kmhv2-ref_defconfig   2026-10-24T15:26:29Z UTC
+ [2B] 构建 difftest 参考共享库 riscv64-xs-kmhv2-ref_defconfig   2026-10-26T15:11:40Z UTC
 ==============================================================
 $ make riscv64-xs-kmhv2-ref_defconfig
 Makefile:40: You have set CONFIG_FLASH_IMG_PATH option, but the specified path '""' does not exist!
 --- 确认 CONFIG_CUSTOM_XVDOT 进入 ref 形态的生成配置 ---
 103:#define CONFIG_CUSTOM_XVDOT 1
-$ make -j$(nproc)
+$ make -j128
 Makefile:40: You have set CONFIG_FLASH_IMG_PATH option, but the specified path '""' does not exist!
 + CC src/nemu-main.c
 + CC src/device/device.c
 + CC src/device/alarm.c
 + CC src/device/intr.c
 + CC src/device/flash.c
-+ CC src/cpu/difftest/ref.c
++ CC src/cpu/cpu-exec.c
 + CC src/cpu/difftest/ame/amuctrl.c
-+ CC src/cpu/difftest/ame/amuhash_portable.c
 + CC src/cpu/difftest/ame/amuhash.c
++ CC src/cpu/difftest/ame/amuhash_portable.c
 + CC src/cpu/difftest/ame/amuhash_x86.c
 + CC src/cpu/difftest/ame/msync.c
 + CC src/cpu/difftest/dut.c
-+ CC src/cpu/cpu-exec.c
++ CC src/cpu/difftest/ref.c
 + CC src/cpu/tcache.c
-+ CC src/monitor/watchpoint.c
-+ CC src/monitor/monitor.c
-+ CC src/monitor/image_loader.c
-+ CC src/monitor/fdt_rng_seed.c
-+ CC src/monitor/ui.c
 + CC src/monitor/aligncheck.c
-+ CC src/utils/log.c
-+ CC src/utils/timer.c
-+ CC src/utils/store_hash.c
-+ CC src/utils/state.c
-+ CC src/utils/filename.c
-+ CC src/utils/hash.c
++ CC src/monitor/fdt_rng_seed.c
++ CC src/monitor/image_loader.c
++ CC src/monitor/monitor.c
++ CC src/monitor/ui.c
++ CC src/monitor/watchpoint.c
 + CC src/utils/br_log.c
 + CC src/utils/dynamic-config.c
-+ CC src/utils/iqueue.c
 + CC src/utils/expr.c
-+ CC src/memory/paddr.c
++ CC src/utils/filename.c
++ CC src/utils/hash.c
++ CC src/utils/iqueue.c
++ CC src/utils/log.c
++ CC src/utils/state.c
++ CC src/utils/store_hash.c
++ CC src/utils/timer.c
 + CC src/memory/host-tlb.c
-+ CC src/memory/vaddr.c
++ CC src/memory/paddr.c
 + CC src/memory/store_log_hash.c
-+ CC src/isa/riscv64/difftest/ref.c
-+ CC src/isa/riscv64/difftest/dut.c
-+ CC src/isa/riscv64/init.c
-+ CC src/isa/riscv64/reg.c
-+ CC src/isa/riscv64/system/priv.c
-+ CC src/isa/riscv64/system/timer.c
-+ CC src/isa/riscv64/system/aia.c
-+ CC src/isa/riscv64/system/trigger.c
-+ CC src/isa/riscv64/system/mmu.c
-+ CC src/isa/riscv64/system/intr.c
++ CC src/memory/vaddr.c
 + CC src/isa/riscv64/ame/raw_fp4_memory.c
 + CC src/isa/riscv64/clint.c
-+ CC src/isa/riscv64/instr/fp.c
-+ CC src/isa/riscv64/instr/rvv/vdot.c
-+ CC src/isa/riscv64/instr/rvv/vcommon.c
-+ CC src/isa/riscv64/instr/rvv/vreg_impl.c
-+ CC src/isa/riscv64/instr/rvv/vfexp2.c
-+ CC src/isa/riscv64/instr/rvv/vcompute_impl.c
-+ CC src/isa/riscv64/instr/rvv/vldst_impl.c
-+ CC src/isa/riscv64/instr/mp.c
-+ CC src/isa/riscv64/instr/rvb/rvintrin.c
-+ CC src/isa/riscv64/instr/rvk/crypto_impl.c
-+ CC src/isa/riscv64/instr/decode.c
-+ CC src/isa/riscv64/instr/ame/mldst_fast.c
-+ CC src/isa/riscv64/instr/ame/mreg.c
++ CC src/isa/riscv64/difftest/dut.c
++ CC src/isa/riscv64/difftest/ref.c
++ CC src/isa/riscv64/init.c
 + CC src/isa/riscv64/instr/ame/mcompute_impl.c
++ CC src/isa/riscv64/instr/ame/mldst_fast.c
 + CC src/isa/riscv64/instr/ame/mldst_impl.c
 + CC src/isa/riscv64/instr/ame/mldst_transpose_fast.c
++ CC src/isa/riscv64/instr/ame/mreg.c
++ CC src/isa/riscv64/instr/decode.c
++ CC src/isa/riscv64/instr/fp.c
++ CC src/isa/riscv64/instr/mp.c
 + CC src/isa/riscv64/instr/priv/system.c
-+ CC src/isa/riscv64/instr/vp.c
 + CC src/isa/riscv64/instr/rva/amo.c
-+ CC src/isa/riscv64/instr/rvt/matmul_subfloat.c
-+ CC src/isa/riscv64/instr/rvt/sfu.c
++ CC src/isa/riscv64/instr/rvb/rvintrin.c
++ CC src/isa/riscv64/instr/rvcbo/cbo_impl.c
++ CC src/isa/riscv64/instr/rvk/crypto_impl.c
 + CC src/isa/riscv64/instr/rvt/conv2d.c
-+ CC src/isa/riscv64/instr/rvt/register.c
 + CC src/isa/riscv64/instr/rvt/convert.c
-+ CC src/isa/riscv64/instr/rvt/pooling.c
 + CC src/isa/riscv64/instr/rvt/element_wise.c
 + CC src/isa/riscv64/instr/rvt/matmul.c
-+ CC src/isa/riscv64/instr/rvt/type.c
-+ CC src/isa/riscv64/instr/rvt/tensor_init.c
++ CC src/isa/riscv64/instr/rvt/matmul_subfloat.c
++ CC src/isa/riscv64/instr/rvt/pooling.c
++ CC src/isa/riscv64/instr/rvt/register.c
++ CC src/isa/riscv64/instr/rvt/sfu.c
 + CC src/isa/riscv64/instr/rvt/tensor_copy.c
-+ CC src/isa/riscv64/instr/rvcbo/cbo_impl.c
++ CC src/isa/riscv64/instr/rvt/tensor_init.c
++ CC src/isa/riscv64/instr/rvt/type.c
++ CC src/isa/riscv64/instr/rvv/vcommon.c
++ CC src/isa/riscv64/instr/rvv/vcompute_impl.c
++ CC src/isa/riscv64/instr/rvv/vfexp2.c
++ CC src/isa/riscv64/instr/rvv/vldst_impl.c
++ CC src/isa/riscv64/instr/rvv/vreg_impl.c
++ CC src/isa/riscv64/instr/rvv/vdot.c
++ CC src/isa/riscv64/instr/vp.c
++ CC src/isa/riscv64/reg.c
++ CC src/isa/riscv64/system/aia.c
++ CC src/isa/riscv64/system/intr.c
++ CC src/isa/riscv64/system/mmu.c
++ CC src/isa/riscv64/system/priv.c
++ CC src/isa/riscv64/system/timer.c
++ CC src/isa/riscv64/system/trigger.c
 + CC src/engine/interpreter/fp.c
-+ CC src/engine/interpreter/init.c
 + CC src/engine/interpreter/hostcall.c
-+ CC src/device/io/port-io.c
++ CC src/engine/interpreter/init.c
 + CC src/device/io/map.c
 + CC src/device/io/mmio.c
++ CC src/device/io/port-io.c
 + CC src/profiling/profiling_control.c
 + CC src/checkpoint/cpt_env.c
 + CXX src/checkpoint/path_manager.cpp
-+ CXX src/checkpoint/simpoint.cpp
-+ CXX src/checkpoint/serializer.cpp
 + CXX src/checkpoint/semantic_point.cpp
++ CXX src/checkpoint/serializer.cpp
++ CXX src/checkpoint/simpoint.cpp
 + CXX src/base/output.cpp
 + CXX src/cpu/difftest/ame/amu_ctrl_queue_wrapper.cpp
 + CXX src/cpu/difftest/ame/msync_queue_wrapper.cpp
 + CXX src/memory/store_queue_wrapper.cpp
-+ g++ /work/work/NEMU/build/riscv64-nemu-interpreter-so
--rwxr-xr-x 1 root root 1571008 Oct 24 15:26 build/riscv64-nemu-interpreter-so
-build/riscv64-nemu-interpreter-so: ELF 64-bit LSB shared object, ARM aarch64, version 1 (SYSV), dynamically linked, BuildID[sha1]=d192482865a19f31b4e73a1a8e6f6586d00baec2, not stripped
++ ccache g++ /data/my/cie2026-vdot-xiangshan/work/NEMU/build/riscv64-nemu-interpreter-so
+-rwxrwxr-x 1 user user 1467864 Oct 26 15:11 build/riscv64-nemu-interpreter-so
+build/riscv64-nemu-interpreter-so: ELF 64-bit LSB shared object, x86-64, version 1 (SYSV), dynamically linked, BuildID[sha1]=09e6b70a4ae90e51f349bd3ecb28726019ffb149, not stripped
 --- vdot.c 确实被编译进 .so 形态 ---
--rw-r--r-- 1 root root 20256 Oct 24 15:26 build/obj-riscv64-nemu-interpreter-so/src/isa/riscv64/instr/rvv/vdot.o
+-rw-rw-r-- 1 user user 19416 Oct 26 15:11 build/obj-riscv64-nemu-interpreter-so/src/isa/riscv64/instr/rvv/vdot.o
 --- 构建 NEMU 自带的 ref-so-runner（dlopen 驱动 .so 跑扁平镜像） ---
-make: Entering directory '/work/work/NEMU/tools/ref-so-runner'
+make: Entering directory '/data/my/cie2026-vdot-xiangshan/work/NEMU/tools/ref-so-runner'
 make: Nothing to be done for 'all'.
-make: Leaving directory '/work/work/NEMU/tools/ref-so-runner'
--rwxr-xr-x 1 root root 94040 Oct 24 11:51 tools/ref-so-runner/runner
+make: Leaving directory '/data/my/cie2026-vdot-xiangshan/work/NEMU/tools/ref-so-runner'
+-rwxrwxr-x 1 user user 41928 Oct 24 16:58 tools/ref-so-runner/runner
 ==============================================================
- [5] 恢复工作区为独立解释器配置   2026-10-24T15:26:38Z UTC
+ [5] 恢复工作区为独立解释器配置   2026-10-26T15:11:44Z UTC
 ==============================================================
 $ make riscv64-xs-kmhv2_defconfig
 Makefile:40: You have set CONFIG_FLASH_IMG_PATH option, but the specified path '""' does not exist!
-$ make -j$(nproc)
+$ make -j128
 Makefile:40: You have set CONFIG_FLASH_IMG_PATH option, but the specified path '""' does not exist!
 + CC src/nemu-main.c
 + CC src/device/device.c
@@ -166,97 +167,97 @@ Makefile:40: You have set CONFIG_FLASH_IMG_PATH option, but the specified path '
 + CC src/device/vga.c
 + CC src/device/sdcard.c
 + CC src/device/flash.c
-+ CC src/cpu/difftest/ref.c
++ CC src/cpu/cpu-exec.c
 + CC src/cpu/difftest/ame/amuctrl.c
-+ CC src/cpu/difftest/ame/amuhash_portable.c
 + CC src/cpu/difftest/ame/amuhash.c
++ CC src/cpu/difftest/ame/amuhash_portable.c
 + CC src/cpu/difftest/ame/amuhash_x86.c
 + CC src/cpu/difftest/ame/msync.c
 + CC src/cpu/difftest/dut.c
-+ CC src/cpu/cpu-exec.c
++ CC src/cpu/difftest/ref.c
 + CC src/cpu/tcache.c
-+ CC src/monitor/watchpoint.c
-+ CC src/monitor/monitor.c
-+ CC src/monitor/image_loader.c
-+ CC src/monitor/fdt_rng_seed.c
-+ CC src/monitor/ui.c
 + CC src/monitor/aligncheck.c
-+ CC src/utils/log.c
-+ CC src/utils/timer.c
-+ CC src/utils/store_hash.c
-+ CC src/utils/state.c
-+ CC src/utils/filename.c
-+ CC src/utils/hash.c
++ CC src/monitor/fdt_rng_seed.c
++ CC src/monitor/image_loader.c
++ CC src/monitor/monitor.c
++ CC src/monitor/ui.c
++ CC src/monitor/watchpoint.c
 + CC src/utils/br_log.c
 + CC src/utils/dynamic-config.c
-+ CC src/utils/iqueue.c
 + CC src/utils/expr.c
-+ CC src/memory/paddr.c
++ CC src/utils/filename.c
++ CC src/utils/hash.c
++ CC src/utils/iqueue.c
++ CC src/utils/log.c
++ CC src/utils/state.c
++ CC src/utils/store_hash.c
++ CC src/utils/timer.c
 + CC src/memory/host-tlb.c
-+ CC src/memory/vaddr.c
++ CC src/memory/paddr.c
 + CC src/memory/store_log_hash.c
-+ CC src/isa/riscv64/difftest/ref.c
-+ CC src/isa/riscv64/difftest/dut.c
-+ CC src/isa/riscv64/init.c
-+ CC src/isa/riscv64/reg.c
-+ CC src/isa/riscv64/system/priv.c
-+ CC src/isa/riscv64/system/timer.c
-+ CC src/isa/riscv64/system/aia.c
-+ CC src/isa/riscv64/system/trigger.c
-+ CC src/isa/riscv64/system/mmu.c
-+ CC src/isa/riscv64/system/intr.c
++ CC src/memory/vaddr.c
 + CC src/isa/riscv64/ame/raw_fp4_memory.c
 + CC src/isa/riscv64/clint.c
-+ CC src/isa/riscv64/instr/fp.c
-+ CC src/isa/riscv64/instr/rvv/vdot.c
-+ CC src/isa/riscv64/instr/rvv/vcommon.c
-+ CC src/isa/riscv64/instr/rvv/vreg_impl.c
-+ CC src/isa/riscv64/instr/rvv/vfexp2.c
-+ CC src/isa/riscv64/instr/rvv/vcompute_impl.c
-+ CC src/isa/riscv64/instr/rvv/vldst_impl.c
-+ CC src/isa/riscv64/instr/mp.c
-+ CC src/isa/riscv64/instr/rvb/rvintrin.c
-+ CC src/isa/riscv64/instr/rvk/crypto_impl.c
-+ CC src/isa/riscv64/instr/decode.c
-+ CC src/isa/riscv64/instr/ame/mldst_fast.c
-+ CC src/isa/riscv64/instr/ame/mreg.c
++ CC src/isa/riscv64/difftest/dut.c
++ CC src/isa/riscv64/difftest/ref.c
++ CC src/isa/riscv64/init.c
 + CC src/isa/riscv64/instr/ame/mcompute_impl.c
++ CC src/isa/riscv64/instr/ame/mldst_fast.c
 + CC src/isa/riscv64/instr/ame/mldst_impl.c
 + CC src/isa/riscv64/instr/ame/mldst_transpose_fast.c
++ CC src/isa/riscv64/instr/ame/mreg.c
++ CC src/isa/riscv64/instr/decode.c
++ CC src/isa/riscv64/instr/fp.c
++ CC src/isa/riscv64/instr/mp.c
 + CC src/isa/riscv64/instr/priv/system.c
-+ CC src/isa/riscv64/instr/vp.c
 + CC src/isa/riscv64/instr/rva/amo.c
-+ CC src/isa/riscv64/instr/rvt/matmul_subfloat.c
-+ CC src/isa/riscv64/instr/rvt/sfu.c
++ CC src/isa/riscv64/instr/rvb/rvintrin.c
++ CC src/isa/riscv64/instr/rvcbo/cbo_impl.c
++ CC src/isa/riscv64/instr/rvk/crypto_impl.c
 + CC src/isa/riscv64/instr/rvt/conv2d.c
-+ CC src/isa/riscv64/instr/rvt/register.c
 + CC src/isa/riscv64/instr/rvt/convert.c
-+ CC src/isa/riscv64/instr/rvt/pooling.c
 + CC src/isa/riscv64/instr/rvt/element_wise.c
 + CC src/isa/riscv64/instr/rvt/matmul.c
-+ CC src/isa/riscv64/instr/rvt/type.c
-+ CC src/isa/riscv64/instr/rvt/tensor_init.c
++ CC src/isa/riscv64/instr/rvt/matmul_subfloat.c
++ CC src/isa/riscv64/instr/rvt/pooling.c
++ CC src/isa/riscv64/instr/rvt/register.c
++ CC src/isa/riscv64/instr/rvt/sfu.c
 + CC src/isa/riscv64/instr/rvt/tensor_copy.c
-+ CC src/isa/riscv64/instr/rvcbo/cbo_impl.c
++ CC src/isa/riscv64/instr/rvt/tensor_init.c
++ CC src/isa/riscv64/instr/rvt/type.c
++ CC src/isa/riscv64/instr/rvv/vcommon.c
++ CC src/isa/riscv64/instr/rvv/vcompute_impl.c
++ CC src/isa/riscv64/instr/rvv/vfexp2.c
++ CC src/isa/riscv64/instr/rvv/vldst_impl.c
++ CC src/isa/riscv64/instr/rvv/vreg_impl.c
++ CC src/isa/riscv64/instr/rvv/vdot.c
++ CC src/isa/riscv64/instr/vp.c
++ CC src/isa/riscv64/reg.c
++ CC src/isa/riscv64/system/aia.c
++ CC src/isa/riscv64/system/intr.c
++ CC src/isa/riscv64/system/mmu.c
++ CC src/isa/riscv64/system/priv.c
++ CC src/isa/riscv64/system/timer.c
++ CC src/isa/riscv64/system/trigger.c
 + CC src/engine/interpreter/fp.c
-+ CC src/engine/interpreter/init.c
 + CC src/engine/interpreter/hostcall.c
-+ CC src/device/io/port-io.c
++ CC src/engine/interpreter/init.c
 + CC src/device/io/map.c
 + CC src/device/io/mmio.c
++ CC src/device/io/port-io.c
 + CC src/profiling/profiling_control.c
 + CC src/checkpoint/cpt_env.c
 + CXX src/checkpoint/path_manager.cpp
-+ CXX src/checkpoint/simpoint.cpp
-+ CXX src/checkpoint/serializer.cpp
 + CXX src/checkpoint/semantic_point.cpp
++ CXX src/checkpoint/serializer.cpp
++ CXX src/checkpoint/simpoint.cpp
 + CXX src/base/output.cpp
 + CXX src/memory/store_queue_wrapper.cpp
-+ g++ /work/work/NEMU/build/riscv64-nemu-interpreter
++ ccache g++ /data/my/cie2026-vdot-xiangshan/work/NEMU/build/riscv64-nemu-interpreter
 #define CONFIG_UARTLITE_MMIO 0x40600000
 #define CONFIG_MBASE 0x80000000
 #define CONFIG_CUSTOM_XVDOT 1
 --- build/ 目录一览 ---
-total 2844
--rwxr-xr-x 1 root root  589272 Oct 24 15:26 riscv64-nemu-interpreter
--rwxr-xr-x 1 root root 1571008 Oct 24 15:26 riscv64-nemu-interpreter-so
+total 1964
+-rwxrwxr-x 1 user user  537496 Oct 26 15:11 riscv64-nemu-interpreter
+-rwxrwxr-x 1 user user 1467864 Oct 26 15:11 riscv64-nemu-interpreter-so

@@ -1,111 +1,358 @@
 ==============================================================
- [T3] 故障注入自测：比对链路必须能检出人为错误   2026-10-24T15:29:43Z UTC
+ [T3] 故障注入自测：比对链路必须能检出人为错误   2026-10-26T15:22:51Z UTC
 ==============================================================
 ==============================================================
- [T3-BASE] 注入前基线（期望 RESULT(VALUE): PASS）   2026-10-24T15:29:43Z UTC
+ [T3-BASE] 注入前基线（期望 RESULT(VALUE): PASS）   2026-10-26T15:22:52Z UTC
 ==============================================================
-TOTAL  attempted = 8405
-  [A] 值比对（REF 与 RTL 都判合法）: 比对 6378 条, PASS 6378, FAIL 0
-  [B] 非法指令判定一致性          : 合法一致 6378, 非法一致 2027, 分歧 0
+TOTAL  attempted = 8429
+  [A] 值比对（REF 与 RTL 都判合法）: 比对 6402 条, PASS 6402, FAIL 0
+  [B] 非法指令判定一致性          : 合法一致 6402, 非法一致 2027, 分歧 0
 RESULT(VALUE)   : PASS   (值比对失配 0 条)
 RESULT(LEGALITY): PASS   (判定分歧 0 条)
 >>> 基线：值比对 PASS，已知判定分歧 0 条
 ==============================================================
- [T3-RTL-1] 在生成的 VDotTop.sv 里把写回结果的 bit0 翻转   2026-10-24T15:29:44Z UTC
+ [T3-RTL-1] 在生成的 VDotTop.sv 里把 io_vd 的输出格式选择取反（vdot4a 格式与归约格式互换）   2026-10-26T15:22:52Z UTC
 ==============================================================
-注入成功：/Users/i3eg1nner/code/cie/work/XiangShan-cosim/yunsuan/build/vdot/VDotTop.sv  (1 处)
-%Warning-WIDTHEXPAND: /Users/i3eg1nner/code/cie/work/XiangShan-cosim/yunsuan/build/vdot/VDotTop.sv:1409:25: Operator XOR expects 128 bits on the RHS, but RHS's VARREF 'isDot4aS2' generates 1 bits.
-                                                                                                          : ... note: In instance 'VDotTop'
+注入成功：/data/my/cie2026-vdot-xiangshan/work/XiangShan-cosim/yunsuan/build/vdot/VDotTop.sv  (1 处)
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+%Warning-WIDTHEXPAND: /data/my/cie2026-vdot-xiangshan/work/XiangShan-cosim/yunsuan/build/vdot/VDotTop.sv:1409:25: Operator XOR expects 128 bits on the RHS, but RHS's VARREF 'isDot4aS2' generates 1 bits.
+                                                                                                                : ... note: In instance 'VDotTop'
  1409 |   assign io_vd = 128'h1 ^
       |                         ^
-                      ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=5.052
+                      ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=5.024
                       ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
-%Warning-WIDTHTRUNC: /Users/i3eg1nner/code/cie/work/XiangShan-cosim/yunsuan/build/vdot/VDotTop.sv:1411:7: Logical operator COND expects 1 bit on the Conditional Test, but Conditional Test's XOR generates 128 bits.
-                                                                                                        : ... note: In instance 'VDotTop'
+%Warning-WIDTHTRUNC: /data/my/cie2026-vdot-xiangshan/work/XiangShan-cosim/yunsuan/build/vdot/VDotTop.sv:1411:7: Logical operator COND expects 1 bit on the Conditional Test, but Conditional Test's XOR generates 128 bits.
+                                                                                                              : ... note: In instance 'VDotTop'
  1411 |       ? {vstartGeVlS2 | (|(vstartS2[6:2]))
       |       ^
-                     ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=5.052
-                     ... Use "/* verilator lint_off WIDTHTRUNC */" and lint_on around source to disable this message.
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
 --- 注入后实跑（期望 RESULT(VALUE): FAIL）---
-TOTAL  attempted = 8405
-  [A] 值比对（REF 与 RTL 都判合法）: 比对 6378 条, PASS 1262, FAIL 5116
-  [B] 非法指令判定一致性          : 合法一致 6378, 非法一致 2027, 分歧 0
-RESULT(VALUE)   : FAIL   (值比对失配 5116 条)
+TOTAL  attempted = 8429
+  [A] 值比对（REF 与 RTL 都判合法）: 比对 6402 条, PASS 699, FAIL 5703
+  [B] 非法指令判定一致性          : 合法一致 6402, 非法一致 2027, 分歧 0
+RESULT(VALUE)   : FAIL   (值比对失配 5703 条)
 RESULT(LEGALITY): PASS   (判定分歧 0 条)
 >>> T3-RTL-1 被检出  => OK
 ==============================================================
- [T3-RTL-2] 把 vdot4a 最高元素的 tail-agnostic 填充 32'hFFFFFFFF 改成 32'hFFFFFFFE   2026-10-24T15:30:18Z UTC
+ [T3-RTL-1b] 把整个 io_vd 表达式加括号后与 128'h1 异或（写回结果 bit0 翻转）   2026-10-26T15:23:15Z UTC
 ==============================================================
-注入成功：/Users/i3eg1nner/code/cie/work/XiangShan-cosim/yunsuan/build/vdot/VDotTop.sv  (1 处)
+注入成功：/data/my/cie2026-vdot-xiangshan/work/XiangShan-cosim/yunsuan/build/vdot/VDotTop.sv  (1 处，整个 io_vd 表达式加括号后与 128'h1 异或)
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
 --- 注入后实跑（期望 RESULT(VALUE): FAIL）---
-TOTAL  attempted = 8405
-  [A] 值比对（REF 与 RTL 都判合法）: 比对 6378 条, PASS 5792, FAIL 586
-  [B] 非法指令判定一致性          : 合法一致 6378, 非法一致 2027, 分歧 0
+TOTAL  attempted = 8429
+  [A] 值比对（REF 与 RTL 都判合法）: 比对 6402 条, PASS 0, FAIL 6402
+  [B] 非法指令判定一致性          : 合法一致 6402, 非法一致 2027, 分歧 0
+RESULT(VALUE)   : FAIL   (值比对失配 6402 条)
+RESULT(LEGALITY): PASS   (判定分歧 0 条)
+>>> T3-RTL-1b 被检出  => OK
+==============================================================
+ [T3-RTL-2] 把 vdot4a 最高元素的 tail-agnostic 填充 32'hFFFFFFFF 改成 32'hFFFFFFFE   2026-10-26T15:23:37Z UTC
+==============================================================
+注入成功：/data/my/cie2026-vdot-xiangshan/work/XiangShan-cosim/yunsuan/build/vdot/VDotTop.sv  (1 处)
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+--- 注入后实跑（期望 RESULT(VALUE): FAIL）---
+TOTAL  attempted = 8429
+  [A] 值比对（REF 与 RTL 都判合法）: 比对 6402 条, PASS 5816, FAIL 586
+  [B] 非法指令判定一致性          : 合法一致 6402, 非法一致 2027, 分歧 0
 RESULT(VALUE)   : FAIL   (值比对失配 586 条)
 RESULT(LEGALITY): PASS   (判定分歧 0 条)
 >>> T3-RTL-2 被检出  => OK
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
 ==============================================================
- [T3-NEMU-1] 在 NEMU 的 vdot.c 里把每个乘积的 bit0 翻转，并重建参考共享库   2026-10-24T15:31:26Z UTC
+ [T3-NEMU-1] 在 NEMU 的 vdot.c 里把每个乘积的 bit0 翻转，并重建参考共享库   2026-10-26T15:24:23Z UTC
 ==============================================================
-注入成功：/Users/i3eg1nner/code/cie/work/NEMU/src/isa/riscv64/instr/rvv/vdot.c  (2 处)
+注入成功：/data/my/cie2026-vdot-xiangshan/work/NEMU/src/isa/riscv64/instr/rvv/vdot.c  (2 处)
 Makefile:40: You have set CONFIG_FLASH_IMG_PATH option, but the specified path '""' does not exist!
 + CXX src/memory/store_queue_wrapper.cpp
-+ g++ /work/work/NEMU/build/riscv64-nemu-interpreter-so
++ ccache g++ /data/my/cie2026-vdot-xiangshan/work/NEMU/build/riscv64-nemu-interpreter-so
 --- 注入后实跑（期望 RESULT(VALUE): FAIL）---
-TOTAL  attempted = 8405
-  [A] 值比对（REF 与 RTL 都判合法）: 比对 6378 条, PASS 1434, FAIL 4944
-  [B] 非法指令判定一致性          : 合法一致 6378, 非法一致 2027, 分歧 0
-RESULT(VALUE)   : FAIL   (值比对失配 4944 条)
+TOTAL  attempted = 8429
+  [A] 值比对（REF 与 RTL 都判合法）: 比对 6402 条, PASS 1436, FAIL 4966
+  [B] 非法指令判定一致性          : 合法一致 6402, 非法一致 2027, 分歧 0
+RESULT(VALUE)   : FAIL   (值比对失配 4966 条)
 RESULT(LEGALITY): PASS   (判定分歧 0 条)
 >>> T3-NEMU-1 被检出  => OK
 ==============================================================
- [T3-NEMU-2] 删掉 vdot_reduce() 里的 check_vstart_exception()，破坏裁定 S-1   2026-10-24T15:31:35Z UTC
+ [T3-NEMU-2] 删掉 vdot_reduce() 里的 check_vstart_exception()，破坏裁定 S-1   2026-10-26T15:24:26Z UTC
 ==============================================================
-注入成功：/Users/i3eg1nner/code/cie/work/NEMU/src/isa/riscv64/instr/rvv/vdot.c  (1 处)
+注入成功：/data/my/cie2026-vdot-xiangshan/work/NEMU/src/isa/riscv64/instr/rvv/vdot.c  (1 处)
 Makefile:40: You have set CONFIG_FLASH_IMG_PATH option, but the specified path '""' does not exist!
 + CC src/isa/riscv64/instr/rvv/vdot.c
-+ g++ /work/work/NEMU/build/riscv64-nemu-interpreter-so
++ ccache g++ /data/my/cie2026-vdot-xiangshan/work/NEMU/build/riscv64-nemu-interpreter-so
 --- 注入后实跑（本项考察的是非法判定通道：REF 不再抛异常，
      vdot/vdotacc 的 vstart!=0 用例必然从「非法一致」翻成「RTL非法/REF合法」）---
-TOTAL  attempted = 8405
-  [A] 值比对（REF 与 RTL 都判合法）: 比对 6378 条, PASS 6378, FAIL 0
-  [B] 非法指令判定一致性          : 合法一致 6378, 非法一致 1865, 分歧 162
+TOTAL  attempted = 8429
+  [A] 值比对（REF 与 RTL 都判合法）: 比对 6402 条, PASS 6402, FAIL 0
+  [B] 非法指令判定一致性          : 合法一致 6402, 非法一致 1865, 分歧 162
 RESULT(VALUE)   : PASS   (值比对失配 0 条)
 RESULT(LEGALITY): DIVERGENT   (判定分歧 162 条)
 >>> 判定分歧：基线 0 条 -> 注入后 162 条
 >>> T3-NEMU-2 被检出  => OK
 ==============================================================
- [T3-NEMU-3] 删掉 vdot4a_exec() 里的 check_vstart_exception()，回退裁定 S-7'   2026-10-24T15:31:38Z UTC
+ [T3-NEMU-3] 删掉 vdot4a_exec() 里的 check_vstart_exception()，回退裁定 S-7'   2026-10-26T15:24:28Z UTC
 ==============================================================
-注入成功：/Users/i3eg1nner/code/cie/work/NEMU/src/isa/riscv64/instr/rvv/vdot.c  (1 处)
+注入成功：/data/my/cie2026-vdot-xiangshan/work/NEMU/src/isa/riscv64/instr/rvv/vdot.c  (1 处)
 Makefile:40: You have set CONFIG_FLASH_IMG_PATH option, but the specified path '""' does not exist!
 + CC src/isa/riscv64/instr/rvv/vdot.c
-+ g++ /work/work/NEMU/build/riscv64-nemu-interpreter-so
++ ccache g++ /data/my/cie2026-vdot-xiangshan/work/NEMU/build/riscv64-nemu-interpreter-so
 --- 注入后实跑（期望判定分歧由 0 条上升：vdot4a 且 vstart!=0 的用例
      会从「非法一致」翻成「RTL非法/REF合法」）---
-TOTAL  attempted = 8405
-  [A] 值比对（REF 与 RTL 都判合法）: 比对 6378 条, PASS 6378, FAIL 0
-  [B] 非法指令判定一致性          : 合法一致 6378, 非法一致 1953, 分歧 74
+TOTAL  attempted = 8429
+  [A] 值比对（REF 与 RTL 都判合法）: 比对 6402 条, PASS 6402, FAIL 0
+  [B] 非法指令判定一致性          : 合法一致 6402, 非法一致 1953, 分歧 74
 RESULT(VALUE)   : PASS   (值比对失配 0 条)
 RESULT(LEGALITY): DIVERGENT   (判定分歧 74 条)
 >>> 判定分歧：基线 0 条 -> 注入后 74 条
 >>> T3-NEMU-3 被检出  => OK（证明 S-7' 的收敛是被实测守住的，不是口头约定）
 ==============================================================
- [T3] 恢复源文件并重建   2026-10-24T15:31:41Z UTC
+ [T3-NEMU-4] 把 vdot_reduce() 的元素 1..3 清零改回按 vta 处理，回退裁定 S-3'   2026-10-26T15:24:30Z UTC
+==============================================================
+注入成功：/data/my/cie2026-vdot-xiangshan/work/NEMU/src/isa/riscv64/instr/rvv/vdot.c  (1 处)
+Makefile:40: You have set CONFIG_FLASH_IMG_PATH option, but the specified path '""' does not exist!
++ CC src/isa/riscv64/instr/rvv/vdot.c
++ ccache g++ /data/my/cie2026-vdot-xiangshan/work/NEMU/build/riscv64-nemu-interpreter-so
+--- 注入后实跑（期望 RESULT(VALUE): FAIL）---
+[REF] 共享库          : /data/my/cie2026-vdot-xiangshan/work/NEMU/build/riscv64-nemu-interpreter-so
+[REF] DIFFTEST_REG_SIZE = 1400 B（与本进程 RefRegState 一致）
+[REF] difftest_init() 完成，nemu_state.state=0
+[REF] 自检 vdot.vv (vs1=vs2=1..16, vl=16, vta=1): trap=0  vd.u32[0]=0x000005d8 (期望 0x000005d8 = Σ i^2, i=1..16)  vd[127:32]=非 0（期望全 0，裁定 S-3'）
+[REF] FATAL: 该共享库没有实现 vdot（或语义不符），拒绝继续。
+>>> T3-NEMU-4 被检出  => OK
+==============================================================
+ [T3] 恢复源文件并重建   2026-10-26T15:24:32Z UTC
 ==============================================================
 Makefile:40: You have set CONFIG_FLASH_IMG_PATH option, but the specified path '""' does not exist!
 + CC src/isa/riscv64/instr/rvv/vdot.c
-+ g++ /work/work/NEMU/build/riscv64-nemu-interpreter-so
-$ diff <(git -C /Users/i3eg1nner/code/cie/work/NEMU diff --stat -- src/isa/riscv64/instr/rvv/vdot.c)
++ ccache g++ /data/my/cie2026-vdot-xiangshan/work/NEMU/build/riscv64-nemu-interpreter-so
+$ diff <(git -C /data/my/cie2026-vdot-xiangshan/work/NEMU diff --stat -- src/isa/riscv64/instr/rvv/vdot.c)
 ?? src/isa/riscv64/instr/rvv/vdot.c
 vdot.c 已恢复（diff 为空）
 VDotTop.sv 已恢复（diff 为空）
 --- 恢复后复测（期望 RESULT(VALUE): PASS 且判定分歧回到 0 条）---
-TOTAL  attempted = 8405
-  [A] 值比对（REF 与 RTL 都判合法）: 比对 6378 条, PASS 6378, FAIL 0
-  [B] 非法指令判定一致性          : 合法一致 6378, 非法一致 2027, 分歧 0
+TOTAL  attempted = 8429
+  [A] 值比对（REF 与 RTL 都判合法）: 比对 6402 条, PASS 6402, FAIL 0
+  [B] 非法指令判定一致性          : 合法一致 6402, 非法一致 2027, 分歧 0
 RESULT(VALUE)   : PASS   (值比对失配 0 条)
 RESULT(LEGALITY): PASS   (判定分歧 0 条)
 >>> 恢复后复测 PASS，判定分歧 0 条
 
-FAULT-INJECTION: 5/5 被检出
+FAULT-INJECTION: 7/7 被检出

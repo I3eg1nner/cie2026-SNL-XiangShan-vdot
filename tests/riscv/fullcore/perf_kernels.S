@@ -96,16 +96,18 @@ perf_empty:
     ret
     .endm
 
-    /* 基线序列本体：baseline_rvv.S:282-288（baseline_vdot_single 中「序列 A 本体：6 条」） */
+    /* 基线序列本体：baseline_rvv.S:291-296（baseline_vdot_single 中「序列 A 本体：6 条」）
+     * 与 vdot.vv 的完整写回逐位相同（裁定 S-3'：v8 = {Σ, 0, 0, 0}）：
+     * vsetivli 4 + vmv.v.i 整体清零 v8，归约用 tu 保住元素 1..3 的 0 */
     .macro BASE_BODY
-    vsetvli     zero, a2, e32, m1, ta, ma
-    vmv.s.x     v8, x0
+    vsetivli    zero, 4, e32, m1, ta, ma
+    vmv.v.i     v8, 0
     vsetvli     zero, a2, e8,  m1, ta, ma
     vwmul.vv    v4, v2, v1
-    vsetvli     zero, a2, e16, m2, ta, ma
+    vsetvli     zero, a2, e16, m2, tu, ma
     vwredsum.vs v8, v4, v8
     .endm
-    /* vdot 序列本体：baseline_rvv.S:303-306（vdot_single 的 vsetvli + 本体 1 条） */
+    /* vdot 序列本体：baseline_rvv.S:307,311（vdot_single 的 vsetvli + 本体 1 条） */
     .macro VDOT_BODY
     vsetvli     zero, a2, e8,  m1, ta, ma
     VDOT        8, 2, 1

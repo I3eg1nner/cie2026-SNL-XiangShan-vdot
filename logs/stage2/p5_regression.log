@@ -1,21 +1,21 @@
-=== 既有指令 / 既有功能单元回归  2026-10-24 23:22:00 CST ===
+=== 既有指令 / 既有功能单元回归  2026-10-26 15:29:49 UTC ===
 
 --- (A) 上游 CI 的随机混合测试（.github/workflows/main.yml:42 原样命令）---
 命令： ./build/emu -O 10000
-Emu compiled at Oct 24 2026, 22:24:04
+Emu compiled at Oct 26 2026, 15:15:16
 Set Test Type Res: fuType:7 fuOpType:225 (pick_fuType=0 pick_fuOpType=0)
 Using seed = 0
 EMU EXCEEDED LIMIT
-HAS Executed Cycles:54823 Operations:10000
-EMU has executed 532 ms.
+HAS Executed Cycles:54959 Operations:10000
+EMU has executed 3224 ms.
 
 --- (B) 逐个既有功能单元定向回归（2000 条 / 个）---
     fuType 对照表见 docs/stage1/03_仿真平台搭建报告.md §4.3
     fuType=1   EMU EXCEEDED LIMIT   cycles=10019   
-    fuType=2   EMU EXCEEDED LIMIT   cycles=24138   
+    fuType=2   EMU EXCEEDED LIMIT   cycles=24232   
     fuType=3   EMU EXCEEDED LIMIT   cycles=4019    
     fuType=4   EMU EXCEEDED LIMIT   cycles=6019    
-    fuType=6   EMU EXCEEDED LIMIT   cycles=23372   
+    fuType=6   EMU EXCEEDED LIMIT   cycles=23311   
     fuType=7   EMU EXCEEDED LIMIT   cycles=8019    
     fuType=8   EMU EXCEEDED LIMIT   cycles=8019    
     fuType=9   EMU EXCEEDED LIMIT   cycles=8019    
@@ -26,14 +26,14 @@ EMU has executed 532 ms.
     fuType=5 fuOpType=0  EMU EXCEEDED LIMIT   cycles=6019    
 
 --- (D) 与 pristine 基线逐 FU 对拍（证明差异为零）---
-    pristine emu: /Users/i3eg1nner/code/cie/work/XiangShan-kmhv2/yunsuan/build/emu（只读运行，不修改该工作树）
+    pristine emu: /data/my/cie2026-vdot-xiangshan/work/XiangShan-kmhv2/yunsuan/build/emu（只读运行，不修改该工作树）
     fuType  pristine 基线                              vdot 工作树                               逐字相同?
-    0       EMU BADTRAP HAS Executed Cycles:63 Operations:13  EMU BADTRAP HAS Executed Cycles:63 Operations:13  YES
+    0       EMU BADTRAP HAS Executed Cycles:111 Operations:29  EMU BADTRAP HAS Executed Cycles:111 Operations:29  YES
     1       EMU EXCEEDED LIMIT HAS Executed Cycles:10019 Operations:2000  EMU EXCEEDED LIMIT HAS Executed Cycles:10019 Operations:2000  YES
-    2       EMU EXCEEDED LIMIT HAS Executed Cycles:24138 Operations:2000  EMU EXCEEDED LIMIT HAS Executed Cycles:24138 Operations:2000  YES
+    2       EMU EXCEEDED LIMIT HAS Executed Cycles:24232 Operations:2000  EMU EXCEEDED LIMIT HAS Executed Cycles:24232 Operations:2000  YES
     3       EMU EXCEEDED LIMIT HAS Executed Cycles:4019 Operations:2000  EMU EXCEEDED LIMIT HAS Executed Cycles:4019 Operations:2000  YES
     4       EMU EXCEEDED LIMIT HAS Executed Cycles:6019 Operations:2000  EMU EXCEEDED LIMIT HAS Executed Cycles:6019 Operations:2000  YES
-    6       EMU EXCEEDED LIMIT HAS Executed Cycles:23372 Operations:2000  EMU EXCEEDED LIMIT HAS Executed Cycles:23372 Operations:2000  YES
+    6       EMU EXCEEDED LIMIT HAS Executed Cycles:23311 Operations:2000  EMU EXCEEDED LIMIT HAS Executed Cycles:23311 Operations:2000  YES
     7       EMU EXCEEDED LIMIT HAS Executed Cycles:8019 Operations:2000  EMU EXCEEDED LIMIT HAS Executed Cycles:8019 Operations:2000  YES
     8       EMU EXCEEDED LIMIT HAS Executed Cycles:8019 Operations:2000  EMU EXCEEDED LIMIT HAS Executed Cycles:8019 Operations:2000  YES
     9       EMU EXCEEDED LIMIT HAS Executed Cycles:8019 Operations:2000  EMU EXCEEDED LIMIT HAS Executed Cycles:8019 Operations:2000  YES
@@ -47,8 +47,8 @@ EMU has executed 532 ms.
 --- (E) 生成 Verilog 的逐模块比对（阶段一基线 vs 本阶段）---
 命令： diff <(sed -E 's@//.*@@' rtl/verilog/baseline/VIMac.sv) <(sed -E 's@//.*@@' rtl/verilog/vdot/VIMac.sv)
     VIMac.sv 去注释后差异行数： 0
-    基线   : /Users/i3eg1nner/code/cie/rtl/verilog/baseline/SimTop.v  (164 个 module)
-    改动后 : /Users/i3eg1nner/code/cie/rtl/verilog/vdot/SimTop_with_vdot.v  (169 个 module)
+    基线   : /data/my/cie2026-vdot-xiangshan/rtl/verilog/baseline/SimTop.v  (164 个 module)
+    改动后 : /data/my/cie2026-vdot-xiangshan/rtl/verilog/vdot/SimTop_with_vdot.v  (169 个 module)
     共有 module                 : 164
     其中去注释后逐字节相同      : 163
     其中存在差异                : 1  ['SimTop']

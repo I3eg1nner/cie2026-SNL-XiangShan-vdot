@@ -51,7 +51,7 @@ MARKS=(--mark '21|in.fire' --mark '23|上升沿 1：S1' --mark '25|上升沿 2�
 # ------------------------------------------------------------ 阶段二 图 1：vdot.vv
 ${PLOT} --vcd "${W2}/vdotvv_vdottop_fuType10_seed1.vcd" --out "${OUT2}/fig1_vdot_wave.png" \
   --from 18 --to 28 --left 0.27 \
-  --title "图 1　vdot.vv：全 0x80 × 全 0x80（vl=16, vta=1），16 个乘积均为 0x4000，4 个 lane 同持总和 0x40000" \
+  --title "图 1　vdot.vv：全 0x80 × 全 0x80（vl=16, vta=1），16 个乘积均为 0x4000，树输出 4 个 lane 同持总和 0x40000；io_vd 只取 lane0，[127:32] 清零（S-3'）" \
   --subtitle "logs/stage2/waveform/vdotvv_vdottop_fuType10_seed1.vcd　DUT = VDotTop　io_out_valid 由平台计数器产生（VectorSimTop.scala:127），不作为 DUT 延迟证据" \
   "${COMMON[@]}" \
   --signal "${T}.io_prod_0|vdotTree.io_prod_0" \
@@ -67,7 +67,7 @@ ${PLOT} --vcd "${W2}/vdotvv_vdottop_fuType10_seed1.vcd" --out "${OUT2}/fig1_vdot
 # --------------------------------------------------------- 阶段二 图 2：vdotacc.vv
 ${PLOT} --vcd "${W2}/vdotaccvv_vdottop_fuType10_seed1.vcd" --out "${OUT2}/fig2_vdotacc_wave.png" \
   --from 18 --to 28 --left 0.27 \
-  --title "图 2　vdotacc.vv：vs1=vs2=[1..16]，累加器 0x3E8 只注入 lane 0 —— lane0 = 0x9C0（2496），lane1..3 = 0x5D8（1496）" \
+  --title "图 2　vdotacc.vv：vs1=vs2=[1..16]，累加器 0x3E8 只注入 lane 0 —— 树输出 lane0 = 0x9C0（2496），lane1..3 = 0x5D8（1496）；io_vd = {0x9C0, 0, 0, 0}（S-3'）" \
   --subtitle "logs/stage2/waveform/vdotaccvv_vdottop_fuType10_seed1.vcd　DUT = VDotTop　io_out_valid 由平台计数器产生，不作为 DUT 延迟证据" \
   "${COMMON[@]}" \
   --signal "${T}.io_prod_0|vdotTree.io_prod_0" \

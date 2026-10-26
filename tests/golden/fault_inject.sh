@@ -29,8 +29,8 @@ for M in 1 2 3; do
       1) DESC="参考模型：int8 改为零扩展（丢掉符号）"
          sed -i.bak 's|return (int32_t)(b ^ 0x80u) - 128;|return (int32_t)b;|' \
              "$TMP/tests/golden/vdot_ref.h" ;;
-      2) DESC="参考模型：vta=1 时 tail 写 0 而不是全 1"
-         sed -i.bak 's|vreg_set_u32(vd, (int)i, 0xFFFFFFFFu);|vreg_set_u32(vd, (int)i, 0u);|g' \
+      2) DESC="参考模型：vdot/vdotacc 元素 1..3 写全 1 而不是清零（退回旧 S-3 的 vta=1 行为）"
+         sed -i.bak 's|for (i = 1; i < VDOT_VLEN / 32; i++) vreg_set_u32(vd, (int)i, 0u);|for (i = 1; i < VDOT_VLEN / 32; i++) vreg_set_u32(vd, (int)i, 0xFFFFFFFFu);|' \
              "$TMP/tests/golden/vdot_ref.c" ;;
       3) DESC="基线仿真：vwredsum.vs 丢掉标量初值（vs1[0]）"
          sed -i.bak 's|sum = vrf_get(s, vs1, dew, 0);|sum = 0;|' \

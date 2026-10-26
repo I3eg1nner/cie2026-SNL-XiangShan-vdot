@@ -4,7 +4,7 @@ gen_extra_vectors.py —— 生成 P5 补充定向语料（期望值一律由参
 
 为什么需要补充语料
 ------------------
-`tests/vectors/` 的 13 个 suite（30703 条）里只出现 OK / ILLEGAL_VSTART /
+`tests/vectors/` 的 13 个 suite（30739 条）里只出现 OK / ILLEGAL_VSTART /
 ERR_SEW 三种状态，**没有任何 `ERR_VSTART_RANGE` 用例**，也就是总体方案裁定
 S-9（`vstart` 超出当前 SEW 的最大元素下标 → 报错）在共享语料中是未覆盖的。
 

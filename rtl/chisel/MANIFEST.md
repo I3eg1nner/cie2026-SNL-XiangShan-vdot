@@ -23,7 +23,7 @@
 
 | 交付文件 | 上游路径 | 状态 | 补丁改动 | 交付副本行数 |
 |---|---|---|---:|---:|
-| `DecodeUnit.scala` | `src/main/scala/xiangshan/backend/decode/DecodeUnit.scala` | 修改 | +5 / −0 | 1200 |
+| `DecodeUnit.scala` | `src/main/scala/xiangshan/backend/decode/DecodeUnit.scala` | 修改 | +6 / −0 | 1201 |
 | `Instructions.scala` | `src/main/scala/xiangshan/backend/decode/Instructions.scala` | 修改 | +11 / −0 | 38 |
 | `VecDecoder.scala` | `src/main/scala/xiangshan/backend/decode/VecDecoder.scala` | 修改 | +9 / −0 | 833 |
 | `VecExceptionGen.scala` | `src/main/scala/xiangshan/backend/decode/VecExceptionGen.scala` | 修改 | +34 / −4 | 332 |
@@ -40,7 +40,7 @@
 |---|---|---|---:|---:|
 | `VimacOpcode.scala` | `src/main/scala/yunsuan/encoding/Opcode/VimacOpcode.scala` | 修改 | +4 / −0 | 28 |
 | `package.scala` | `src/main/scala/yunsuan/package.scala` | 修改 | +17 / −0 | 629 |
-| `VDotTop.scala` | `src/main/scala/yunsuan/vector/vectorIMAC/VDotTop.scala` | **新建** | +150 | 150 |
+| `VDotTop.scala` | `src/main/scala/yunsuan/vector/vectorIMAC/VDotTop.scala` | **新建** | +149 | 149 |
 | `VDotTree.scala` | `src/main/scala/yunsuan/vector/vectorIMAC/VDotTree.scala` | **新建** | +161 | 161 |
 | `VIMac64b.scala` | `src/main/scala/yunsuan/vector/vectorIMAC/VIMac64b.scala` | 修改 | +7 / −0 | 302 |
 

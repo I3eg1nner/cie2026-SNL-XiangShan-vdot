@@ -8,7 +8,7 @@
 #
 # 可选开关（默认关闭的两项耗时较长，单独提供）：
 #   WITH_WAVE=1    额外重建带 trace 的 emu 并抓三条指令的波形（会重建两次 emu）
-#   WITH_FAULT=1   额外跑 5 个故障注入（每个故障重建一次 emu）
+#   WITH_FAULT=1   额外跑 6 个故障注入（每个故障重建一次 emu）
 #   RANDOM_OPS=N   每条指令的随机激励条数（默认 20000，验收要求 >= 10000）
 #   RANDOM_SEEDS="a b c"   随机种子列表（默认 "11 12 13"）
 #
@@ -438,7 +438,7 @@ else
 fi
 
 if [ "${WITH_FAULT}" = "1" ]; then
-  step "7b/7 故障注入（5 个故障，每个重建一次 emu）"
+  step "7b/7 故障注入（6 个故障，每个重建一次 emu）"
   ( YS_DIR="${YS_DIR}" bash "${REPO_ROOT}/scripts/tools/fault_inject_vdot.sh" || true ) 2>&1 | tee "${LOG_DIR}/p5_fault_injection.log"
 else
   info "跳过故障注入（WITH_FAULT=1 开启；已存档结果见 ${LOG_DIR}/p5_fault_injection.log）"

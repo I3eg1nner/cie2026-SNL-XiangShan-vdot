@@ -4,7 +4,8 @@
  * 目的（对应赛题 3.2「基线实现」）：
  *   1. 用**只属于 RVV 1.0 标准**的指令组合实现与 vdot 指令族完全相同的功能；
  *   2. 该实现是一个**微型 RVV 解释器**：逐条模拟 vwmul.vv / vwredsum.vs /
- *      vsll.vi / vsra.vi / vmacc.vv / vmv.s.x / vwadd.wv / vredsum.vs 的
+ *      vsll.vi / vsra.vi / vmacc.vv / vmv.s.x / vmv.v.i / vslideup.vi /
+ *      vslidedown.vi / vwadd.wv / vredsum.vs 的
  *      vstart / vl / mask / vta / vma 语义，再把它们按 baseline_rvv.S 中
  *      的指令顺序组合起来；
  *   3. 因此它与 tests/golden/vdot_ref.c 是**两份相互独立编写的实现**，
@@ -40,6 +41,14 @@ typedef struct { uint8_t x[RVV_NREG][RVV_VLENB]; } rvv_vrf_t;
  */
 int rvv_vmv_s_x   (rvv_vrf_t *s, int vd, uint64_t x,
                    int sew, uint32_t vstart, uint32_t vl, int vta);
+int rvv_vmv_v_i   (rvv_vrf_t *s, int vd, int imm,
+                   int sew, int lmul, uint32_t vstart, uint32_t vl, int vta);
+int rvv_vslideup_vi(rvv_vrf_t *s, int vd, int vs2, uint32_t off,
+                   int sew, int lmul, uint32_t vstart, uint32_t vl,
+                   int mask_on, int vta, int vma);
+int rvv_vslidedown_vi(rvv_vrf_t *s, int vd, int vs2, uint32_t off,
+                   int sew, int lmul, uint32_t vstart, uint32_t vl,
+                   int mask_on, int vta, int vma);
 int rvv_vwmul_vv  (rvv_vrf_t *s, int vd, int vs2, int vs1,
                    int sew, int lmul, uint32_t vstart, uint32_t vl,
                    int mask_on, int vta, int vma);

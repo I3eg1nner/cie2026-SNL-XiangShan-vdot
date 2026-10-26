@@ -1,16 +1,16 @@
 ==============================================================
  cie2026-vdot / P5-T3  NEMU vdot 故障注入自测
- 2026-10-24T15:52:43Z UTC
+ 2026-10-26T15:12:20Z UTC
 ==============================================================
-被改坏的文件 : /work/work/NEMU/src/isa/riscv64/instr/rvv/vdot.c
-测试镜像     : /work/tests/riscv/vdot/build/vdot_test.bin
-NEMU 解释器  : /work/work/NEMU/build/riscv64-nemu-interpreter
+被改坏的文件 : /data/my/cie2026-vdot-xiangshan/work/NEMU/src/isa/riscv64/instr/rvv/vdot.c
+测试镜像     : /data/my/cie2026-vdot-xiangshan/work/build/src/tests/riscv/vdot/build/vdot_test.bin
+NEMU 解释器  : /data/my/cie2026-vdot-xiangshan/work/NEMU/build/riscv64-nemu-interpreter
 
 ==============================================================
 inject #1  [丢掉源操作数的符号扩展：SIGNED -> UNSIGNED]
 ==============================================================
 --- 改动（与干净版本的 diff）---
-@@ -84,8 +84,7 @@
+@@ -86,8 +86,7 @@
   * get_vreg(..., SIGNED, ...) 本身就按 (int64_t)(int8_t) 扩展，这里再调一次
   * rtl_sext 与 reduction_instr()/arithmetic_instr() 的写法保持一致。 */
  static inline int64_t vdot_get_i8(Decode *s, uint64_t reg, int idx, rtlreg_t *tmp) {
@@ -22,9 +22,9 @@ inject #1  [丢掉源操作数的符号扩展：SIGNED -> UNSIGNED]
  
 --- 重新编译 NEMU ---
 --- 重跑全部语料 ---
-TOTAL cases=30758 pass=9655 fail=21103
+TOTAL cases=30794 pass=9675 fail=21119
   must-trap cases (status != OK) = 4834 , trapped with mcause=2 = 4834
-  missing-trap=0  unexpected-trap=0  wrong-mcause=0  value-mismatch=21103  vl-readback-mismatch=0
+  missing-trap=0  unexpected-trap=0  wrong-mcause=0  value-mismatch=21119  vl-readback-mismatch=0
 RESULT: FAIL
 打印出的失败用例条数（上限 20）: 20
   => 被检出 OK
@@ -33,7 +33,7 @@ RESULT: FAIL
 inject #2  [vl 差一：归约主循环少算最后一个元素]
 ==============================================================
 --- 改动（与干净版本的 diff）---
-@@ -117,7 +117,7 @@
+@@ -122,7 +122,7 @@
      acc = *s1;
    }
  
@@ -44,9 +44,9 @@ inject #2  [vl 差一：归约主循环少算最后一个元素]
        continue;
 --- 重新编译 NEMU ---
 --- 重跑全部语料 ---
-TOTAL cases=30758 pass=18679 fail=12079
+TOTAL cases=30794 pass=18683 fail=12111
   must-trap cases (status != OK) = 4834 , trapped with mcause=2 = 4834
-  missing-trap=0  unexpected-trap=0  wrong-mcause=0  value-mismatch=12079  vl-readback-mismatch=0
+  missing-trap=0  unexpected-trap=0  wrong-mcause=0  value-mismatch=12111  vl-readback-mismatch=0
 RESULT: FAIL
 打印出的失败用例条数（上限 20）: 20
   => 被检出 OK
@@ -55,7 +55,7 @@ RESULT: FAIL
 inject #3  [忽略掩码：vm=0 时不再排除 inactive 元素]
 ==============================================================
 --- 改动（与干净版本的 diff）---
-@@ -118,10 +118,7 @@
+@@ -123,10 +123,7 @@
    }
  
    for (word_t idx = vstart->val; idx < vl->val; idx++) {
@@ -67,7 +67,7 @@ inject #3  [忽略掩码：vm=0 时不再排除 inactive 元素]
      int64_t a = vdot_get_i8(s, id_src2->reg, idx, s0);
      int64_t b = vdot_get_i8(s, id_src->reg,  idx, s1);
      acc += (uint64_t)(a * b);
-@@ -171,7 +168,7 @@
+@@ -178,7 +175,7 @@
  
    for (word_t idx = vstart->val; idx < vl->val; idx++) {
      rtlreg_t mask = get_mask(0, idx);
@@ -78,7 +78,7 @@ inject #3  [忽略掩码：vm=0 时不再排除 inactive 元素]
          set_vreg(id_dest->reg, idx, *s1, VDOT_DEST_VSEW, vtype->vlmul, 1);
 --- 重新编译 NEMU ---
 --- 重跑全部语料 ---
-TOTAL cases=30758 pass=20585 fail=10173
+TOTAL cases=30794 pass=20621 fail=10173
   must-trap cases (status != OK) = 4834 , trapped with mcause=2 = 4834
   missing-trap=0  unexpected-trap=0  wrong-mcause=0  value-mismatch=10173  vl-readback-mismatch=0
 RESULT: FAIL
@@ -89,8 +89,8 @@ RESULT: FAIL
 inject #4  [破坏裁定 S-1：归约形态不再对 vstart!=0 抛 Illegal Instruction]
 ==============================================================
 --- 改动（与干净版本的 diff）---
-@@ -103,7 +103,7 @@
-  *     净效果为「元素 1..3 全 1（tail，EEW=32，裁定 S-3）+ 元素 0 为结果」。
+@@ -108,7 +108,7 @@
+  *     vstart >= vl（含 vl == 0），那种情况 vd 完全不写（裁定 S-5）。
   * ------------------------------------------------------------------------ */
  static void vdot_reduce(Decode *s, int accumulate) {
 -  check_vstart_exception(s);
@@ -100,9 +100,9 @@ inject #4  [破坏裁定 S-1：归约形态不再对 vstart!=0 抛 Illegal Instr
      return;
 --- 重新编译 NEMU ---
 --- 重跑全部语料 ---
-TOTAL cases=30758 pass=27556 fail=3202
+TOTAL cases=30794 pass=27592 fail=3202
   must-trap cases (status != OK) = 4834 , trapped with mcause=2 = 1632
-  missing-trap=3202  unexpected-trap=0  wrong-mcause=0  value-mismatch=1471  vl-readback-mismatch=0
+  missing-trap=3202  unexpected-trap=0  wrong-mcause=0  value-mismatch=1499  vl-readback-mismatch=0
 RESULT: FAIL
 打印出的失败用例条数（上限 20）: 20
   => 被检出 OK
@@ -111,7 +111,7 @@ RESULT: FAIL
 inject #5  [破坏裁定 S-9：vstart 超出当前 SEW 最大元素下标时不再报错]
 ==============================================================
 --- 改动（与干净版本的 diff）---
-@@ -75,9 +75,7 @@
+@@ -77,9 +77,7 @@
    // 裁定 S-9：vstart 超出当前 SEW 的最大元素下标属 reserved
    // （RVV 1.0 §3.7，并采纳其 NOTE 中"建议实现 trap"的意见）。
    // vdot/vdotacc 的 VLMAX = 16，vdot4a 的 VLMAX = 4。
@@ -124,7 +124,7 @@ inject #5  [破坏裁定 S-9：vstart 超出当前 SEW 最大元素下标时不�
  /* 取第 idx 个 int8 源元素并符号扩展，返回 int64。
 --- 重新编译 NEMU ---
 --- 重跑全部语料 ---
-TOTAL cases=30758 pass=30758 fail=0
+TOTAL cases=30794 pass=30794 fail=0
   must-trap cases (status != OK) = 4834 , trapped with mcause=2 = 4834
   missing-trap=0  unexpected-trap=0  wrong-mcause=0  value-mismatch=0  vl-readback-mismatch=0
 RESULT: PASS
@@ -135,7 +135,7 @@ RESULT: PASS
 inject #6  [回退裁定 S-7'：vdot4a 不再对 vstart!=0 抛 Illegal Instruction]
 ==============================================================
 --- 改动（与干净版本的 diff）---
-@@ -163,7 +163,7 @@
+@@ -170,7 +170,7 @@
   * 裁定 S-7 的这一部分未被 S-7' 修订，仍然有效。
   * ------------------------------------------------------------------------ */
  static void vdot4a_exec(Decode *s) {
@@ -146,9 +146,34 @@ inject #6  [回退裁定 S-7'：vdot4a 不再对 vstart!=0 抛 Illegal Instructi
      return;
 --- 重新编译 NEMU ---
 --- 重跑全部语料 ---
-TOTAL cases=30758 pass=29174 fail=1584
+TOTAL cases=30794 pass=29210 fail=1584
   must-trap cases (status != OK) = 4834 , trapped with mcause=2 = 3250
   missing-trap=1584  unexpected-trap=0  wrong-mcause=0  value-mismatch=581  vl-readback-mismatch=0
+RESULT: FAIL
+打印出的失败用例条数（上限 20）: 20
+  => 被检出 OK
+
+==============================================================
+inject #7  [回退裁定 S-3'：vdot/vdotacc 元素 1..3 改回按 vta 处理（vta=1 写全 1，vta=0 保持）]
+==============================================================
+--- 改动（与干净版本的 diff）---
+@@ -135,9 +135,8 @@
+   /* 裁定 S-3'：vd[31:0] = 结果，vd[VLEN-1:32] = 0，与 vta / vma 无关 */
+   if (vl->val != 0) {
+     int vlmax_d = get_vlen_max(VDOT_DEST_VSEW, vtype->vlmul, 0);
+-    for (int idx = 1; idx < vlmax_d; idx++) {
+-      set_vreg(id_dest->reg, idx, 0, VDOT_DEST_VSEW, vtype->vlmul, 0);
+-    }
++    (void)vlmax_d;  /* FAULT #7 */
++    if (RVV_AGNOSTIC && vtype->vta) set_vreg_tail(id_dest->reg);
+     set_vreg(id_dest->reg, 0, acc, VDOT_DEST_VSEW, vtype->vlmul, 0);
+   }
+   vp_set_dirty();
+--- 重新编译 NEMU ---
+--- 重跑全部语料 ---
+TOTAL cases=30794 pass=14495 fail=16299
+  must-trap cases (status != OK) = 4834 , trapped with mcause=2 = 4834
+  missing-trap=0  unexpected-trap=0  wrong-mcause=0  value-mismatch=16299  vl-readback-mismatch=0
 RESULT: FAIL
 打印出的失败用例条数（上限 20）: 20
   => 被检出 OK
@@ -157,14 +182,14 @@ RESULT: FAIL
  还原 vdot.c 并重新编译，确认回到全 PASS
 ==============================================================
   （上面没有 diff 输出即表示源码已完全还原）
-TOTAL cases=30758 pass=30758 fail=0
+TOTAL cases=30794 pass=30794 fail=0
   must-trap cases (status != OK) = 4834 , trapped with mcause=2 = 4834
   missing-trap=0  unexpected-trap=0  wrong-mcause=0  value-mismatch=0  vl-readback-mismatch=0
 RESULT: PASS
 
 ==============================================================
 等价变异体（按设计不可观测，未计入）: 1 个（#5，S-7' 之后 S-9 被 S-1/S-7' 覆盖）
-FAULT-INJECTION: 5/5 被检出
+FAULT-INJECTION: 6/6 被检出
 还原后复测: PASS
 FAULT-INJECTION: PASS
 ==============================================================

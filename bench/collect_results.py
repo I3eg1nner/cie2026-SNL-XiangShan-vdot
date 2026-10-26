@@ -39,6 +39,7 @@ FU_DECLARED = {
     "vsetvli":     ("vsetiwi/vsetiwf", "VSetRiWiCfg / VSetRiWvfCfg", 0,
                     "FuConfig.scala:415 / FuConfig.scala:402"),
     "vmv.s.x":     ("vialuF", "VialuCfg", 1, "FuConfig.scala:544"),
+    "vmv.v.i":     ("vialuF", "VialuCfg", 1, "FuConfig.scala:544"),
     "vwmul.vv":    ("vimac",  "VimacCfg", 2, "FuConfig.scala:563"),
     "vwadd.wv":    ("vialuF", "VialuCfg", 1, "FuConfig.scala:544"),
     "vwredsum.vs": ("vipu",   "VipuCfg",  2, "FuConfig.scala:615"),
@@ -66,6 +67,7 @@ UOPS = [
     # instruction, 场景, UopSplitType, vlmul, uops, 出处
     ("vsetvli",     "任意",            "VSET",      "-",   2, "UopInfoGen.scala:199"),
     ("vmv.s.x",     "e32/m1",          "VEC_0XV",   "m1",  2, "UopInfoGen.scala:200 + VecDecoder.scala:457 (实现树 :466)"),
+    ("vmv.v.i",     "e32/m1",          "VEC_VXV",   "m1",  2, "UopInfoGen.scala:211 (lmul + 1 = 2) + VecDecoder.scala:336 (实现树 :345)"),
     ("vwmul.vv",    "e8/m1 -> e16/m2", "VEC_VVW",   "m1",  2, "UopInfoGen.scala:214 (numOfUopWV, vlmul=000 -> 2) + VecDecoder.scala:427 (实现树 :436)"),
     ("vwadd.wv",    "e16/m2 -> e32/m4","VEC_WVW",   "m2",  4, "UopInfoGen.scala:215 (numOfUopWV, vlmul=001 -> 4) + VecDecoder.scala:421 (实现树 :430)"),
     ("vwredsum.vs", "e16/m2",          "VEC_VWW",   "m2",  4, "UopInfoGen.scala:229 (Cat(lmul,0) = 2*lmul = 4) + VecDecoder.scala:243 (实现树 :244)"),
@@ -220,7 +222,7 @@ def parse_body_macros(kernels_s, baseline_s):
             continue
         ins = [l.split("#")[0].strip() for l in m.group(1).splitlines()]
         ins = [l for l in ins if l and not l.startswith("/*")]
-        nvset = sum(1 for l in ins if l.startswith("vsetvli"))
+        nvset = sum(1 for l in ins if l.startswith(("vsetvli", "vsetivli")))
         res[mac] = {"instr": ins, "n": len(ins), "vsetvli": nvset, "arith": len(ins) - nvset,
                     "line": txt[:m.start()].count("\n") + 1}
     if "BASE_BODY" in res and os.path.exists(baseline_s):
@@ -306,7 +308,7 @@ def main():
                 "logs/stage3/waveform/p7_%svv_vdottop_fuType10_seed1.vcd" % k, v["n"], cyc)
 
     rows = []
-    order = ["vsetvli", "vmv.s.x", "vwmul.vv", "vwadd.wv", "vwredsum.vs", "vredsum.vs",
+    order = ["vsetvli", "vmv.s.x", "vmv.v.i", "vwmul.vv", "vwadd.wv", "vwredsum.vs", "vredsum.vs",
              "vadd.vv", "vmul.vv", "vmacc.vv", "vdot.vv", "vdotacc.vv", "vdot4a.vv"]
     for ins in order:
         fut, cfgname, dec, dsrc = FU_DECLARED[ins]
@@ -438,7 +440,7 @@ def main():
     rows = []
     for variant, fn, mac, seq_uops in (
             ("baseline", "baseline_vdot_single", "BASE_BODY",
-             ["vsetvli", "vmv.s.x", "vsetvli", "vwmul.vv", "vsetvli", "vwredsum.vs"]),
+             ["vsetvli", "vmv.v.i", "vsetvli", "vwmul.vv", "vsetvli", "vwredsum.vs"]),
             ("vdot", "vdot_single", "VDOT_BODY", ["vsetvli", "vdot.vv"])):
         if fn in eq["static"]:
             rows.append([variant, "static_instr_function", "函数整体静态指令数（含装载、取回与 ret）",
@@ -478,13 +480,16 @@ def main():
         m = meas.get(ins)
         return m["lat"] if m else FU_DECLARED[ins][2]
 
+    def K(ins):
+        return "实测" if meas.get(ins) else "声明值"
+
     cp = [
         # case, step, instruction, latency, kind, note
-        ("单次点积-基线", 1, "vsetvli e32,m1", L("vsetvli"), "声明值", "并行分支起点"),
-        ("单次点积-基线", 2, "vmv.s.x v8,x0",  L("vmv.s.x"), "实测", "并行分支, 累加器清零"),
+        ("单次点积-基线", 1, "vsetivli 4,e32,m1", L("vsetvli"), "声明值", "并行分支起点"),
+        ("单次点积-基线", 2, "vmv.v.i v8,0",  L("vmv.v.i"), K("vmv.v.i"), "并行分支, v8 整体清零（S-3'）"),
         ("单次点积-基线", 3, "vsetvli e8,m1",  L("vsetvli"), "声明值", "关键路径起点"),
         ("单次点积-基线", 4, "vwmul.vv v4,v2,v1", L("vwmul.vv"), "实测", "关键路径"),
-        ("单次点积-基线", 5, "vsetvli e16,m2", L("vsetvli"), "声明值", "与 #4 并行"),
+        ("单次点积-基线", 5, "vsetvli e16,m2,tu", L("vsetvli"), "声明值", "与 #4 并行"),
         ("单次点积-基线", 6, "vwredsum.vs v8,v4,v8", L("vwredsum.vs"), "实测", "关键路径终点"),
         ("单次点积-vdot", 1, "vsetvli e8,m1",  L("vsetvli"), "声明值", "关键路径起点"),
         ("单次点积-vdot", 2, "vdot.vv v8,v2,v1", L("vdot.vv"), "实测", "关键路径终点"),
@@ -513,12 +518,12 @@ def main():
             % (fcv[kb]["ev"], fcv[kv]["ev"], bb["n"] if bb else "?", vb["n"] if vb else "?"))
     elif bb and vb:
         add("单次点积 (16 int8)", "架构指令条数 (条)", bb["n"], vb["n"], "静态计数(源码宏)",
-            "tests/riscv/fullcore/perf_kernels.S BASE_BODY / VDOT_BODY；基线含 3 条 vsetvli，vdot 含 1 条")
+            "tests/riscv/fullcore/perf_kernels.S BASE_BODY / VDOT_BODY；基线含 3 条 vsetvli/vsetivli，vdot 含 1 条")
     if bb and vb:
         add("单次点积 (16 int8)", "向量算术指令条数 (条)", bb["arith"], vb["arith"], "静态计数(源码宏)",
-            "不含 vsetvli：基线 vmv.s.x/vwmul.vv/vwredsum.vs，vdot 只有 vdot.vv（perf_kernels.S BASE_BODY / VDOT_BODY）")
+            "不含 vsetvli：基线 vmv.v.i/vwmul.vv/vwredsum.vs，vdot 只有 vdot.vv（perf_kernels.S BASE_BODY / VDOT_BODY）")
     ub = sum(dict((u[0], u[4]) for u in UOPS)[x] for x in
-             ["vsetvli", "vmv.s.x", "vsetvli", "vwmul.vv", "vsetvli", "vwredsum.vs"])
+             ["vsetvli", "vmv.v.i", "vsetvli", "vwmul.vv", "vsetvli", "vwredsum.vs"])
     uv = sum(dict((u[0], u[4]) for u in UOPS)[x] for x in ["vsetvli", "vdot.vv"])
     add("单次点积 (16 int8)", "译码级 uop 条数 (个)", ub, uv, "源码推导",
         "UopInfoGen.scala:197-235（由 uop_count.csv 逐条相加）")

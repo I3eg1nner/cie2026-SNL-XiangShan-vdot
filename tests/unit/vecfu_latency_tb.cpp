@@ -4,7 +4,7 @@
 //
 // 为什么需要它
 //   RVV 1.0 基线序列的三条核心指令分别落在三个不同的功能单元上：
-//       vmv.s.x / vwadd.wv  -> FuType.vialuF -> VIAluFix (VialuCfg, latency=1)
+//       vmv.s.x / vmv.v.i / vwadd.wv -> FuType.vialuF -> VIAluFix (VialuCfg, latency=1)
 //       vwmul.vv            -> FuType.vimac  -> VIMacU   (VimacCfg, latency=2)
 //       vwredsum.vs         -> FuType.vipu   -> VIPU     (VipuCfg,  latency=2)
 //   YunSuan 的 L1 平台只例化了 YunSuan 自己的 VIAluFWrapper，既没有 VIMacU 也
@@ -20,7 +20,7 @@
 //      settle = io_vd 第一次等于 out.valid 那拍的值的拍数，属下界型证据：
 //      输出端残留的前一笔结果恰好等于本笔结果时会偏小（本 tb 用随机操作数，
 //      未做残留值排除；vimacu_latency_tb.cpp 做了排除与扰动重测）
-//   3) 对能用几行 C 写清语义的指令（vadd.vv / vwadd.wv / vmv.s.x）再做逐位数值
+//   3) 对能用几行 C 写清语义的指令（vadd.vv / vwadd.wv / vmv.s.x / vmv.v.i）再做逐位数值
 //      比对，使延迟数字不是空洞的握手观测
 //
 // 编译时用 -DTOPMOD=VIAluFixHarness 或 -DTOPMOD=VIPUHarness 选择 DUT。
@@ -165,12 +165,16 @@ static uint16_t get16(const reg128_t *r, int i) {
  *     vadd_vv  = 00_1_000000 = 0x040   (VialuOpcode.vadd = 0)
  *     vwadd_wv = 10_1_000000 = 0x140
  *     vmv_s_x  = 00_1_101110 = 0x06E   (VialuOpcode.vmvsx = 46)
+ *     vmv_v_v  = 00_0_011010 = 0x01A   (VialuOpcode.vmv = 26)；vmv.v.i 译码为
+ *                vialuF + VialuFixType.vmv_v_v（XiangShan VecDecoder.scala VMV_V_I），
+ *                立即数经 VEC_VXV 拆分后以向量形式进入 vs1，FU 内与 vmv.v.v 同一通路
  *   VipuType（直接写死的 8 位串）
  *     vredsum_vs  = b00111001 = 0x039
  *     vwredsum_vs = b01000010 = 0x042                                        */
 static const uint32_t OP_VADD_VV     = 0x040;
 static const uint32_t OP_VWADD_WV    = 0x140;
 static const uint32_t OP_VMV_S_X     = 0x06E;
+static const uint32_t OP_VMV_V_V     = 0x01A;
 static const uint32_t OP_VREDSUM_VS  = 0x039;
 static const uint32_t OP_VWREDSUM_VS = 0x042;
 
@@ -192,14 +196,15 @@ int main(int argc, char **argv) {
   int exit_code = 0;
   int ncase = 0;
   struct Case { const char *name; uint32_t op; int vsew, vlmul, vl; int model; };
-  /* model: 0=不建模 1=vadd.vv(e8) 2=vwadd.wv(e16->e32) 3=vmv.s.x(e32) */
+  /* model: 0=不建模 1=vadd.vv(e8) 2=vwadd.wv(e16->e32) 3=vmv.s.x(e32) 4=vmv.v.i(e32) */
 #if defined(VIALU_MODE)
   Case cases[] = {
     { "vadd.vv",     OP_VADD_VV,  0, 0, 16, 1 },   /* e8 , LMUL=1 —— 数值可建模的锚点 */
     { "vwadd.wv",    OP_VWADD_WV, 1, 1, 16, 2 },   /* e16, LMUL=2 —— 基线 D 的循环携带指令 */
-    { "vmv.s.x",     OP_VMV_S_X,  2, 0,  4, 3 },   /* e32, LMUL=1 —— 基线的累加器清零指令 */
+    { "vmv.s.x",     OP_VMV_S_X,  2, 0,  4, 3 },   /* e32, LMUL=1 —— 基线 A/B/D 循环外的累加器清零 */
+    { "vmv.v.i",     OP_VMV_V_V,  2, 0,  4, 4 },   /* e32, LMUL=1 —— 单次点积基线的 v8 整体清零（S-3'） */
   };
-  ncase = 3;
+  ncase = 4;
 #else
   Case cases[] = {
     { "vredsum.vs",  OP_VREDSUM_VS,  2, 2, 16, 0 },  /* e32, LMUL=4（基线 D 循环外的一次归约） */
@@ -244,9 +249,12 @@ int main(int argc, char **argv) {
           for (int e = 0; e < 4; e++)
             put32(&ref, e, get32(&s.vs2, e) + (uint32_t)(int32_t)(int16_t)get16(&s.vs1, e));
           break;
-        case 3:  /* vmv.s.x, SEW=32, vl=4, vta=1：vd[0]=vs1[0]，其余为 tail */
+        case 3:  /* vmv.s.x, SEW=32, vl=4, vta=1：vd[0]=vs1[0]，其余为 tail（标准 RVV 规则，与 vdot 无关） */
           put32(&ref, 0, get32(&s.vs1, 0));
           for (int e = 1; e < 4; e++) put32(&ref, e, 0xffffffffu);
+          break;
+        case 4:  /* vmv.v.i（FU 内 vmv_v_v），SEW=32, vl=4=VLMAX：vd = vs1，全 body 无 tail */
+          ref = s.vs1;
           break;
         default: have_ref = 0; break;
       }

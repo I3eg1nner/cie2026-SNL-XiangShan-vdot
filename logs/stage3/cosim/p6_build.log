@@ -1,50 +1,228 @@
 ==============================================================
- [1] NEMU difftest 参考共享库（riscv64-xs-kmhv2-ref_defconfig + XVDOT）   2026-10-24T15:28:27Z UTC
+ [1] NEMU difftest 参考共享库（riscv64-xs-kmhv2-ref_defconfig + XVDOT）   2026-10-26T15:18:55Z UTC
 ==============================================================
 已存在且比 vdot.c 新，跳过重建（FORCE_NEMU=1 可强制重建）：
--rw-r--r--  1 i3eg1nner  staff    20256 10 24 23:26 /Users/i3eg1nner/code/cie/work/NEMU/build/obj-riscv64-nemu-interpreter-so/src/isa/riscv64/instr/rvv/vdot.o
--rwxr-xr-x@ 1 i3eg1nner  staff  1571008 10 24 23:26 /Users/i3eg1nner/code/cie/work/NEMU/build/riscv64-nemu-interpreter-so
+-rw-rw-r-- 1 user user   19416 Oct 26 15:17 /data/my/cie2026-vdot-xiangshan/work/NEMU/build/obj-riscv64-nemu-interpreter-so/src/isa/riscv64/instr/rvv/vdot.o
+-rwxrwxr-x 1 user user 1467864 Oct 26 15:17 /data/my/cie2026-vdot-xiangshan/work/NEMU/build/riscv64-nemu-interpreter-so
 ==============================================================
- [2] 从 work/XiangShan-cosim 精化 RTL   2026-10-24T15:28:27Z UTC
+ [2] 从 /data/my/cie2026-vdot-xiangshan/work/XiangShan-cosim 精化 RTL   2026-10-26T15:18:55Z UTC
 ==============================================================
-java      : openjdk version "17.0.21.0.2" 2026-10-22
-verilator : Verilator 5.052 2026-09-05 rev vUNKNOWN-built20260905
+java      : openjdk version "17.0.20" 2026-07-21
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+verilator : Verilator 5.024 2024-04-05 rev v5.024
 --- yunsuan: VDotTop ---
 Generating the VDotTop hardware
--rw-r--r--@ 1 i3eg1nner  staff  134630 10 24 23:28 /Users/i3eg1nner/code/cie/work/XiangShan-cosim/yunsuan/build/vdot/VDotTop.sv
+-rw-rw-r-- 1 user user 134507 Oct 26 15:19 /data/my/cie2026-vdot-xiangshan/work/XiangShan-cosim/yunsuan/build/vdot/VDotTop.sv
 --- xiangshan: VdotDecodeProbe (DecodeUnit + VecExceptionGen) ---
 =============== xiangshan.test.runMain xiangshan...dir build/vdot --target verilog ===============
 ==================================================================================================
-[844/860] xiangshan.compile
-[844] [info] compiling 1 Scala source to /Users/i3eg1nner/code/cie/work/XiangShan-cosim/out/xiangshan/compile.dest/classes ...
-[844] [info] done compiling
+[build.sc-62/66] compile
+[build.sc-62] [info] compiling 7 Scala sources to /data/my/cie2026-vdot-xiangshan/work/XiangShan-cosim/out/mill-build/compile.dest/classes ...
+[build.sc-62] [info] done compiling
+[769/860] difftest.compile
+[746/860] rocketchip.cde.compile
+[736/860] rocketchip.macros.compile
+[771/860] fudian.compile
+[772/860] yunsuan.compile
+[769] [info] compiling 36 Scala sources to /data/my/cie2026-vdot-xiangshan/work/XiangShan-cosim/out/difftest/compile.dest/classes ...
+[746] [info] compiling 1 Scala source to /data/my/cie2026-vdot-xiangshan/work/XiangShan-cosim/out/rocketchip/cde/compile.dest/classes ...
+[771] [info] compiling 15 Scala sources to /data/my/cie2026-vdot-xiangshan/work/XiangShan-cosim/out/fudian/compile.dest/classes ...
+[736] [info] compiling 1 Scala source to /data/my/cie2026-vdot-xiangshan/work/XiangShan-cosim/out/rocketchip/macros/compile.dest/classes ...
+[772] [info] compiling 82 Scala sources to /data/my/cie2026-vdot-xiangshan/work/XiangShan-cosim/out/yunsuan/compile.dest/classes ...
+[747/860] macros.compile
+[747] [info] compiling 1 Scala source to /data/my/cie2026-vdot-xiangshan/work/XiangShan-cosim/out/macros/compile.dest/classes ...
+[770/860] rocketchip.hardfloat.compile
+[770] [info] compiling 20 Scala sources to /data/my/cie2026-vdot-xiangshan/work/XiangShan-cosim/out/rocketchip/hardfloat/compile.dest/classes ...
+[736] [info] done compiling
+[747] [info] done compiling
+[746] [info] done compiling
+[771] [warn] /data/my/cie2026-vdot-xiangshan/work/XiangShan-cosim/fudian/src/main/scala/fudian/FPToInt.scala:55:12: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+[771] [warn]   io.to_s2.sel_lpath
+[771] [warn]            ^
+[770] [info] done compiling
+[771] [warn] 5 deprecations (since 2.13.0); re-run with -deprecation for details
+[771] [warn] two warnings found
+[771] [info] done compiling
+[786/860] rocketchip.compile
+[786] [info] compiling 315 Scala sources to /data/my/cie2026-vdot-xiangshan/work/XiangShan-cosim/out/rocketchip/compile.dest/classes ...
+[769] [warn] 1 deprecation (since 2.13.0)
+[769] [warn] 2 deprecations (since Chisel 6.0)
+[769] [warn] 3 deprecations in total; re-run with -deprecation for details
+[769] [warn] three warnings found
+[769] [info] done compiling
+[794/860] difftest.test.compile
+[794] [info] compiling 2 Scala sources to /data/my/cie2026-vdot-xiangshan/work/XiangShan-cosim/out/difftest/test/compile.dest/classes ...
+[794] [info] done compiling
+[772] [info] done compiling
+[786] [warn] 3 deprecations
+[786] [warn] 66 deprecations (since 2.13.0)
+[786] [warn] 1 deprecation (since 2.13.7)
+[786] [warn] 1 deprecation (since 6.6.0)
+[786] [warn] 1 deprecation (since 9)
+[786] [warn] 52 deprecations (since CDE 0.1)
+[786] [warn] 1 deprecation (since Chisel 6.7.0)
+[786] [warn] 1 deprecation (since rocket-chip 1.2)
+[786] [warn] 126 deprecations in total; re-run with -deprecation for details
+[786] [warn] 19 feature warnings; re-run with -feature for details
+[786] [warn] 10 warnings found
+[786] [info] done compiling
+[798/860] =============== xiangshan.test.runMain xi...ld/vdot --target verilog =============== 60s
+[786] rocketchip.compile 38s
+==================================================================================================
+[807/860] utility.compile
+[808/860] openNCB.compile
+[807] [info] compiling 61 Scala sources to /data/my/cie2026-vdot-xiangshan/work/XiangShan-cosim/out/utility/compile.dest/classes ...
+[808] [info] compiling 89 Scala sources to /data/my/cie2026-vdot-xiangshan/work/XiangShan-cosim/out/openNCB/compile.dest/classes ...
+[807] [warn] /data/my/cie2026-vdot-xiangshan/work/XiangShan-cosim/utility/src/main/scala/utility/TLUtils/TLLogger.scala:91:5: match may not be exhaustive.
+[807] [warn] It would fail on the following input: TLBundleE()
+[807] [warn]     chn match {
+[807] [warn]     ^
+[808] [info] done compiling
+[807] [warn] 21 deprecations (since 2.13.0)
+[807] [warn] 1 deprecation (since 2.13.3)
+[807] [warn] 22 deprecations in total; re-run with -deprecation for details
+[807] [warn] 2 feature warnings; re-run with -feature for details
+[807] [warn] 5 warnings found
+[807] [info] done compiling
+[822/860] chiselAIA.compile
+[823/860] huancun.compile
+[824/860] chiselIOPMP.compile
+[822] [info] compiling 6 Scala sources to /data/my/cie2026-vdot-xiangshan/work/XiangShan-cosim/out/chiselAIA/compile.dest/classes ...
+[823] [info] compiling 43 Scala sources to /data/my/cie2026-vdot-xiangshan/work/XiangShan-cosim/out/huancun/compile.dest/classes ...
+[824] [info] compiling 3 Scala sources to /data/my/cie2026-vdot-xiangshan/work/XiangShan-cosim/out/chiselIOPMP/compile.dest/classes ...
+[823] [warn] /data/my/cie2026-vdot-xiangshan/work/XiangShan-cosim/huancun/src/main/scala/huancun/Slice.scala:444:44: non-variable type argument huancun.noninclusive.MSHR in type pattern Seq[huancun.noninclusive.MSHR] (the underlying of Seq[huancun.noninclusive.MSHR]) is unchecked since it is eliminated by erasure
+[823] [warn]     case (dir: noninclusive.Directory, ms: Seq[noninclusive.MSHR]) =>
+[823] [warn]                                            ^
+[823] [warn] /data/my/cie2026-vdot-xiangshan/work/XiangShan-cosim/huancun/src/main/scala/huancun/Slice.scala:459:38: non-variable type argument huancun.inclusive.MSHR in type pattern Seq[huancun.inclusive.MSHR] (the underlying of Seq[huancun.inclusive.MSHR]) is unchecked since it is eliminated by erasure
+[823] [warn]     case (_: inclusive.Directory, _: Seq[inclusive.MSHR]) =>
+[823] [warn]                                      ^
+[824] [info] done compiling
+[822] [info] done compiling
+[823] [warn] two warnings found
+[823] [info] done compiling
+[834/860] coupledL2.compile
+[834] [info] compiling 60 Scala sources to /data/my/cie2026-vdot-xiangshan/work/XiangShan-cosim/out/coupledL2/compile.dest/classes ...
+[834] [warn] /data/my/cie2026-vdot-xiangshan/work/XiangShan-cosim/coupledL2/src/main/scala/coupledL2/tl2chi/TL2CHICoupledL2.scala:133:20: non-variable type argument coupledL2.tl2chi.Slice in type pattern Seq[coupledL2.tl2chi.Slice] (the underlying of Seq[coupledL2.tl2chi.Slice]) is unchecked since it is eliminated by erasure
+[834] [warn]       case slices: Seq[Slice] =>
+[834] [warn]                    ^
+[834] [info] /data/my/cie2026-vdot-xiangshan/work/XiangShan-cosim/coupledL2/src/main/scala/coupledL2/tl2tl/Bundle.scala:1:1: 
+[834] [info] Found names but no class, trait or object is defined in the compilation unit.
+[834] [info] The incremental compiler cannot record the dependency information in such case.
+[834] [info] Some errors like unused import referring to a non-existent class might not be reported.
+[834] [info]     
+[834] [info] /** *************************************************************************************
+[834] [info] ^
+[834] [warn] 1 deprecation (since 2.13.0); re-run with -deprecation for details
+[834] [warn] two warnings found
+[834] [info] done compiling
+[840/860] openLLC.compile
+[840] [info] compiling 27 Scala sources to /data/my/cie2026-vdot-xiangshan/work/XiangShan-cosim/out/openLLC/compile.dest/classes ...
+[840] [info] done compiling
+[846/860] xiangshan.compile
+[846] [info] compiling 382 Scala sources to /data/my/cie2026-vdot-xiangshan/work/XiangShan-cosim/out/xiangshan/compile.dest/classes ...
+[846/860] =============== xiangshan.test.runMain x...ld/vdot --target verilog =============== 120s
+[846] xiangshan.compile 35s
+==================================================================================================
+[846] [info] done compiling
+[853/860] xiangshan.test.compile
+[853] [info] compiling 25 Scala sources to /data/my/cie2026-vdot-xiangshan/work/XiangShan-cosim/out/xiangshan/test/compile.dest/classes ...
+[853] [info] done compiling
 [860/860] xiangshan.test.runMain
 [860] ImmUnion max len: 22
-[860/860] =============== xiangshan.test.runMain xi...ld/vdot --target verilog =============== 15s
+[860/860] =============== xiangshan.test.runMain x...ld/vdot --target verilog =============== 170s
 ==================================================================================================
--rw-r--r--@ 1 i3eg1nner  staff  745897 10 24 23:28 /Users/i3eg1nner/code/cie/work/XiangShan-cosim/build/vdot/VdotDecodeProbe.v
+-rw-rw-r-- 1 user user 747816 Oct 26 15:21 /data/my/cie2026-vdot-xiangshan/work/XiangShan-cosim/build/vdot/VdotDecodeProbe.v
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
 ==============================================================
- [3] verilator --cc（宿主机 verilator 5.052）   2026-10-24T15:28:47Z UTC
+ [3] verilator --cc（宿主机 Verilator 5.024）   2026-10-26T15:21:52Z UTC
 ==============================================================
-- V e r i l a t i o n   R e p o r t: Verilator 5.052 2026-09-05 rev vUNKNOWN-built20260905
-- Verilator: Built from 0.093 MB sources in 6 modules, into 1.171 MB in 11 C++ files needing 0.001 MB
-- Verilator: Walltime 0.106 s (elab=0.010, cvt=0.074, bld=0.000); cpu 0.096 s on 1 threads; allocated 34.516 MB
-- V e r i l a t i o n   R e p o r t: Verilator 5.052 2026-09-05 rev vUNKNOWN-built20260905
-- Verilator: Built from 0.662 MB sources in 6 modules, into 1.183 MB in 5 C++ files needing 0.001 MB
-- Verilator: Walltime 0.102 s (elab=0.012, cvt=0.064, bld=0.000); cpu 0.102 s on 1 threads; allocated 33.203 MB
-verilator runtime <- /opt/homebrew/Cellar/verilator/5.052/share/verilator/include
-VDotTopDut___024root__0__Slow.cpp
-VDotTopDut___024root__0.cpp
-VDotTopDut___024root__Slow.cpp
-DecodeProbeDut___024root__0__Slow.cpp
-DecodeProbeDut___024root__0.cpp
-DecodeProbeDut___024root__Slow.cpp
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+- V e r i l a t i o n   R e p o r t: Verilator 5.024 2024-04-05 rev v5.024
+- Verilator: Built from 0.073 MB sources in 6 modules, into 1.615 MB in 12 C++ files needing 0.006 MB
+- Verilator: Walltime 0.154 s (elab=0.008, cvt=0.117, bld=0.000); cpu 0.000 s on 1 threads; alloced 43.762 MB
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+- V e r i l a t i o n   R e p o r t: Verilator 5.024 2024-04-05 rev v5.024
+- Verilator: Built from 0.642 MB sources in 6 modules, into 0.948 MB in 8 C++ files needing 0.002 MB
+- Verilator: Walltime 0.131 s (elab=0.011, cvt=0.085, bld=0.000); cpu 0.000 s on 1 threads; alloced 36.801 MB
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+verilator runtime <- /usr/local/share/verilator/include
+VDotTopDut.cpp
+VDotTopDut.h
+VDotTopDut.mk
+DecodeProbeDut.cpp
+DecodeProbeDut.h
+DecodeProbeDut.mk
 ==============================================================
- [4] 容器内 g++ 编译协同仿真驱动   2026-10-24T15:28:47Z UTC
+ [4] g++ 编译协同仿真驱动（执行环境：host）   2026-10-26T15:21:53Z UTC
 ==============================================================
-aarch64
-g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
-rm -f build/cosim
-g++ -O2 -std=c++17 -Wno-attributes -I/work/tests/cosim/build/verilator/include -I/work/tests/cosim/build/verilator/include/vltstd -Ibuild/vdut -Ibuild/ddut -I. -o build/cosim cosim_main.cpp build/vdut/VDotTopDut.cpp build/vdut/VDotTopDut_CSA4to2__0.cpp build/vdut/VDotTopDut_CSA4to2__0__Slow.cpp build/vdut/VDotTopDut_CSA4to2__Slow.cpp build/vdut/VDotTopDut_VIMac64b__0.cpp build/vdut/VDotTopDut_VIMac64b__0__Slow.cpp build/vdut/VDotTopDut_VIMac64b__Slow.cpp build/vdut/VDotTopDut__Syms__Slow.cpp build/vdut/VDotTopDut___024root__0.cpp build/vdut/VDotTopDut___024root__0__Slow.cpp build/vdut/VDotTopDut___024root__Slow.cpp build/ddut/DecodeProbeDut.cpp build/ddut/DecodeProbeDut__Syms__Slow.cpp build/ddut/DecodeProbeDut___024root__0.cpp build/ddut/DecodeProbeDut___024root__0__Slow.cpp build/ddut/DecodeProbeDut___024root__Slow.cpp /work/tests/cosim/build/verilator/include/verilated.cpp /work/tests/cosim/build/verilator/include/verilated_threads.cpp -ldl -lpthread
--rwxr-xr-x 1 root root 481192 Oct 24 15:29 build/cosim
-build/cosim: ELF 64-bit LSB pie executable, ARM aarch64, version 1 (GNU/Linux), dynamically linked, interpreter /lib/ld-linux-aarch64.so.1, BuildID[sha1]=0375b937a7b6a5e30fe9e36facb9c5f54ce6ccfa, for GNU/Linux 3.7.0, not stripped
+x86_64
+g++ (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0
+rm -f /data/my/cie2026-vdot-xiangshan/work/build/cosim/cosim
+g++ -O2 -std=c++17 -Wno-attributes -I/data/my/cie2026-vdot-xiangshan/work/build/cosim/verilator/include -I/data/my/cie2026-vdot-xiangshan/work/build/cosim/verilator/include/vltstd -I/data/my/cie2026-vdot-xiangshan/work/build/cosim/vdut -I/data/my/cie2026-vdot-xiangshan/work/build/cosim/ddut -I. -o /data/my/cie2026-vdot-xiangshan/work/build/cosim/cosim cosim_main.cpp /data/my/cie2026-vdot-xiangshan/work/build/cosim/vdut/VDotTopDut.cpp /data/my/cie2026-vdot-xiangshan/work/build/cosim/vdut/VDotTopDut_CSA4to2__DepSet_h98408285__0__Slow.cpp /data/my/cie2026-vdot-xiangshan/work/build/cosim/vdut/VDotTopDut_CSA4to2__DepSet_hfa255396__0.cpp /data/my/cie2026-vdot-xiangshan/work/build/cosim/vdut/VDotTopDut_CSA4to2__DepSet_hfa255396__1.cpp /data/my/cie2026-vdot-xiangshan/work/build/cosim/vdut/VDotTopDut_CSA4to2__Slow.cpp /data/my/cie2026-vdot-xiangshan/work/build/cosim/vdut/VDotTopDut__Syms.cpp /data/my/cie2026-vdot-xiangshan/work/build/cosim/vdut/VDotTopDut___024root__DepSet_hca912899__0.cpp /data/my/cie2026-vdot-xiangshan/work/build/cosim/vdut/VDotTopDut___024root__DepSet_hca912899__0__Slow.cpp /data/my/cie2026-vdot-xiangshan/work/build/cosim/vdut/VDotTopDut___024root__DepSet_hca912899__1.cpp /data/my/cie2026-vdot-xiangshan/work/build/cosim/vdut/VDotTopDut___024root__DepSet_hce53175f__0.cpp /data/my/cie2026-vdot-xiangshan/work/build/cosim/vdut/VDotTopDut___024root__DepSet_hce53175f__0__Slow.cpp /data/my/cie2026-vdot-xiangshan/work/build/cosim/vdut/VDotTopDut___024root__Slow.cpp /data/my/cie2026-vdot-xiangshan/work/build/cosim/ddut/DecodeProbeDut.cpp /data/my/cie2026-vdot-xiangshan/work/build/cosim/ddut/DecodeProbeDut__Syms.cpp /data/my/cie2026-vdot-xiangshan/work/build/cosim/ddut/DecodeProbeDut___024root__DepSet_h2c7a9744__0.cpp /data/my/cie2026-vdot-xiangshan/work/build/cosim/ddut/DecodeProbeDut___024root__DepSet_h2c7a9744__0__Slow.cpp /data/my/cie2026-vdot-xiangshan/work/build/cosim/ddut/DecodeProbeDut___024root__DepSet_h65f11a59__0.cpp /data/my/cie2026-vdot-xiangshan/work/build/cosim/ddut/DecodeProbeDut___024root__DepSet_h65f11a59__0__Slow.cpp /data/my/cie2026-vdot-xiangshan/work/build/cosim/ddut/DecodeProbeDut___024root__DepSet_h65f11a59__1.cpp /data/my/cie2026-vdot-xiangshan/work/build/cosim/ddut/DecodeProbeDut___024root__Slow.cpp /data/my/cie2026-vdot-xiangshan/work/build/cosim/verilator/include/verilated.cpp /data/my/cie2026-vdot-xiangshan/work/build/cosim/verilator/include/verilated_threads.cpp -ldl -lpthread
+-rwxrwxr-x 1 user user 432712 Oct 26 15:22 /data/my/cie2026-vdot-xiangshan/work/build/cosim/cosim
+/data/my/cie2026-vdot-xiangshan/work/build/cosim/cosim: ELF 64-bit LSB pie executable, x86-64, version 1 (GNU/Linux), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, BuildID[sha1]=093e00b72899b0386b08aab52cfc093178deeb74, for GNU/Linux 3.2.0, not stripped

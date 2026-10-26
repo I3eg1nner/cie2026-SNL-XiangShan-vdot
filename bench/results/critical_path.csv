@@ -1,9 +1,9 @@
 case,step,instruction,fu_latency_cycles,latency_kind,note
-单次点积-基线,1,"vsetvli e32,m1",0,声明值,并行分支起点
-单次点积-基线,2,"vmv.s.x v8,x0",1,实测,"并行分支, 累加器清零"
+单次点积-基线,1,"vsetivli 4,e32,m1",0,声明值,并行分支起点
+单次点积-基线,2,"vmv.v.i v8,0",1,实测,"并行分支, v8 整体清零（S-3'）"
 单次点积-基线,3,"vsetvli e8,m1",0,声明值,关键路径起点
 单次点积-基线,4,"vwmul.vv v4,v2,v1",2,实测,关键路径
-单次点积-基线,5,"vsetvli e16,m2",0,声明值,与 #4 并行
+单次点积-基线,5,"vsetvli e16,m2,tu",0,声明值,与 #4 并行
 单次点积-基线,6,"vwredsum.vs v8,v4,v8",2,实测,关键路径终点
 单次点积-vdot,1,"vsetvli e8,m1",0,声明值,关键路径起点
 单次点积-vdot,2,"vdot.vv v8,v2,v1",2,实测,关键路径终点

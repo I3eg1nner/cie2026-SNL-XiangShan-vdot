@@ -4,7 +4,7 @@ VCD     ： logs/stage2/waveform/vdot4avv_vdottop_fuType10_seed1.vcd
 激励     ： vdot4a 32 0 4 1 1 1 0102030405060708090a0b0c0d0e0f10 0102030405060708090a0b0c0d0e0f10 00000000000000000000000000000000 1e000000ae000000be0100004e030000 00000000000000000000000000000000 OK
 生成命令： python3 scripts/tools/vcd_extract.py --vcd <vcd> --transactions
 ================================================================
-# VCD: /Users/i3eg1nner/code/cie/logs/stage2/waveform/vdot4avv_vdottop_fuType10_seed1.vcd
+# VCD: /data/my/cie2026-vdot-xiangshan/logs/stage2/waveform/vdot4avv_vdottop_fuType10_seed1.vcd
 # timescale: $timescale 1ps $end
 # 时钟上升沿共 13 个；检出 in.fire 事务 1 笔
 

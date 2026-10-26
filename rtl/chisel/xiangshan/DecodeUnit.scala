@@ -977,8 +977,9 @@ class DecodeUnit(implicit p: Parameters) extends XSModule with DecodeUnitConstan
   private val vmaInsts = Seq(
     VMACC_VV, VMACC_VX, VNMSAC_VV, VNMSAC_VX, VMADD_VV, VMADD_VX, VNMSUB_VV, VNMSUB_VX,
     VWMACCU_VV, VWMACCU_VX, VWMACC_VV, VWMACC_VX, VWMACCSU_VV, VWMACCSU_VX, VWMACCUS_VX,
-    // vdot 指令族：三条都要读旧 vd —— vdotacc/vdot4a 用它做累加器，vdot 在 vta=0 时
-    // 用它的 [127:32] 做 tail-undisturbed。不登记的话 isDependOldVd 为 0，
+    // vdot 指令族：三条都要读旧 vd —— vdotacc/vdot4a 用它做累加器；vdot 在 vstart >= vl
+    // （含 vl = 0）时必须原样写回旧 vd（裁定 S-5；vstart < vl 时 vd[127:32] 恒清零，
+    // 裁定 S-3'，不再依赖 vta）。不登记的话 isDependOldVd 为 0，
     // NewDispatch 会在 vlIsVlmax && (vm||vma) && !isWritePartVd 时丢弃对旧 vd 的依赖。
     VDOT_VV, VDOTACC_VV, VDOT4A_VV,
   )

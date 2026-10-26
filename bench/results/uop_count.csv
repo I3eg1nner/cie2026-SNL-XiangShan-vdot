@@ -1,6 +1,7 @@
 instruction,scenario,uop_split_type,vlmul,uops,kind,source
 vsetvli,任意,VSET,-,2,源码推导(非实测),UopInfoGen.scala:199
 vmv.s.x,e32/m1,VEC_0XV,m1,2,源码推导(非实测),UopInfoGen.scala:200 + VecDecoder.scala:457 (实现树 :466)
+vmv.v.i,e32/m1,VEC_VXV,m1,2,源码推导(非实测),UopInfoGen.scala:211 (lmul + 1 = 2) + VecDecoder.scala:336 (实现树 :345)
 vwmul.vv,e8/m1 -> e16/m2,VEC_VVW,m1,2,源码推导(非实测),"UopInfoGen.scala:214 (numOfUopWV, vlmul=000 -> 2) + VecDecoder.scala:427 (实现树 :436)"
 vwadd.wv,e16/m2 -> e32/m4,VEC_WVW,m2,4,源码推导(非实测),"UopInfoGen.scala:215 (numOfUopWV, vlmul=001 -> 4) + VecDecoder.scala:421 (实现树 :430)"
 vwredsum.vs,e16/m2,VEC_VWW,m2,4,源码推导(非实测),"UopInfoGen.scala:229 (Cat(lmul,0) = 2*lmul = 4) + VecDecoder.scala:243 (实现树 :244)"

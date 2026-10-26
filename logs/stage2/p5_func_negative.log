@@ -1,38 +1,38 @@
-=== 2.3.2 负数测试  2026-10-24 23:21:51 CST ===
+=== 2.3.2 负数测试  2026-10-26 15:28:57 UTC ===
 
 ########################################################################
 # suite  : negative(vdot.vv)
 # file   : tests/vectors/negative.txt
-# 用例数 : 总 44，可执行 44，跳过 0 
-# 命令   : YS_VDOT_VECTORS=tests/vectors/negative.txt ./build/emu -O 44 -s 7
+# 用例数 : 总 50，可执行 50，跳过 0 
+# 命令   : YS_VDOT_VECTORS=tests/vectors/negative.txt ./build/emu -O 50 -s 7
 ########################################################################
-Emu compiled at Oct 24 2026, 22:24:04
-[vdot-vectors] loaded 44 cases from /Users/i3eg1nner/code/cie/tests/vectors/negative.txt (skipped 0 non-OK, 0 unparsed)
-[vdot-vectors] run with -O 44 to execute every case exactly once
+Emu compiled at Oct 26 2026, 15:15:16
+[vdot-vectors] loaded 50 cases from /data/my/cie2026-vdot-xiangshan/tests/vectors/negative.txt (skipped 0 non-OK, 0 unparsed)
+[vdot-vectors] run with -O 50 to execute every case exactly once
 Set Test Type Res: fuType:7 fuOpType:225 (pick_fuType=0 pick_fuOpType=0)
 Using seed = 7
-[vdot-vectors] all 44 cases consumed
+[vdot-vectors] all 50 cases consumed
 EMU EXCEEDED LIMIT
-HAS Executed Cycles:195 Operations:44
-EMU has executed 2 ms.
-# 判定   : PASS（attempted=44 passed=44 failed=0 skipped=0）
+HAS Executed Cycles:219 Operations:50
+EMU has executed 21 ms.
+# 判定   : PASS（attempted=50 passed=50 failed=0 skipped=0）
 
 ########################################################################
 # suite  : negative(vdotacc.vv)
 # file   : tests/vectors/vdotacc_negative.txt
-# 用例数 : 总 44，可执行 44，跳过 0 
-# 命令   : YS_VDOT_VECTORS=tests/vectors/vdotacc_negative.txt ./build/emu -O 44 -s 7
+# 用例数 : 总 50，可执行 50，跳过 0 
+# 命令   : YS_VDOT_VECTORS=tests/vectors/vdotacc_negative.txt ./build/emu -O 50 -s 7
 ########################################################################
-Emu compiled at Oct 24 2026, 22:24:04
-[vdot-vectors] loaded 44 cases from /Users/i3eg1nner/code/cie/tests/vectors/vdotacc_negative.txt (skipped 0 non-OK, 0 unparsed)
-[vdot-vectors] run with -O 44 to execute every case exactly once
+Emu compiled at Oct 26 2026, 15:15:16
+[vdot-vectors] loaded 50 cases from /data/my/cie2026-vdot-xiangshan/tests/vectors/vdotacc_negative.txt (skipped 0 non-OK, 0 unparsed)
+[vdot-vectors] run with -O 50 to execute every case exactly once
 Set Test Type Res: fuType:7 fuOpType:225 (pick_fuType=0 pick_fuOpType=0)
 Using seed = 7
-[vdot-vectors] all 44 cases consumed
+[vdot-vectors] all 50 cases consumed
 EMU EXCEEDED LIMIT
-HAS Executed Cycles:195 Operations:44
-EMU has executed 3 ms.
-# 判定   : PASS（attempted=44 passed=44 failed=0 skipped=0）
+HAS Executed Cycles:219 Operations:50
+EMU has executed 19 ms.
+# 判定   : PASS（attempted=50 passed=50 failed=0 skipped=0）
 
 ########################################################################
 # suite  : negative(vdot4a.vv)
@@ -40,25 +40,25 @@ EMU has executed 3 ms.
 # 用例数 : 总 44，可执行 44，跳过 0 
 # 命令   : YS_VDOT_VECTORS=tests/vectors/vdot4a_negative.txt ./build/emu -O 44 -s 7
 ########################################################################
-Emu compiled at Oct 24 2026, 22:24:04
-[vdot-vectors] loaded 44 cases from /Users/i3eg1nner/code/cie/tests/vectors/vdot4a_negative.txt (skipped 0 non-OK, 0 unparsed)
+Emu compiled at Oct 26 2026, 15:15:16
+[vdot-vectors] loaded 44 cases from /data/my/cie2026-vdot-xiangshan/tests/vectors/vdot4a_negative.txt (skipped 0 non-OK, 0 unparsed)
 [vdot-vectors] run with -O 44 to execute every case exactly once
 Set Test Type Res: fuType:7 fuOpType:225 (pick_fuType=0 pick_fuOpType=0)
 Using seed = 7
 [vdot-vectors] all 44 cases consumed
 EMU EXCEEDED LIMIT
 HAS Executed Cycles:195 Operations:44
-EMU has executed 2 ms.
+EMU has executed 18 ms.
 # 判定   : PASS（attempted=44 passed=44 failed=0 skipped=0）
 
 ======================================================================
 == 代表性用例：vdot.vv 符号扩展陷阱：全 0x80 × 全 0x80 = 16×(-128)×(-128) = 262144 = 0x40000
 == 来源：tests/vectors/negative.txt   过滤：$8=="80808080808080808080808080808080" && $9=="80808080808080808080808080808080"
 == 语料原文（op vsew vstart vl vm vta vma vs1 vs2 vd_in vd_expected v0 status）：
-==   vdot 8 0 16 1 1 1 80808080808080808080808080808080 80808080808080808080808080808080 00000000000000000000000000000000 00000400ffffffffffffffffffffffff 00000000000000000000000000000000 OK
+==   vdot 8 0 16 1 1 1 80808080808080808080808080808080 80808080808080808080808080808080 00000000000000000000000000000000 00000400000000000000000000000000 00000000000000000000000000000000 OK
 ======================================================================
-Emu compiled at Oct 24 2026, 22:24:04
-[vdot-vectors] loaded 1 cases from /var/folders/mm/k9qhqcg91qs6xnm6zdsnwb6c0000gn/T/vdotcase.JXnaF5sEDF (skipped 0 non-OK, 0 unparsed)
+Emu compiled at Oct 26 2026, 15:15:16
+[vdot-vectors] loaded 1 cases from /tmp/vdotcase.898Y0m (skipped 0 non-OK, 0 unparsed)
 [vdot-vectors] run with -O 1 to execute every case exactly once
 Set Test Type Res: fuType:7 fuOpType:225 (pick_fuType=0 pick_fuOpType=0)
 [vdot-vectors] all 1 cases consumed
@@ -69,21 +69,21 @@ REF Input:
   fuType a fuOpType 0 sew 0 uop_idx 0 src_widen 0 widen 0 is_frs1 0 rm 0
   vstart 0 vl 16 vlmul 0 vm 1 ta 1 ma 1
 Expected Output 
-  result  ffffffffffffffff_ffffffff00040000 fflags: 0_0  vxsat: 0
+  result  0000000000000000_0000000000040000 fflags: 0_0  vxsat: 0
 DUT Output:
-  result  ffffffffffffffff_ffffffff00040000 fflags: 0_0  vxsat: 0
+  result  0000000000000000_0000000000040000 fflags: 0_0  vxsat: 0
 EMU EXCEEDED LIMIT
 HAS Executed Cycles:23 Operations:1
-EMU has executed 1 ms.
+EMU has executed 10 ms.
 
 ======================================================================
 == 代表性用例：vdot.vv 正负混合：16×(-128)×(+127) = -260096 = 0xFFFC0800
 == 来源：tests/vectors/negative.txt   过滤：$8=="80808080808080808080808080808080" && $9=="7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f"
 == 语料原文（op vsew vstart vl vm vta vma vs1 vs2 vd_in vd_expected v0 status）：
-==   vdot 8 0 16 1 1 1 80808080808080808080808080808080 7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f 00000000000000000000000000000000 0008fcffffffffffffffffffffffffff 00000000000000000000000000000000 OK
+==   vdot 8 0 16 1 1 1 80808080808080808080808080808080 7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f 00000000000000000000000000000000 0008fcff000000000000000000000000 00000000000000000000000000000000 OK
 ======================================================================
-Emu compiled at Oct 24 2026, 22:24:04
-[vdot-vectors] loaded 1 cases from /var/folders/mm/k9qhqcg91qs6xnm6zdsnwb6c0000gn/T/vdotcase.rHJs8V4Mfc (skipped 0 non-OK, 0 unparsed)
+Emu compiled at Oct 26 2026, 15:15:16
+[vdot-vectors] loaded 1 cases from /tmp/vdotcase.0hFFng (skipped 0 non-OK, 0 unparsed)
 [vdot-vectors] run with -O 1 to execute every case exactly once
 Set Test Type Res: fuType:7 fuOpType:225 (pick_fuType=0 pick_fuOpType=0)
 [vdot-vectors] all 1 cases consumed
@@ -94,12 +94,12 @@ REF Input:
   fuType a fuOpType 0 sew 0 uop_idx 0 src_widen 0 widen 0 is_frs1 0 rm 0
   vstart 0 vl 16 vlmul 0 vm 1 ta 1 ma 1
 Expected Output 
-  result  ffffffffffffffff_fffffffffffc0800 fflags: 0_0  vxsat: 0
+  result  0000000000000000_00000000fffc0800 fflags: 0_0  vxsat: 0
 DUT Output:
-  result  ffffffffffffffff_fffffffffffc0800 fflags: 0_0  vxsat: 0
+  result  0000000000000000_00000000fffc0800 fflags: 0_0  vxsat: 0
 EMU EXCEEDED LIMIT
 HAS Executed Cycles:23 Operations:1
-EMU has executed 1 ms.
+EMU has executed 10 ms.
 
 ======================================================================
 == 代表性用例：vdot4a.vv：负数分组点积
@@ -107,8 +107,8 @@ EMU has executed 1 ms.
 == 语料原文（op vsew vstart vl vm vta vma vs1 vs2 vd_in vd_expected v0 status）：
 ==   vdot4a 32 0 4 1 1 1 80808080808080808080808080808080 80808080808080808080808080808080 00000000000000000000000000000000 00000100000001000000010000000100 00000000000000000000000000000000 OK
 ======================================================================
-Emu compiled at Oct 24 2026, 22:24:04
-[vdot-vectors] loaded 1 cases from /var/folders/mm/k9qhqcg91qs6xnm6zdsnwb6c0000gn/T/vdotcase.hbpu97BRYb (skipped 0 non-OK, 0 unparsed)
+Emu compiled at Oct 26 2026, 15:15:16
+[vdot-vectors] loaded 1 cases from /tmp/vdotcase.BICNjx (skipped 0 non-OK, 0 unparsed)
 [vdot-vectors] run with -O 1 to execute every case exactly once
 Set Test Type Res: fuType:7 fuOpType:225 (pick_fuType=0 pick_fuOpType=0)
 [vdot-vectors] all 1 cases consumed
@@ -124,4 +124,4 @@ DUT Output:
   result  0001000000010000_0001000000010000 fflags: 0_0  vxsat: 0
 EMU EXCEEDED LIMIT
 HAS Executed Cycles:23 Operations:1
-EMU has executed 1 ms.
+EMU has executed 8 ms.

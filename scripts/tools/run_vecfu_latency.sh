@@ -3,7 +3,7 @@
 # run_vecfu_latency.sh —— 直接驱动 VIAluFix / VIPU 实测功能单元延迟
 #                         （P7 / 赛题 3.3，基线序列用到的另外两个功能单元）
 #
-#   vmv.s.x / vwadd.wv  -> FuType.vialuF -> VIAluFix (VialuCfg, 声明 latency=1)
+#   vmv.s.x / vmv.v.i / vwadd.wv -> FuType.vialuF -> VIAluFix (VialuCfg, 声明 latency=1)
 #   vwredsum.vs         -> FuType.vipu   -> VIPU     (VipuCfg,  声明 latency=2)
 #
 # 工作树：${WORK_DIR}/XiangShan-cosim（P7 专用；不触碰 XiangShan-vdot）
