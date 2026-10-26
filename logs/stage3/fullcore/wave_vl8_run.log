@@ -1,0 +1,64 @@
+$ /data/my/cie2026-vdot-xiangshan/work/XiangShan-fullcore/build/emu -i /data/my/cie2026-vdot-xiangshan/work/build/fullcore/wave_vl8/vdot_wave_vl8.bin --diff /data/my/cie2026-vdot-xiangshan/work/NEMU-fullcore/ref/riscv64-nemu-interpreter-so --dump-commit-trace
+start: 2026-10-26T18:21:59Z
+（下面先是 emu 的 stdout，再是 stderr；stderr 中 emu 退出时打印的 [PERF ] 性能计数器行已滤掉）
+emu compiled at Oct 26 2026, 16:04:36
+%Warning: System has stack size 8192 kb which may be too small; suggest 'ulimit -s 35539' or larger
+Using simulated 1048576B flash
+Core  0's Commit SHA is: a4eeaabb4c, dirty: 1
+Using simulated 8386560MB RAM
+The image is /data/my/cie2026-vdot-xiangshan/work/build/fullcore/wave_vl8/vdot_wave_vl8.bin
+The reference model is /data/my/cie2026-vdot-xiangshan/work/NEMU-fullcore/ref/riscv64-nemu-interpreter-so
+The first instruction of core 0 has commited. Difftest enabled. 
+[00] commit pc 0000000010000000 inst 74446073 wen 0 dst 00 data 0000000000000000 idx 000 csrsi   mnstatus, 8
+[01] commit pc 0000000010000004 inst 0010029b wen 1 dst 05 data 0000000000000001 idx 001 addiw   t0, zero, 1
+[02] commit pc 0000000010000008 inst 02a29313 wen 1 dst 06 data 0000040000000000 idx 002 slli    t1, t0, 42
+[03] commit pc 000000001000000c inst 30033073 wen 0 dst 00 data 0000040000000000 idx 003 csrc    mstatus, t1
+[04] commit pc 0000000010000010 inst 01f29293 wen 1 dst 05 data 0000000080000000 idx 004 slli    t0, t0, 31
+[05] commit pc 0000000010000014 inst 00028067 wen 0 dst 00 data 0000000080000000 idx 005 jr      t0
+[06] commit pc 0000000080000000 inst 000062b7 wen 1 dst 05 data 0000000000006600 idx 006 lui     t0, 0x6
+[07] commit pc 0000000080000006 inst 3002a073 wen 0 dst 00 data 0000000000006600 idx 007 csrs    mstatus, t0
+[08] commit pc 000000008000000a inst 00000517 wen 1 dst 10 data 000000008000000a idx 008 auipc   a0, 0x0
+[09] commit pc 000000008000000e inst 0a650513 wen 1 dst 10 data 00000000800000b0 idx 009 addi    a0, a0, 166
+[10] commit pc 0000000080000012 inst cc087057 wen 0 dst 00 data 0000000000000000 idx 00a vsetivli zero, 16, e8, m1, ta, 
+[11] commit pc 0000000080000016 inst 02050407 wen 1 dst 08 data 00000000800000b0 idx 00b (00) vle8.v  v8, (a0)
+[12] commit pc 000000008000001a inst 01050593 wen 1 dst 11 data 00000000800000c0 idx 00c addi    a1, a0, 16
+[13] commit pc 000000008000001e inst 02058487 wen 1 dst 09 data 00000000800000b0 idx 00d (00) vle8.v  v9, (a1)
+[14] commit pc 0000000080000022 inst 02050593 wen 1 dst 11 data 00000000800000d0 idx 00e addi    a1, a0, 32
+[15] commit pc 0000000080000026 inst 02058187 wen 1 dst 03 data 0000000000000000 idx 00f (00) vle8.v  v3, (a1)
+[16] commit pc 000000008000002a inst 03050593 wen 1 dst 11 data 00000000800000e0 idx 010 addi    a1, a0, 48
+[17] commit pc 000000008000002e inst 02058207 wen 1 dst 04 data 00000000800000d0 idx 011 (00) vle8.v  v4, (a1)
+[18] commit pc 0000000080000032 inst 0ff0000f wen 0 dst 00 data 00000000800000e0 idx 012 fence   iorw,iorw
+[19] commit pc 0000000080000036 inst cc047057 wen 0 dst 00 data 00000000800000e0 idx 013 vsetivli zero, 8, e8, m1, ta, m
+[20] commit pc 000000008000003a inst e69401d7 wen 1 dst 03 data 00000000800000e0 idx 014 unknown
+[21] commit pc 000000008000003e inst ea940257 wen 1 dst 04 data 00000000800000e0 idx 015 unknown
+[22] commit pc 0000000080000042 inst c20024f3 wen 1 dst 09 data 0000000000000008 idx 016 csrr    s1, vl
+[23] commit pc 0000000080000046 inst 00000597 wen 1 dst 11 data 0000000080000046 idx 017 auipc   a1, 0x0
+[24] commit pc 000000008000004a inst 0aa58593 wen 1 dst 11 data 00000000800000f0 idx 018 addi    a1, a1, 170
+[25] commit pc 000000008000004e inst cc087057 wen 0 dst 00 data 0000000000000008 idx 019 vsetivli zero, 16, e8, m1, ta, 
+[26] commit pc 0000000080000052 inst 020581a7 wen 1 dst 32 data 00000000800000f0 idx 01a (00) vse8.v  v3, (a1)
+[27] commit pc 0000000080000056 inst 01058613 wen 1 dst 12 data 0000000080000100 idx 01b addi    a2, a1, 16
+[28] commit pc 000000008000005a inst 02060227 wen 1 dst 32 data 00000000800000f0 idx 01c (00) vse8.v  v4, (a2)
+[29] commit pc 000000008000005e inst 0ff0000f wen 0 dst 00 data 00000000800000f0 idx 01d fence   iorw,iorw
+[30] commit pc 0000000080000062 inst 00100513 wen 1 dst 10 data 0000000000000001 idx 01e li      a0, 1
+[31] commit pc 0000000080000066 inst 02649b63 wen 0 dst 22 data 0000000000000001 idx 01f bne     s1, t1, pc + 54
+[32] commit pc 000000008000006a inst 00200513 wen 1 dst 10 data 0000000000000002 idx 020 li      a0, 2
+[33] commit pc 000000008000006c inst 0005b283 wen 1 dst 05 data 00000000000000cc idx 021 (08) ld      t0, 0(a1)
+[34] commit pc 0000000080000070 inst 0cc00313 wen 1 dst 06 data 00000000000000cc idx 022 li      t1, 204
+[35] commit pc 0000000080000074 inst 02629463 wen 0 dst 08 data 00000000000000cc idx 023 bne     t0, t1, pc + 40
+[36] commit pc 0000000080000078 inst 00300513 wen 1 dst 10 data 0000000000000003 idx 024 li      a0, 3
+[37] commit pc 000000008000007a inst 0085b283 wen 1 dst 05 data 0000000000000000 idx 025 (09) ld      t0, 8(a1)
+[38] commit pc 000000008000007e inst 00029f63 wen 0 dst 30 data 00000000000000cc idx 026 bnez    t0, pc + 30
+[39] commit pc 0000000080000082 inst 00400513 wen 1 dst 10 data 0000000000000004 idx 027 li      a0, 4
+[40] commit pc 0000000080000084 inst 0105b283 wen 1 dst 05 data 00000000000004b4 idx 028 (0a) ld      t0, 16(a1)
+[41] commit pc 0000000080000088 inst 4b400313 wen 1 dst 06 data 00000000000004b4 idx 029 li      t1, 1204
+[42] commit pc 000000008000008c inst 00629863 wen 0 dst 16 data 0000000000000000 idx 02a bne     t0, t1, pc + 16
+[43] commit pc 0000000080000090 inst 00500513 wen 1 dst 10 data 0000000000000005 idx 02b li      a0, 5
+[44] commit pc 0000000080000092 inst 0185b283 wen 1 dst 05 data 0000000000000000 idx 02c (0b) ld      t0, 24(a1)
+[45] commit pc 0000000080000096 inst 00029363 wen 0 dst 06 data 00000000000004b4 idx 02d bnez    t0, pc + 6
+[46] commit pc 000000008000009a inst 00000513 wen 1 dst 10 data 0000000000000000 idx 02e li      a0, 0
+Core 0: [32mHIT GOOD TRAP at pc = 0x8000009c
+[0m[35mCore-0 instrCnt = 49, cycleCnt = 1585, IPC = 0.030915
+[0m[34mSeed=0 Guest cycle spent: 1591 (this will be different from cycleCnt if emu loads a snapshot)
+[0m[34mHost time spent: 806ms
+[0m------------------------------ emu stderr ------------------------------
+end: 2026-10-26T18:22:00Z  wall=1s  emu-exit=0

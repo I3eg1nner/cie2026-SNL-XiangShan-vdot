@@ -6,7 +6,7 @@
 | 对应计划 | `docs/_plan/HANDOFF_TODO.md` T1 |
 | DUT | 香山昆明湖V2 全核 `MinimalConfig`，Verilator emu（带 difftest）。工作树 `work/XiangShan-fullcore` = `work/XiangShan-kmhv2`（`a4eeaab`）副本 + `rtl/patch/0001-xiangshan-vdot.patch` + `rtl/patch/0002-yunsuan-vdot.patch` |
 | REF | `work/NEMU-fullcore`（`work/NEMU` 的私有副本，`9090839` + `nemu/patch/0001-add-vdot-instruction-family.patch`），`riscv64-xs-kmhv2-ref_defconfig` 构建的 `riscv64-nemu-interpreter-so` |
-| 一键复现 | `scripts/50_run_fullcore_difftest.sh`（`build` / `run` / `wave` / `fault`） |
+| 一键复现 | `scripts/50_run_fullcore_difftest.sh`（`build` / `run` / `wave` / `wave-vl8` / `fault`） |
 | 测试程序 | `tests/riscv/fullcore/` |
 | 日志 | `logs/stage3/fullcore/` |
 | 执行环境 | Ubuntu 22.04 x86_64，128 核，约 1 TB 内存；Verilator 5.024；OpenJDK 17.0.20；clang++ 14；交叉 GCC 15.2（`/opt/riscv`） |
@@ -23,6 +23,7 @@
 | 异常投递与 mcause | **完成**。4834 条非法用例在全核上全部 trap 且 mcause=2；流水线中（前后有依赖指令）插入的非法 vdot/vdot4a/vstart≠0 每次恰好 trap 3 次（K8，`k8-trap-count-bad=0`）；REF 侧独立执行判定，CSR 每条提交比对 | `summary.log:8,12`；§2.2 |
 | 故障注入 | **完成**。两种注入各 3/3 检出：① VIMacU 的 vdot 结果 bit0 翻转，3 个程序在**第一条** vdot 提交处被 difftest 中止（`v3_low` right/wrong 只差 bit0）；② 把 vdot / vdotacc 写回尾部退回旧裁定 S-3 的全 1（`s3old`），同样在第一条 vdot 处中止（`v3_low` / `v3_high` 高位失配）。源码还原后均与全核树逐字节一致 | `fault_summary.log:1-5`；`fault_summary_s3old.log:1-5` |
 | 全核波形（译码 → ROB 提交） | **完成**。文本轨迹 + 时序图；VCD 382 MB 不入库 | `wave_trace.txt:155-192`；`wave_fullcore_vdot.png`（嵌入 §7 图 8） |
+| vl=8 主演示（与官方伪代码逐位等价） | **完成**。`vsetivli zero, 8, e8, m1, ta, ma`（vta=1）下 vdot / vdotacc 只取元素 0..7，高 8 字节的无关值不参与；vd 旧值的元素 1..3（非零垃圾值）被清零；`vdot` 得 `0x00000000_00000000_00000000_000000cc`（Σi² = 204），`vdotacc` 得 `0x…000004b4`（1000 + 204）；程序内自检通过，HIT GOOD TRAP，difftest 失配 0 | `wave_vl8_run.log:32-34,45-56,59`；`wave_vl8_trace.txt:76-81`；§7.3 图 10 |
 | Level 1 等价性论证是否成立 | **成立，且其 4 个缺口中的 G1–G4 已在全核上实测闭合**（§8） | §8 |
 | 发现 RTL / NEMU 补丁缺陷 | **未发现**。全核 difftest 本身没有促成 `rtl/patch/`、`nemu/patch/` 的任何改动（两份补丁在 S-3' 语义修订中有改动，那是语义对齐，见提交 b16b58d，不是本报告发现的缺陷） | — |
 
@@ -170,7 +171,9 @@ S-3' 重建直接使用 clang++（`build_emu.log:19` 的 `CXX=clang++ LINK=clang
 
 ### 4.3 波形程序
 
-`vdot_wave.S`：`vadd.vv v1` → `vdot.vv v3, v10, v1` → `vdotacc.vv v3, v11, v8` → `vsetivli e32` → `vdot4a.vv v4, v3, v9`，一条 RAW 链，期望值写在文件头注释里（`vdot_wave.S:10-15`，按 S-3' 给出，并注明原裁定 S-3 下的旧值）。
+`vdot_wave.S`：`vadd.vv v1` → `vdot.vv v3, v10, v1` → `vdotacc.vv v3, v11, v8` → `vsetivli e32` → `vdot4a.vv v4, v3, v9`，一条 RAW 链，期望值写在文件头注释里（`vdot_wave.S:10-15`，按 S-3' 给出，并注明原裁定 S-3 下的旧值）。该程序取 `vl = 16`（满寄存器），是「流水线时序」演示。
+
+`vdot_wave_vl8.S`：`vl = 8` 的主演示，与赛题官方伪代码 `for i in range(8)` 逐位等价，程序内自检，见 §7.3。
 
 ---
 
@@ -275,7 +278,7 @@ emu -i vdot_wave.bin --diff <ref .so> --dump-wave -b 0 -e 2000 --wave-path work/
 emu 在 `--dump-wave`（不加 `--dump-wave-full`）下每个周期只写一个时间点，VCD 时刻即周期号。整核 1594 个周期的 VCD 为 382 MB（`wave_dump.log:19`），**不入库**；入库的是：
 
 * `logs/stage3/fullcore/wave_trace.txt`：`tests/riscv/fullcore/wave_trace.py` 从 VCD 抽取 162 个信号（译码、重命名、ROB 入队、向量发射队列入/出、VialuFix 与 Vimac 的输入输出、ROB 提交）后得到的事件轨迹；
-* `logs/stage3/fullcore/wave_fullcore_vdot.png`：用 `scripts/tools/vcd_plot.py` 从同一 VCD 渲染的 13 路信号时序图（周期 1483–1516），文档内嵌的图 8 是它的逐字节副本 `docs/stage3/figures/fig8_fullcore_vdot_wave.png`； ![图 8　全核 MinimalConfig 中 vadd → vdot → vdotacc → vdot4a 背靠背的时序图](figures/fig8_fullcore_vdot_wave.png) 图 8　全核时序图（周期 1483–1516）。四条竖线标出 vdot（robIdx=22）的发射 1494、进 VIMacU 1497、写回 1499、提交 1501；`Vimac.in.valid` → `Vimac.out.valid` 三次都是 2 拍。图由 `scripts/50_run_fullcore_difftest.sh` 的 `run_wave()` 函数在抓完 VCD 后渲染；S-3' 重建后已重新抓取并重画（`wave_driver.log:23-27`），图 8 与 `wave_fullcore_vdot.png` 逐字节相同。VCD 不入库，但只要 `work/build/fullcore/wave/vdot_wave.vcd` 还在，就可以只重画图、不重跑仿真：在 `PYTHON` 带 matplotlib 的环境中执行 `run_wave()` 里那条 `vcd_plot.py` 命令（`--vcd` 指向上述 VCD，`--from 1483 --to 1516`，13 个 `--signal` 原样照抄）。
+* `logs/stage3/fullcore/wave_fullcore_vdot.png`：用 `scripts/tools/vcd_plot.py` 从同一 VCD 渲染的 13 路信号时序图（周期 1483–1516），文档内嵌的图 8 是它的逐字节副本 `docs/stage3/figures/fig8_fullcore_vdot_wave.png`； ![图 8　全核 MinimalConfig 中 vadd → vdot → vdotacc → vdot4a 背靠背的时序图](figures/fig8_fullcore_vdot_wave.png) 图 8　全核时序图（周期 1483–1516；`vl = 16` 的满寄存器版本，16 项求和，与官方伪代码逐位等价的 `vl = 8` 主演示见 §7.3 图 10）。四条竖线标出 vdot（robIdx=22）的发射 1494、进 VIMacU 1497、写回 1499、提交 1501；`Vimac.in.valid` → `Vimac.out.valid` 三次都是 2 拍。图由 `scripts/50_run_fullcore_difftest.sh` 的 `run_wave()` 函数在抓完 VCD 后渲染；S-3' 重建后已重新抓取并重画（`wave_driver.log:23-27`），图 8 与 `wave_fullcore_vdot.png` 逐字节相同。VCD 不入库，但只要 `work/build/fullcore/wave/vdot_wave.vcd` 还在，就可以只重画图、不重跑仿真：在 `PYTHON` 带 matplotlib 的环境中执行 `run_wave()` 里那条 `vcd_plot.py` 命令（`--vcd` 指向上述 VCD，`--from 1483 --to 1516`，13 个 `--signal` 原样照抄）。
 * `logs/stage3/fullcore/wave_run.log`：同一程序带 `--dump-commit-trace` 的逐条提交记录，`wave_run.log:34,35,37` 是三条 vdot 族指令的提交，`:46` 为 `HIT GOOD TRAP`。
 
 ### 7.2 关键信号与时刻（`wave_trace.txt:155-192`）
@@ -299,6 +302,59 @@ emu 在 `--dump-wave`（不加 `--dump-wave-full`）下每个周期只写一个�
 2. **结果值与手算一致**：vdot = −(3+…+18) = −168 = `0xffffff58`；vdotacc 加上 −128×64 + 127×72 = 952 得 `0x310`；vdot4a 第 0 lane (0x10+0x03)×2 = 38 = `0x26`。按 S-3'，vdot / vdotacc 的 `vd[127:32]` 为 0（虽然这里 `vta=1`，`wave_trace.txt:182,186`），因此 vdot4a 读到的 vs2 元素 1..3 为 0、其余 lane 结果为 0（`wave_trace.txt:183,187,191`；原裁定 S-3 下这三个 lane 为全 1 参与累加，得 `0xfffffff8`，见 `vdot_wave.S:15`）。语义修订只改变了数值，各级时刻与 S-3 时完全相同。
 3. **VIMacU 的 latency=2 在全核中得到确认**：Vimac `io_in_valid` 到 `io_out_valid` 恰为 2 拍（1497→1499、1504→1506、1511→1513），这是在真实流水线中、由 `VIMacU` 内部 `ctrlPipe/dataPipe` 驱动的结果，不再是 L1 平台的常量计数器（陷阱第 6 条）。
 4. **发射 → FU 输入固定 3 拍**（1494→1497 等，对应读物理寄存器堆的 OG0/OG1 两级）；**FU 输出 → 依赖者发射 2 拍**（1499→1501）。因此在 MinimalConfig 下，**相互依赖的两条 vdot 族指令的发射间隔是 7 拍**（1494→1501→1508）。这是本波形的实测，样本为一条依赖链，见 §9 第 3 条的讨论。
+
+### 7.3 vl=8 主演示（与官方伪代码逐位等价）
+
+§7.1–§7.2 的程序取 `vl = 16`，求的是 16 项和。赛题官方伪代码（`docs/_recon/figures/vdot_official_semantics.jpg`）写死 `for i in range(8)`，取 8 个 int8 求和写入 `vd[0]`、其余清零。本项目对元素 `0..vl-1` 求和，`vl = 8` 时与伪代码逐位等价（`docs/stage2/10` §1）。答辩与录屏以本节的 `vl = 8` 用例为主演示，§7.2 作为满寄存器版本的补充。
+
+**程序**：`tests/riscv/fullcore/vdot_wave_vl8.S`（构建目标 `make wave-vl8`，运行 `bash scripts/50_run_fullcore_difftest.sh wave-vl8`）。
+
+```
+vsetivli zero, 8, e8, m1, ta, ma     # vl = 8，vta = 1
+vdot.vv    v3, v9, v8                # vs1 = v8，vs2 = v9
+vdotacc.vv v4, v9, v8
+```
+
+| 寄存器 | 字节 0..7（参与求和） | 字节 8..15（无关值，不参与） | 说明 |
+|---|---|---|---|
+| `v8`（vs1） | 1, 2, 3, 4, 5, 6, 7, 8 | `0x7f` × 8（+127） | |
+| `v9`（vs2） | 1, 2, 3, 4, 5, 6, 7, 8 | `0x80` × 8（−128） | |
+| `v3`（vdot 的 vd 旧值） | u32 `{0xdeadbeef, 0xcafebabe, 0x8badf00d, 0xfeedface}` | | 元素 0..3 全是非零垃圾值 |
+| `v4`（vdotacc 的 vd 旧值） | u32 `{0x000003e8 (=1000), 0x5a5a5a5a, 0xa5a5a5a5, 0x0badc0de}` | | 元素 0 为累加初值 |
+
+**手算（按官方伪代码）**（`vdot_wave_vl8.S:18-27`）：
+
+* `result = Σ_{i=0..7} vs1[i]·vs2[i] = 1 + 4 + 9 + 16 + 25 + 36 + 49 + 64 = 204 = 0xcc`；
+* `vdot.vv`：`vd[0] = 0xcc`，`vd[1..3] = 0` → `v3 = 0x00000000_00000000_00000000_000000cc`；
+* `vdotacc.vv`（本项目扩展，伪代码未涉及；初值取 `vd.u32[0]`）：`1000 + 204 = 1204 = 0x4b4` → `v4 = 0x00000000_00000000_00000000_000004b4`；
+* 对照：若把 16 个元素都加进来，结果是 `204 + 8×127×(−128) = −129844 = 0xfffe04cc`，与 `0xcc` 截然不同；
+* `vta = 1` 不影响清零：按 S-3'，vdot / vdotacc 的 `vd[127:32]` 恒为 0。
+
+**程序内自检**（`vdot_wave_vl8.S:70-90`）：`csrr vl` 必须为 8，两个结果寄存器存回内存后逐个 64 位与上面的期望值比较，全部一致才 `a0 = 0`（HIT GOOD TRAP），否则以出错项编号作为 `a0` 进入 BAD TRAP。
+
+**运行结果**（S-3' 补丁构建的同一个全核 emu，带 difftest）：
+
+* `logs/stage3/fullcore/wave_vl8_run.log:32-33`：`vdot.vv`（`e69401d7`）与 `vdotacc.vv`（`ea940257`）提交；`:34` `csrr s1, vl` 读回 8；`:45,49,52,56` 自检的 `ld` 读回 `0xcc`、`0`、`0x4b4`、`0`；`:59` `HIT GOOD TRAP`，`:60` `instrCnt = 49, cycleCnt = 1585`；`:64` `emu-exit=0`。日志中 `different at` / `ABORT` 0 行，即 difftest 0 失配（每条提交都与 NEMU 比对了整个向量寄存器堆与 `vl`/`vtype`）。
+* 抓波形的第二次运行同样 HIT GOOD TRAP（`wave_vl8_dump.log:13`），VCD 约 382 MB，不入库（`work/build/fullcore/wave_vl8/vdot_wave_vl8.vcd`，`wave_vl8_driver.log:5`）。
+
+**文本轨迹**（`logs/stage3/fullcore/wave_vl8_trace.txt`）：
+
+| 行 | 周期 | 事件 | 内容 |
+|---:|---:|---|---|
+| 64–65 | 1486–1487 | 译码输出 | vdot `fuOpType=0xe7`、vdotacc `fuOpType=0x177`，`illegalInstr=0` |
+| 69, 71 | 1489–1490 | 入 ROB | pc `0x8000003a` / `0x8000003e` |
+| 72, 74 | 1494–1495 | IQ0 发射 | robIdx 20 / 21，pdest 55 / 56 |
+| 76 | 1497 | vdot 进 VIMacU | `vsew=0 vta=1`，`src0(vs1)=7f7f7f7f7f7f7f7f_0807060504030201`，`src1(vs2)=8080808080808080_0807060504030201`，`src2(oldVd)=feedface8badf00dcafebabedeadbeef` |
+| 77 | 1498 | vdotacc 进 VIMacU | 同样的 vs1 / vs2，`src2(oldVd)=0badc0dea5a5a5a55a5a5a5a000003e8` |
+| 78 | 1499 | vdot 出 VIMacU | `res=000000000000000000000000000000cc` 即 `0x00000000_00000000_00000000_000000cc` |
+| 79 | 1500 | vdotacc 出 VIMacU | `res=0x00000000_00000000_00000000_000004b4` |
+| 80–81 | 1501–1502 | ROB 提交 | vdot、vdotacc |
+
+读法：VIMacU 输入端能直接看到高 8 字节的无关值（`7f…` / `80…`）和 vd 旧值的垃圾元素，输出端只剩低 32 位的 8 项和，高 96 位为 0；两条指令都是进 FU 后 2 拍出结果（1497→1499、1498→1500），与 §7.2 第 3 条一致。两条指令互不依赖，所以背靠背一拍一条发射。
+
+![图 10　全核 MinimalConfig 中 vl=8 主演示的时序图](figures/fig10_fullcore_vdot_vl8_wave.png)
+
+图 10　全核时序图（周期 1492–1504，`docs/stage3/figures/fig10_fullcore_vdot_vl8_wave.png`）。自上而下：IQ0 发射（robIdx 20 / 21）、Vimac 输入（`valid`、`fuOpType` 0e7 / 177、`vl = 8`、`vta = 1`、vs1 / vs2 分两行显示高 64 位与低 64 位：高 8 字节为无关值，低 8 字节为参与求和的 1..8、vd 旧值）、Vimac 输出（`res` = `…000000cc` / `…000004b4`）、ROB 提交。四条竖线：vdot 进 VIMacU 1497、出 VIMacU 1499、vdot 提交 1501、vdotacc 提交 1502。图由 `run_wave_vl8()` 在抓完 VCD 后直接渲染，窗口与竖线时刻从文本轨迹中取（`wave_vl8_driver.log:13`）。
 
 ---
 
@@ -343,6 +399,8 @@ bash scripts/50_run_fullcore_difftest.sh build   # 全核树 + NEMU 私有副本
 bash scripts/50_run_fullcore_difftest.sh run     # 6 批语料 + 依赖测试 4 个种子（实测 60m33s）
 PLOT_PYTHON=/path/to/python-with-matplotlib \
 bash scripts/50_run_fullcore_difftest.sh wave    # 波形 + 文本轨迹 + 时序图（约 1 分钟，VCD 382 MB）
+PLOT_PYTHON=/path/to/python-with-matplotlib \
+bash scripts/50_run_fullcore_difftest.sh wave-vl8  # vl=8 主演示（§7.3；只需已构建的 emu 与 NEMU .so，实测约 10 秒）
 bash scripts/50_run_fullcore_difftest.sh fault   # 故障注入 bit0（首次需额外构建一次 emu）
 FAULT_KIND=s3old \
 bash scripts/50_run_fullcore_difftest.sh fault   # 故障注入：写回尾部退回旧 S-3（独立的注入树，同样需构建一次 emu）
@@ -350,7 +408,7 @@ bash scripts/50_run_fullcore_difftest.sh fault   # 故障注入：写回尾部�
 
 可调参数见脚本文件头（`FC_CONFIG`、`EMU_THREADS`、`JVM_XMX`、`BATCHES`、`DEP_ITERS`、`DEP_SEEDS`、`WAVE_BEGIN/END`；故障注入种类 `FAULT_KIND=bit0|s3old` 见 `scripts/50_run_fullcore_difftest.sh:20-24,384-401`）。日志写到 `${LOG_ROOT}/stage3/fullcore/`，已有同名日志时改写到 `rerun_<时间戳>/` 子目录，不覆盖存档。
 
-本报告的存档（S-3' 修订后重跑）由以下命令产生：`build`（`build_driver.log`、`build_emu.log`；脚本末尾 `exit=2` 的原因见 §3.2，emu 构建本身 `exit=0`）、`run`（`run_driver.log`）、`wave`（`wave_driver.log`）、`fault` 与 `FAULT_KIND=s3old fault`（`fault_driver.log`、`fault_driver_s3old.log`，注入树构建日志 `build_emu_fault.log`、`build_emu_fault_s3old.log`），均为上述脚本原样运行。首次构建（S-3' 之前）的三次手工 `make emu` 与脚本从零复测的日志不再对应当前树，已从工作区删除，见 git 历史（提交 19a29ea）。
+本报告的存档（S-3' 修订后重跑）由以下命令产生：`build`（`build_driver.log`、`build_emu.log`；脚本末尾 `exit=2` 的原因见 §3.2，emu 构建本身 `exit=0`）、`run`（`run_driver.log`）、`wave`（`wave_driver.log`）、`wave-vl8`（`wave_vl8_driver.log`）、`fault` 与 `FAULT_KIND=s3old fault`（`fault_driver.log`、`fault_driver_s3old.log`，注入树构建日志 `build_emu_fault.log`、`build_emu_fault_s3old.log`），均为上述脚本原样运行。首次构建（S-3' 之前）的三次手工 `make emu` 与脚本从零复测的日志不再对应当前树，已从工作区删除，见 git 历史（提交 19a29ea）。
 
 ---
 
@@ -362,7 +420,8 @@ bash scripts/50_run_fullcore_difftest.sh fault   # 故障注入：写回尾部�
 | `tests/riscv/fullcore/Makefile` | 语料批次 / 依赖测试 / 波形程序的构建 |
 | `tests/riscv/fullcore/slice_corpus.py` | 语料 blob 按区间切批 |
 | `tests/riscv/fullcore/vdot_dep.c`、`vdot_dep_kernels.S` | 背靠背依赖测试 |
-| `tests/riscv/fullcore/vdot_wave.S` | 波形抓取用最小程序 |
+| `tests/riscv/fullcore/vdot_wave.S` | 波形抓取用最小程序（vl=16） |
+| `tests/riscv/fullcore/vdot_wave_vl8.S` | vl=8 主演示（与官方伪代码逐位等价，程序内自检，§7.3） |
 | `tests/riscv/fullcore/wave_trace.py` | 从全核 VCD 抽取 vdot 事件轨迹 |
 | `logs/stage3/fullcore/build_driver.log`、`build_emu.log` | S-3' 重建的脚本驱动日志与 `make emu` 日志（§3.2）；首次构建的 g++/clang 排查记录（`build_emu_2/3.log`、`build_time_breakdown.log` 等）见 git 历史（提交 19a29ea） |
 | `logs/stage3/fullcore/build_emu_fault.log`、`build_emu_fault_s3old.log` | 两棵故障注入树的 emu 构建日志 |
@@ -370,3 +429,4 @@ bash scripts/50_run_fullcore_difftest.sh fault   # 故障注入：写回尾部�
 | `logs/stage3/fullcore/fault_*.log`、`fault_diff.txt`、`fault_summary.log`、`fault_driver.log` | 故障注入 bit0（§6.1） |
 | `logs/stage3/fullcore/fault_*_s3old.log`、`fault_diff_s3old.txt`、`fault_summary_s3old.log`、`fault_driver_s3old.log` | 故障注入 s3old（§6.2） |
 | `logs/stage3/fullcore/wave_run.log`、`wave_dump.log`、`wave_trace.txt`、`wave_fullcore_vdot.png`、`wave_driver.log` | 波形（时序图副本：`docs/stage3/figures/fig8_fullcore_vdot_wave.png`） |
+| `logs/stage3/fullcore/wave_vl8_run.log`、`wave_vl8_dump.log`、`wave_vl8_trace.txt`、`wave_vl8_driver.log` | vl=8 主演示（§7.3；时序图 `docs/stage3/figures/fig10_fullcore_vdot_vl8_wave.png`） |

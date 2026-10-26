@@ -17,6 +17,9 @@
 #     [4] 语料批次：全部定向 + 3×10000 随机 + 必须 trap 的非法用例，切成 ${BATCHES} 批并行跑
 #     [5] 依赖测试：vdot 与其他向量指令背靠背（RAW/WAR/WAW、掩码、访存、异常、分支冲刷）
 #     [6] 波形：最小程序上抓 vdot 从译码到 ROB 提交的窗口，导出文本轨迹
+#     [6'] wave-vl8 模式：vl=8 主演示（tests/riscv/fullcore/vdot_wave_vl8.S，与赛题官方伪代码逐位等价，
+#         程序内自检），流程同 [6]：带 difftest 运行 + VCD + wave_trace.py 文本轨迹 + 时序图，
+#         日志 ${FC_LOG_DIR}/wave_vl8_{run,dump,trace}.*，时序图 docs/stage3/figures/fig10_fullcore_vdot_vl8_wave.png
 #   fault 模式：在 ${WORK_DIR}/XiangShan-fullcore-fault 中把 VIMacU 的 vdot 结果 bit0 翻转，
 #         重建 emu，期望 difftest 报错；随后还原源码并核对与全核树一致。
 #         FAULT_KIND=s3old：改为把 VIMacU 的 vdot / vdotacc 写回尾部改回旧裁定 S-3 的全 1
@@ -35,6 +38,7 @@
 #     bash scripts/50_run_fullcore_difftest.sh build      # 只做 [0]..[2]
 #     bash scripts/50_run_fullcore_difftest.sh run        # 只做 [3]..[5]（要求 emu 已构建）
 #     bash scripts/50_run_fullcore_difftest.sh wave       # 只做 [6]
+#     bash scripts/50_run_fullcore_difftest.sh wave-vl8   # 只做 [6']（vl=8 主演示，要求 emu 已构建）
 #     bash scripts/50_run_fullcore_difftest.sh fault      # 故障注入
 #     bash scripts/50_run_fullcore_difftest.sh perf       # 周期实测（要求 emu 已构建）
 #     bash scripts/50_run_fullcore_difftest.sh hello      # hello 在全核 emu 上运行（HOST_IP 可覆盖）
@@ -43,6 +47,7 @@
 #     FC_CONFIG=MinimalConfig  EMU_THREADS=16  JVM_XMX=200G  BUILD_JOBS=${JOBS}
 #     BATCHES=6（语料分批数，与依赖测试一起并行运行；每个 emu 进程 EMU_THREADS 个线程）
 #     DEP_ITERS=200  WAVE_BEGIN=0 WAVE_END=2000（波形窗口，单位：周期）
+#     WAVE_VL8_FIG（wave-vl8 模式时序图输出路径，默认 docs/stage3/figures/fig10_fullcore_vdot_vl8_wave.png；已存在时改写到日志子目录）
 #     PERF_REPS=5（perf 模式每个测量点的重复次数）  HOST_IP（hello 模式；缺省自动探测本机 IP）
 #     PLOT_PYTHON（装有 matplotlib 的 Python，用于渲染时序图；缺省时跳过绘图）
 #     FC_LOG_DIR（默认 ${LOG_ROOT}/stage3/fullcore；已存在的同名日志不会被覆盖，改写到带时间戳的子目录）
@@ -112,7 +117,7 @@ need_cmd python3
 load_host_env
 detect_cross
 # NEMU 开发包检查提前到最前面：缺依赖时在耗时的 [0] 复制工作树之前就报错（wave 模式不构建 NEMU）
-case "${MODE}" in wave) ;; *) setup_nemu_host_deps ;; esac
+case "${MODE}" in wave|wave-vl8) ;; *) setup_nemu_host_deps ;; esac
 
 # -----------------------------------------------------------------------------
 # [0] 全核工作树
@@ -381,6 +386,70 @@ run_wave() {
 }
 
 # -----------------------------------------------------------------------------
+# [6'] vl=8 主演示波形（与官方伪代码逐位等价；流程同 run_wave）
+# -----------------------------------------------------------------------------
+run_wave_vl8() {
+  banner "[6'] 全核波形：vl=8 主演示（vdot / vdotacc，vta=1）"
+  [ -x "${XS}/build/emu" ] || die "找不到 ${XS}/build/emu，请先执行 build 模式"
+  [ -f "${NEMU_SO}" ] || die "找不到 ${NEMU_SO}，请先执行 build 模式"
+  make -s -C "${TESTS}" wave-vl8 BUILD="${BUILD}" CROSS="${CROSS}" 2>&1 | grep -v 'RWX permissions' || true
+  local bin="${BUILD}/wave_vl8/vdot_wave_vl8.bin"
+  ls -l "${bin}"
+  local d; d="$(dirname "$(newlog wave_vl8_run.log)")"
+  local vcd="${BUILD}/wave_vl8/vdot_wave_vl8.vcd"
+  # 先不抓波形跑一遍：逐条提交轨迹 + 程序自检（HIT GOOD TRAP 即自检通过）
+  run_emu "${XS}/build/emu" "${bin}" "${d}/wave_vl8_run.log" --dump-commit-trace
+  grep -aq 'HIT GOOD TRAP' "${d}/wave_vl8_run.log" || die "vl=8 演示程序未 HIT GOOD TRAP（自检失败或 difftest 失配），见 ${d}/wave_vl8_run.log"
+  rm -f "${vcd}"
+  local b="${WAVE_BEGIN:-0}" e="${WAVE_END:-2000}"
+  run_emu "${XS}/build/emu" "${bin}" "${d}/wave_vl8_dump.log" --dump-wave -b "${b}" -e "${e}" --wave-path "${vcd}"
+  grep -aq 'HIT GOOD TRAP' "${d}/wave_vl8_dump.log" || die "抓波形的一次未 HIT GOOD TRAP，见 ${d}/wave_vl8_dump.log"
+  ls -l "${vcd}" | tee -a "${d}/wave_vl8_dump.log"
+  local tr="${d}/wave_vl8_trace.txt"
+  python3 "${TESTS}/wave_trace.py" "${vcd}" > "${tr}"
+  info "文本轨迹：$(relpath "${tr}")（VCD 体积大，不入库：${vcd}）"
+  grep -aE 'VIMACU-(IN|OUT)|ROB-COMMIT' "${tr}" || true
+  # 时序图窗口与竖线时刻从文本轨迹中取（不写死周期号）：
+  #   vdot 进 VIMacU / 出 VIMacU / 提交，vdotacc 提交
+  local c_in c_out c_cmt c_cmt2
+  c_in="$(awk '$2=="VIMACU-IN"{print $1; exit}' "${tr}")"
+  c_out="$(awk '$2=="VIMACU-OUT"{print $1; exit}' "${tr}")"
+  c_cmt="$(awk '$2=="ROB-COMMIT" && $4=="vdot.vv"{print $1; exit}' "${tr}")"
+  c_cmt2="$(awk '$2=="ROB-COMMIT" && $4=="vdotacc.vv"{print $1; exit}' "${tr}")"
+  [ -n "${c_in}" ] && [ -n "${c_out}" ] && [ -n "${c_cmt}" ] && [ -n "${c_cmt2}" ] \
+    || die "文本轨迹中找不到 VIMacU 进出或提交事件，见 $(relpath "${tr}")"
+  local py="${PLOT_PYTHON:-${PYTHON}}"
+  if "${py}" -c 'import matplotlib' >/dev/null 2>&1; then
+    local fig="${WAVE_VL8_FIG:-${REPO_ROOT}/docs/stage3/figures/fig10_fullcore_vdot_vl8_wave.png}"
+    [ -e "${fig}" ] && fig="${d}/$(basename "${fig}")"
+    local P=TOP.SimTop.cpu.l_soc.core_with_l2.core.backend
+    local IQ0="${P}.inner_vfScheduler.IssueQueueVfmaVialuFixVimacVppuVfaluVfcvtVipuVsetrvfwvf"
+    local MAC="${P}.inner_vfExuBlock.exus.Vimac"
+    "${py}" "${REPO_ROOT}/scripts/tools/vcd_plot.py" --vcd "${vcd}" --out "${fig}" \
+      --from "$((c_in - 5))" --to "$((c_cmt2 + 2))" --width 19 --left 0.16 \
+      --title "全核 MinimalConfig：vl=8 主演示 vdot.vv / vdotacc.vv（vsetivli zero, 8, e8, m1, ta, ma；vta=1）" \
+      --subtitle "vs1 = vs2 = [1..8 | 高 8 字节无关值 0x7f / 0x80]；vdot 结果 vd = 0x00000000_00000000_00000000_000000cc（Σi² = 204），vd 旧值 deadbeef/cafebabe/8badf00d 的元素 1..3 被清零；vdotacc = 1000 + 204 = 0x4b4" \
+      --xlabel "emu 周期号（--dump-wave 每周期记录一个时间点，VCD 时刻 = 周期号）" \
+      --mark "${c_in}|vdot 进VIMacU" --mark "${c_out}|vdot 出VIMacU" --mark "${c_cmt}|vdot 提交" --mark "${c_cmt2}|vdotacc 提交" \
+      --signal "${IQ0}.io_deqDelay_0_valid|IQ0.issue.valid|wave" \
+      --signal "${IQ0}.io_deqDelay_0_bits_common_robIdx_value|IQ0.issue.robIdx|dec" \
+      --signal "${MAC}.io_in_valid|Vimac.in.valid|wave" \
+      --signal "${MAC}.io_in_bits_ctrl_fuOpType|Vimac.in.fuOpType|hex" \
+      --signal "${MAC}.io_in_bits_data_src_4|Vimac.in.vl|dec" \
+      --signal "${MAC}.io_in_bits_ctrl_vpu_vta|Vimac.in.vta|wave" \
+      --signal "${MAC}.io_in_bits_data_src_0|Vimac.in.vs1 (高8B无关 / 低8B参与)|hex2" \
+      --signal "${MAC}.io_in_bits_data_src_1|Vimac.in.vs2 (高8B无关 / 低8B参与)|hex2" \
+      --signal "${MAC}.io_in_bits_data_src_2|Vimac.in.vd旧值|hex2" \
+      --signal "${MAC}.io_out_valid|Vimac.out.valid|wave" \
+      --signal "${MAC}.io_out_bits_res_data|Vimac.out.res (vd)|hex2" \
+      --signal "${P}.inner_ctrlBlock.rob.io_commits_commitValid_0|rob.commit0.valid|wave" \
+      --signal "${P}.inner_ctrlBlock.rob.io_commits_info_0_debug_instr|rob.commit0.instr|hex" 2>&1 | grep -v findfont || true
+  else
+    warn "${py} 没有 matplotlib，跳过时序图（文本轨迹已生成）"
+  fi
+}
+
+# -----------------------------------------------------------------------------
 # fault：VIMacU 的 vdot 结果 bit0 翻转（FAULT_KIND=bit0，默认）/ 尾部改回旧 S-3（FAULT_KIND=s3old）
 # -----------------------------------------------------------------------------
 FAULT_FILE="src/main/scala/xiangshan/backend/fu/wrapper/VIMacU.scala"
@@ -525,9 +594,10 @@ case "${MODE}" in
   build) make_tree; build_nemu_ref; build_emu ;;
   run)   build_nemu_ref; build_images; run_tests ;;
   wave)  build_images; run_wave ;;
+  wave-vl8) run_wave_vl8 ;;
   fault) build_nemu_ref; build_images; run_fault ;;
   perf)  build_nemu_ref; run_perf ;;
   hello) build_nemu_ref; run_hello ;;
   all)   make_tree; build_nemu_ref; build_emu; build_images; run_tests ;;
-  *) die "未知模式 ${MODE}（可选 all / build / run / wave / fault / perf / hello）" ;;
+  *) die "未知模式 ${MODE}（可选 all / build / run / wave / wave-vl8 / fault / perf / hello）" ;;
 esac

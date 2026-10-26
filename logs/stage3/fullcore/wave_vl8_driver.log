@@ -1,0 +1,18 @@
+==============================================================
+ [6'] 全核波形：vl=8 主演示（vdot / vdotacc，vta=1）   2026-10-26T18:21:59Z UTC
+==============================================================
+-rwxrwxr-x 1 user user 272 Oct 26 18:21 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/wave_vl8/vdot_wave_vl8.bin
+-rw-rw-r-- 1 user user 381627615 Oct 26 18:22 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/wave_vl8/vdot_wave_vl8.vcd
+    文本轨迹：logs/stage3/fullcore/wave_vl8_trace.txt（VCD 体积大，不入库：/data/my/cie2026-vdot-xiangshan/work/build/fullcore/wave_vl8/vdot_wave_vl8.vcd）
+1497   VIMACU-IN          fuOpType=0xe7                    vsew=0 vta=1 vm=1 src0(vs1)=7f7f7f7f7f7f7f7f0807060504030201 src1(vs2)=80808080808080800807060504030201 src2(oldVd)=feedface8badf00dcafebabedeadbeef
+1498   VIMACU-IN          fuOpType=0x177                   vsew=0 vta=1 vm=1 src0(vs1)=7f7f7f7f7f7f7f7f0807060504030201 src1(vs2)=80808080808080800807060504030201 src2(oldVd)=0badc0dea5a5a5a55a5a5a5a000003e8
+1499   VIMACU-OUT         robIdx=20 pdest=55               res=000000000000000000000000000000cc
+1500   VIMACU-OUT         robIdx=21 pdest=56               res=000000000000000000000000000004b4
+1501   ROB-COMMIT slot0   vdot.vv v3, v9, v8               pc=0x8000003a
+1502   ROB-COMMIT slot0   vdotacc.vv v4, v9, v8            pc=0x8000003e
+wrote /data/my/cie2026-vdot-xiangshan/docs/stage3/figures/fig10_fullcore_vdot_vl8_wave.png  (17 行信号, 时刻 #1492..#1504, 200 dpi)
+
+real	0m9.597s
+user	0m42.567s
+sys	0m1.573s
+exit=0

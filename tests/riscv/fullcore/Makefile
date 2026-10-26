@@ -22,6 +22,7 @@
 #   make corpus-batch BUILD=<dir> NAME=b00 BEGIN=0 END=4000   # 第 b00 批镜像
 #   make dep BUILD=<dir> [DEP_ITERS=200] [DEP_SEED=..] [DEP_NAME=dep]  # 依赖测试镜像
 #   make wave BUILD=<dir>                                     # 波形抓取用最小程序
+#   make wave-vl8 BUILD=<dir>                                 # vl=8 主演示（与官方伪代码逐位等价，程序内自检）
 #   make perf BUILD=<dir> [PERF_REPS=5]                       # 周期实测（HANDOFF T3）
 #   make perf-probe BUILD=<dir>                               # 计时方法对照（裸 csrr vs fence+csrr）
 #   make hello BUILD=<dir> HOST_IP=<本机IP>                   # 赛题 1.1 hello 在全核 emu 上运行
@@ -56,7 +57,7 @@ CFLAGS  := $(ARCH_FLAGS) -ffreestanding -nostdlib -nostartfiles -fno-builtin -fn
 # -no-pie：见 tests/riscv/vdot/Makefile 中的说明（switch 指针表需要绝对地址）
 LDFLAGS := -nostdlib -nostartfiles -no-pie -Wl,--build-id=none
 
-.PHONY: corpus-full corpus-batch dep wave perf perf-probe hello clean
+.PHONY: corpus-full corpus-batch dep wave wave-vl8 perf perf-probe hello clean
 
 $(BUILD)/vdot.ld: $(VDOT_DIR)/vdot.ld.in
 	@mkdir -p $(@D)
@@ -100,6 +101,13 @@ wave: $(BUILD)/vdot.ld
 	$(CROSS)gcc $(ARCH_FLAGS) $(LDFLAGS) -T $(BUILD)/vdot.ld -o $(BUILD)/wave/vdot_wave.elf vdot_wave.S
 	$(CROSS)objcopy -O binary $(BUILD)/wave/vdot_wave.elf $(BUILD)/wave/vdot_wave.bin
 	$(CROSS)objdump -d -M no-aliases $(BUILD)/wave/vdot_wave.elf > $(BUILD)/wave/vdot_wave.dis
+
+# vl=8 主演示：vdot / vdotacc 只取元素 0..7，高 8 个元素填无关值，vd 旧值填非零垃圾值
+wave-vl8: $(BUILD)/vdot.ld
+	@mkdir -p $(BUILD)/wave_vl8
+	$(CROSS)gcc $(ARCH_FLAGS) $(LDFLAGS) -T $(BUILD)/vdot.ld -o $(BUILD)/wave_vl8/vdot_wave_vl8.elf vdot_wave_vl8.S
+	$(CROSS)objcopy -O binary $(BUILD)/wave_vl8/vdot_wave_vl8.elf $(BUILD)/wave_vl8/vdot_wave_vl8.bin
+	$(CROSS)objdump -d -M no-aliases $(BUILD)/wave_vl8/vdot_wave_vl8.elf > $(BUILD)/wave_vl8/vdot_wave_vl8.dis
 
 perf: $(BUILD)/vdot.ld
 	@mkdir -p $(BUILD)/perf
