@@ -1,12 +1,12 @@
 $ /data/my/cie2026-vdot-xiangshan/work/XiangShan-fullcore-fault/build/emu -i /data/my/cie2026-vdot-xiangshan/work/build/fullcore/dep0/vdot_dep.bin --diff /data/my/cie2026-vdot-xiangshan/work/NEMU-fullcore/ref/riscv64-nemu-interpreter-so 
-start: 2026-10-25T08:12:39Z
+start: 2026-10-26T16:11:12Z
 （下面先是 emu 的 stdout，再是 stderr；stderr 中 emu 退出时打印的 [PERF ] 性能计数器行已滤掉）
 ======================================================================
  cie2026-vdot / T1  full-core back-to-back dependency test
    kernels=10 iters/kernel=200 seed=0x20261025cafef00d
 ======================================================================
-emu compiled at Oct 25 2026, 06:57:47
-%Warning: System has stack size 8192 kb which may be too small; suggest 'ulimit -s 35430' or larger
+emu compiled at Oct 26 2026, 16:07:56
+%Warning: System has stack size 8192 kb which may be too small; suggest 'ulimit -s 35539' or larger
 Using simulated 1048576B flash
 Core  0's Commit SHA is: a4eeaabb4c, dirty: 1
 Using simulated 8386560MB RAM
@@ -163,7 +163,7 @@ pma: 32 entries active, details:
 30: cfg:0x6f addr:0x0000020000000000|31: cfg:0x18 addr:0x00001fffffffffff
 ---------------- Vector Registers ----------------
 v0 : 0xf5bb15133969bcb0_3bb72d85bd8caead  v1 : 0x156902a17eef710e_1783a51ee47b50b2  
-v2 : 0xfde559fcdb7bd934_9b1b84f8f6bc2bb6  v3 : 0xab8b6bbee11be1c1_b85a792d00000468  
+v2 : 0xfde559fcdb7bd934_9b1b84f8f6bc2bb6  v3 : 0x0000000000000000_0000000000000468  
 v4 : 0x8483d33fe5fd6dce_5a9402c1aa9d8642  v5 : 0x551deca8efde5d9c_30a7767701fe2495  
 v6 : 0xc875d8f9f0a4b9eb_283ae4fb8e6b0627  v7 : 0x8774b2f1b4dcb18c_15cd498d69e6ea58  
 v8 : 0x8938414bfc031df8_b3cd3c332176ebef  v9 : 0x578f193f30f27fc8_b97f0db0c30565c3  
@@ -188,10 +188,10 @@ v30: 0x7b43d3c03a8456d7_4d46617265eb669a  v31: 0xfc934889bce9312d_474a8145864a0b
  3: tdata1: 0xf000000000000000 tdata2: 0x4d454e2f6b726f77 tdata3: 0x6f636c6c75662d55
  4: tdata1: 0x722f6665722f6572 tdata2: 0x6e2d343676637369 tdata3: 0x65746e692d756d65
 privilegeMode: 3
- v3_low different at pc = 0x0080000cc4, right = 0xb85a792d00000468, wrong = 0xb85a792d00000469
+ v3_low different at pc = 0x0080000cc4, right = 0x0000000000000468, wrong = 0x0000000000000469
 Core 0: [31mABORT at pc = 0x80000cc4
 [0m[35mCore-0 instrCnt = 4288, cycleCnt = 15550, IPC = 0.275756
 [0m[34mSeed=0 Guest cycle spent: 15555 (this will be different from cycleCnt if emu loads a snapshot)
-[0m[34mHost time spent: 4522ms
+[0m[34mHost time spent: 87333ms
 [0m------------------------------ emu stderr ------------------------------
-end: 2026-10-25T08:12:44Z  wall=5s  emu-exit=1
+end: 2026-10-26T16:12:40Z  wall=88s  emu-exit=1

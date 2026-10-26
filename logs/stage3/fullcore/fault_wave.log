@@ -1,8 +1,8 @@
 $ /data/my/cie2026-vdot-xiangshan/work/XiangShan-fullcore-fault/build/emu -i /data/my/cie2026-vdot-xiangshan/work/build/fullcore/wave/vdot_wave.bin --diff /data/my/cie2026-vdot-xiangshan/work/NEMU-fullcore/ref/riscv64-nemu-interpreter-so 
-start: 2026-10-25T08:12:38Z
+start: 2026-10-26T16:11:07Z
 （下面先是 emu 的 stdout，再是 stderr；stderr 中 emu 退出时打印的 [PERF ] 性能计数器行已滤掉）
-emu compiled at Oct 25 2026, 06:57:47
-%Warning: System has stack size 8192 kb which may be too small; suggest 'ulimit -s 35430' or larger
+emu compiled at Oct 26 2026, 16:07:56
+%Warning: System has stack size 8192 kb which may be too small; suggest 'ulimit -s 35539' or larger
 Using simulated 1048576B flash
 Core  0's Commit SHA is: a4eeaabb4c, dirty: 1
 Using simulated 8386560MB RAM
@@ -150,7 +150,7 @@ pma: 32 entries active, details:
 30: cfg:0x6f addr:0x0000020000000000|31: cfg:0x18 addr:0x00001fffffffffff
 ---------------- Vector Registers ----------------
 v0 : 0x2cec1b4dbc57e161_cb2e0c4302a7130a  v1 : 0x1211100f0e0d0c0b_0a09080706050403  
-v2 : 0x2a3f9ca2fb2f47ad_ad105ec8aee2bdfb  v3 : 0xffffffffffffffff_ffffffffffffff58  
+v2 : 0x2a3f9ca2fb2f47ad_ad105ec8aee2bdfb  v3 : 0x0000000000000000_00000000ffffff58  
 v4 : 0x0000000000000000_0000000000000000  v5 : 0xb0cdee1dc4330de6_9fe2ee382dff06af  
 v6 : 0x55c43ce6765cb940_93ed349db9633754  v7 : 0x67ec5acdb633d47b_ec135ef69e16cab3  
 v8 : 0x100f0e0d0c0b0a09_0807060504030201  v9 : 0x0202020202020202_0202020202020202  
@@ -175,10 +175,10 @@ v30: 0xaa14785cc8d8288f_04856a2b91e7f62b  v31: 0xd6bec30e55abda7b_2add8da8ea482d
  3: tdata1: 0xf000000000000000 tdata2: 0x4d454e2f6b726f77 tdata3: 0x6f636c6c75662d55
  4: tdata1: 0x722f6665722f6572 tdata2: 0x6e2d343676637369 tdata3: 0x65746e692d756d65
 privilegeMode: 3
- v3_low different at pc = 0x0080000062, right = 0xffffffffffffff58, wrong = 0xffffffffffffff59
+ v3_low different at pc = 0x0080000062, right = 0x00000000ffffff58, wrong = 0x00000000ffffff59
 Core 0: [31mABORT at pc = 0x80000062
 [0m[35mCore-0 instrCnt = 24, cycleCnt = 1502, IPC = 0.015979
 [0m[34mSeed=0 Guest cycle spent: 1507 (this will be different from cycleCnt if emu loads a snapshot)
-[0m[34mHost time spent: 555ms
+[0m[34mHost time spent: 5313ms
 [0m------------------------------ emu stderr ------------------------------
-end: 2026-10-25T08:12:39Z  wall=1s  emu-exit=1
+end: 2026-10-26T16:11:12Z  wall=5s  emu-exit=1

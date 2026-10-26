@@ -1,0 +1,4 @@
+193c193
+<                       Cat(0.U((VLEN - 32).W), dotVd(31, 0)))              // 裁定 S-3'
+---
+>                       Cat(~0.U((VLEN - 32).W), dotVd(31, 0)))             // FAULT-INJECTION T1-F2: tail back to old S-3 (all ones)

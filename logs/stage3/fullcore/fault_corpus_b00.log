@@ -1,5 +1,5 @@
 $ /data/my/cie2026-vdot-xiangshan/work/XiangShan-fullcore-fault/build/emu -i /data/my/cie2026-vdot-xiangshan/work/build/fullcore/b00/vdot_test.bin --diff /data/my/cie2026-vdot-xiangshan/work/NEMU-fullcore/ref/riscv64-nemu-interpreter-so 
-start: 2026-10-25T08:12:44Z
+start: 2026-10-26T16:12:40Z
 （下面先是 emu 的 stdout，再是 stderr；stderr 中 emu 退出时打印的 [PERF ] 性能计数器行已滤掉）
 ======================================================================
  cie2026-vdot / P5  NEMU vdot instruction-family conformance test
@@ -8,15 +8,15 @@ start: 2026-10-25T08:12:44Z
    NEMU commit      : 90908390002f
    NEMU VLEN macro  : 128 bit
    csrr vlenb       : 16 byte -> VLEN = 128 bit (MATCH)
-   corpus           : 14 suites, 5127 cases, 451648 bytes
+   corpus           : 14 suites, 5133 cases, 452176 bytes
    instr encodings  : vd=v3 vs2=v2 vs1=v1 (OPIVV, funct3=000)
        vdot.vv    vm=1 0xe62081d7   vm=0 0xe42081d7
        vdotacc.vv vm=1 0xea2081d7   vm=0 0xe82081d7
        vdot4a.vv  vm=1 0xee2081d7   vm=0 0xec2081d7
 ======================================================================
 
-emu compiled at Oct 25 2026, 06:57:47
-%Warning: System has stack size 8192 kb which may be too small; suggest 'ulimit -s 35430' or larger
+emu compiled at Oct 26 2026, 16:07:56
+%Warning: System has stack size 8192 kb which may be too small; suggest 'ulimit -s 35539' or larger
 Using simulated 1048576B flash
 Core  0's Commit SHA is: a4eeaabb4c, dirty: 1
 Using simulated 8386560MB RAM
@@ -61,16 +61,16 @@ commit group [15]: pc 008000092a cmtcnt 2 <--
 [15] commit pc 0000000080000806 inst 00078493 wen 1 dst 09 data 0000000000000010 idx 013 mv      s1, a5
 [16] commit pc 0000000080000808 inst 00881073 wen 0 dst 00 data 0000000000000000 idx 014 csrw    vstart, a6
 [17] commit pc 000000008000080c inst 00070797 wen 1 dst 15 data 000000008007080c idx 015 auipc   a5, 0x70
-[18] commit pc 0000000080000810 inst 9207b623 wen 0 dst 12 data 000000008007080c idx 016 (03) sd      zero, -1748(a5)
+[18] commit pc 0000000080000810 inst b207be23 wen 0 dst 28 data 000000008007080c idx 016 (03) sd      zero, -1220(a5)
 [19] commit pc 0000000080000814 inst 00070797 wen 1 dst 15 data 0000000080070814 idx 017 auipc   a5, 0x70
-[20] commit pc 0000000080000818 inst 9007be23 wen 0 dst 28 data 000000008007080c idx 018 (04) sd      zero, -1764(a5)
+[20] commit pc 0000000080000818 inst b207b623 wen 0 dst 12 data 000000008007080c idx 018 (04) sd      zero, -1236(a5)
 [21] commit pc 000000008000081c inst fc85c783 wen 1 dst 15 data 0000000000000000 idx 019 (16) lbu     a5, -56(a1)
 [22] commit pc 0000000080000820 inst 00500713 wen 1 dst 14 data 0000000000000005 idx 01a li      a4, 5
 [23] commit pc 0000000080000828 inst 04f76363 wen 0 dst 06 data 00000000800014b8 idx 01b bltu    a4, a5, pc + 70
-[24] commit pc 000000008000082c inst 0006f717 wen 1 dst 14 data 000000008006f82c idx 01c auipc   a4, 0x6f
-[25] commit pc 0000000080000830 inst 73c70713 wen 1 dst 14 data 000000008006ff68 idx 01d addi    a4, a4, 1852
-[26] commit pc 0000000080000834 inst 00279793 wen 1 dst 15 data 000000008006ff6c idx 01e slli    a5, a5, 2
-[27] commit pc 0000000080000838 inst 0007a783 wen 1 dst 15 data fffffffffff909c2 idx 01f (17) lw      a5, 0(a5)
+[24] commit pc 000000008000082c inst 00070717 wen 1 dst 14 data 000000008007082c idx 01c auipc   a4, 0x70
+[25] commit pc 0000000080000830 inst 94c70713 wen 1 dst 14 data 0000000080070178 idx 01d addi    a4, a4, -1716
+[26] commit pc 0000000080000834 inst 00279793 wen 1 dst 15 data 000000008007017c idx 01e slli    a5, a5, 2
+[27] commit pc 0000000080000838 inst 0007a783 wen 1 dst 15 data fffffffffff907b2 idx 01f (17) lw      a5, 0(a5)
 [28] commit pc 000000008000083a inst 00e787b3 wen 1 dst 15 data 000000008000092a idx 020 add     a5, a5, a4
 [29] commit pc 000000008000083c inst 00078067 wen 0 dst 00 data 000000008000092a idx 021 jr      a5
 [30] commit pc 000000008000092a inst e62081d7 wen 1 dst 03 data 000000008000092a idx 022 unknown
@@ -78,12 +78,12 @@ commit group [15]: pc 008000092a cmtcnt 2 <--
 
 ==============  REF Regs  ==============
 ---------------- Intger Registers ----------------
-  $0: 0x0000000000000000   ra: 0x0000000080000758   sp: 0x0000000080080060   gp: 0x0000000000000000 
-  tp: 0x0000000000000000   t0: 0x0000000080070140   t1: 0x0000000080001660   t2: 0x0000000000000000 
+  $0: 0x0000000000000000   ra: 0x0000000080000758   sp: 0x0000000080080270   gp: 0x0000000000000000 
+  tp: 0x0000000000000000   t0: 0x0000000080070350   t1: 0x0000000080001660   t2: 0x0000000000000000 
   s0: 0x0000000000000000   s1: 0x0000000000000010   a0: 0x0000000000000040   a1: 0x0000000080001690 
-  a2: 0x0000000000000001   a3: 0x0000000040600004   a4: 0x000000008006ff68   a5: 0x000000008000092a 
+  a2: 0x0000000000000001   a3: 0x0000000040600004   a4: 0x0000000080070178   a5: 0x000000008000092a 
   a6: 0x0000000000000000   a7: 0x00000000800016a0   s2: 0x0000000000000000   s3: 0x0000000000000000 
-  s4: 0x000000000000000e   s5: 0x0000000000000000   s6: 0x0000000000001407   s7: 0x0000000000000000 
+  s4: 0x000000000000000e   s5: 0x0000000000000000   s6: 0x000000000000140d   s7: 0x0000000000000000 
   s8: 0x0000000000000000   s9: 0x0000000000000000  s10: 0x0000000000000000  s11: 0x0000000080001680 
   t3: 0x0000000080001670   t4: 0x0000000000000000   t5: 0x0000000000000000   t6: 0x0000000000000000 
 ---------------- Float Registers ----------------
@@ -173,7 +173,7 @@ pma: 32 entries active, details:
 30: cfg:0x6f addr:0x0000020000000000|31: cfg:0x18 addr:0x00001fffffffffff
 ---------------- Vector Registers ----------------
 v0 : 0x0000000000000000_0000000000000000  v1 : 0x100f0e0d0c0b0a09_0807060504030201  
-v2 : 0x100f0e0d0c0b0a09_0807060504030201  v3 : 0xffffffffffffffff_ffffffff000005d8  
+v2 : 0x100f0e0d0c0b0a09_0807060504030201  v3 : 0x0000000000000000_00000000000005d8  
 v4 : 0xe8ea50f1f7c9ef4a_6fccf3ae69e84fc9  v5 : 0xb0cdee1dc4330de6_9fe2ee382dff06af  
 v6 : 0x55c43ce6765cb940_93ed349db9633754  v7 : 0x67ec5acdb633d47b_ec135ef69e16cab3  
 v8 : 0xb7c6509dc28fb1f3_f5c71eb1528ccc94  v9 : 0x151f01f2ba13bafd_04d0eed44dbe091b  
@@ -198,10 +198,10 @@ v30: 0xaa14785cc8d8288f_04856a2b91e7f62b  v31: 0xd6bec30e55abda7b_2add8da8ea482d
  3: tdata1: 0xf000000000000000 tdata2: 0x4d454e2f6b726f77 tdata3: 0x6f636c6c75662d55
  4: tdata1: 0x722f6665722f6572 tdata2: 0x6e2d343676637369 tdata3: 0x65746e692d756d65
 privilegeMode: 3
- v3_low different at pc = 0x0080000858, right = 0xffffffff000005d8, wrong = 0xffffffff000005d9
+ v3_low different at pc = 0x0080000858, right = 0x00000000000005d8, wrong = 0x00000000000005d9
 Core 0: [31mABORT at pc = 0x80000858
-[0m[35mCore-0 instrCnt = 4226, cycleCnt = 36525, IPC = 0.115702
-[0m[34mSeed=0 Guest cycle spent: 36530 (this will be different from cycleCnt if emu loads a snapshot)
-[0m[34mHost time spent: 10369ms
+[0m[35mCore-0 instrCnt = 4226, cycleCnt = 36528, IPC = 0.115692
+[0m[34mSeed=0 Guest cycle spent: 36533 (this will be different from cycleCnt if emu loads a snapshot)
+[0m[34mHost time spent: 177034ms
 [0m------------------------------ emu stderr ------------------------------
-end: 2026-10-25T08:12:54Z  wall=10s  emu-exit=1
+end: 2026-10-26T16:15:37Z  wall=177s  emu-exit=1

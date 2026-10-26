@@ -180,13 +180,13 @@ cycle  stage              instr / uop                      detail
 1494   IQ0-ISSUE port0    robIdx=22 pdest=60               fuType=0x200000 fuOpType=0xe7 psrc(rf0,rf1,rf2)=(59,52,56)
 1494   ROB-COMMIT slot0   vadd.vv v1, v8, v9               pc=0x8000003e
 1497   VIMACU-IN          fuOpType=0xe7                    vsew=0 vta=1 vm=1 src0(vs1)=1211100f0e0d0c0b0a09080706050403 src1(vs2)=ffffffffffffffffffffffffffffffff src2(oldVd)=00000000000000000000000000000000
-1499   VIMACU-OUT         robIdx=22 pdest=60               res=ffffffffffffffffffffffffffffff58
+1499   VIMACU-OUT         robIdx=22 pdest=60               res=000000000000000000000000ffffff58
 1501   IQ0-ISSUE port0    robIdx=23 pdest=61               fuType=0x200000 fuOpType=0x177 psrc(rf0,rf1,rf2)=(48,54,60)
 1501   ROB-COMMIT slot0   vdot.vv v3, v10, v1              pc=0x80000042
-1504   VIMACU-IN          fuOpType=0x177                   vsew=0 vta=1 vm=1 src0(vs1)=100f0e0d0c0b0a090807060504030201 src1(vs2)=7f807f807f807f807f807f807f807f80 src2(oldVd)=ffffffffffffffffffffffffffffff58
-1506   VIMACU-OUT         robIdx=23 pdest=61               res=ffffffffffffffffffffffff00000310
+1504   VIMACU-IN          fuOpType=0x177                   vsew=0 vta=1 vm=1 src0(vs1)=100f0e0d0c0b0a090807060504030201 src1(vs2)=7f807f807f807f807f807f807f807f80 src2(oldVd)=000000000000000000000000ffffff58
+1506   VIMACU-OUT         robIdx=23 pdest=61               res=00000000000000000000000000000310
 1508   IQ0-ISSUE port0    robIdx=25 pdest=62               fuType=0x200000 fuOpType=0x1f7 psrc(rf0,rf1,rf2)=(50,61,58)
 1508   ROB-COMMIT slot0   vdotacc.vv v3, v11, v8           pc=0x80000046
-1511   VIMACU-IN          fuOpType=0x1f7                   vsew=2 vta=1 vm=1 src0(vs1)=02020202020202020202020202020202 src1(vs2)=ffffffffffffffffffffffff00000310 src2(oldVd)=00000000000000000000000000000000
-1513   VIMACU-OUT         robIdx=25 pdest=62               res=fffffff8fffffff8fffffff800000026
+1511   VIMACU-IN          fuOpType=0x1f7                   vsew=2 vta=1 vm=1 src0(vs1)=02020202020202020202020202020202 src1(vs2)=00000000000000000000000000000310 src2(oldVd)=00000000000000000000000000000000
+1513   VIMACU-OUT         robIdx=25 pdest=62               res=00000000000000000000000000000026
 1515   ROB-COMMIT slot0   vdot4a.vv v4, v3, v9             pc=0x8000004e

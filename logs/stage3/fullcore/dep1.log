@@ -1,5 +1,5 @@
 $ /data/my/cie2026-vdot-xiangshan/work/XiangShan-fullcore/build/emu -i /data/my/cie2026-vdot-xiangshan/work/build/fullcore/dep1/vdot_dep.bin --diff /data/my/cie2026-vdot-xiangshan/work/NEMU-fullcore/ref/riscv64-nemu-interpreter-so 
-start: 2026-10-25T07:51:43Z
+start: 2026-10-26T16:44:56Z
 （下面先是 emu 的 stdout，再是 stderr；stderr 中 emu 退出时打印的 [PERF ] 性能计数器行已滤掉）
 ======================================================================
  cie2026-vdot / T1  full-core back-to-back dependency test
@@ -20,8 +20,8 @@ K10 vdotacc loop + branch flush   200x2   0
 ----------------------------------------------------------------------
 DEP TOTAL runs=2000x2 fail=0 k8-trap-count-bad=0
 RESULT: PASS
-emu compiled at Oct 25 2026, 06:55:56
-%Warning: System has stack size 8192 kb which may be too small; suggest 'ulimit -s 35430' or larger
+emu compiled at Oct 26 2026, 16:04:36
+%Warning: System has stack size 8192 kb which may be too small; suggest 'ulimit -s 35539' or larger
 Using simulated 1048576B flash
 Core  0's Commit SHA is: a4eeaabb4c, dirty: 1
 Using simulated 8386560MB RAM
@@ -31,6 +31,6 @@ The first instruction of core 0 has commited. Difftest enabled.
 Core 0: [32mHIT GOOD TRAP at pc = 0x80000042
 [0m[35mCore-0 instrCnt = 4580262, cycleCnt = 4522984, IPC = 1.012664
 [0m[34mSeed=0 Guest cycle spent: 4522990 (this will be different from cycleCnt if emu loads a snapshot)
-[0m[34mHost time spent: 1225114ms
+[0m[34mHost time spent: 1345028ms
 [0m------------------------------ emu stderr ------------------------------
-end: 2026-10-25T08:12:08Z  wall=1225s  emu-exit=0
+end: 2026-10-26T17:07:21Z  wall=1345s  emu-exit=0

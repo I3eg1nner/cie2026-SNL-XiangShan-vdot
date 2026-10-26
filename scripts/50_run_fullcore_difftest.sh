@@ -19,6 +19,9 @@
 #     [6] 波形：最小程序上抓 vdot 从译码到 ROB 提交的窗口，导出文本轨迹
 #   fault 模式：在 ${WORK_DIR}/XiangShan-fullcore-fault 中把 VIMacU 的 vdot 结果 bit0 翻转，
 #         重建 emu，期望 difftest 报错；随后还原源码并核对与全核树一致。
+#         FAULT_KIND=s3old：改为把 VIMacU 的 vdot / vdotacc 写回尾部改回旧裁定 S-3 的全 1
+#         （vd[127:32] = 全 1），树为 ${WORK_DIR}/XiangShan-fullcore-fault-s3old，日志名带 _s3old 后缀；
+#         用来证明全核 difftest 能区分 S-3 与 S-3'。
 #   perf 模式（HANDOFF T3，赛题 3.3）：tests/riscv/fullcore/perf_cycles.c + perf_kernels.S
 #         + bench/baseline/baseline_rvv.S，带 difftest 运行，用 fence + mcycle 实测单次点积、
 #         依赖链与长向量循环的周期数，日志 ${FC_LOG_DIR}/perf_cycles.log。
@@ -64,7 +67,6 @@ MODE="${1:-all}"
 source "$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)/lib/common.sh"
 
 XS="${WORK_DIR}/XiangShan-fullcore"
-XS_FAULT="${WORK_DIR}/XiangShan-fullcore-fault"
 NEMU_FC="${WORK_DIR}/NEMU-fullcore"
 NEMU_SO="${NEMU_FC}/ref/riscv64-nemu-interpreter-so"
 TESTS="${REPO_ROOT}/tests/riscv/fullcore"
@@ -379,15 +381,29 @@ run_wave() {
 }
 
 # -----------------------------------------------------------------------------
-# fault：VIMacU 的 vdot 结果 bit0 翻转
+# fault：VIMacU 的 vdot 结果 bit0 翻转（FAULT_KIND=bit0，默认）/ 尾部改回旧 S-3（FAULT_KIND=s3old）
 # -----------------------------------------------------------------------------
 FAULT_FILE="src/main/scala/xiangshan/backend/fu/wrapper/VIMacU.scala"
-FAULT_ORIG='  private val dotVd = vdotTree.io.dotVd'
-FAULT_BAD='  private val dotVd = vdotTree.io.dotVd ^ 1.U  // FAULT-INJECTION T1-F1: flip bit0 of the vdot result'
+FAULT_KIND="${FAULT_KIND:-bit0}"
+case "${FAULT_KIND}" in
+  bit0)
+    XS_FAULT="${WORK_DIR}/XiangShan-fullcore-fault"; FTAG=""
+    FAULT_DESC="vdot 结果 bit0 翻转"
+    FAULT_ORIG='  private val dotVd = vdotTree.io.dotVd'
+    FAULT_BAD='  private val dotVd = vdotTree.io.dotVd ^ 1.U  // FAULT-INJECTION T1-F1: flip bit0 of the vdot result'
+    ;;
+  s3old)
+    XS_FAULT="${WORK_DIR}/XiangShan-fullcore-fault-s3old"; FTAG="_s3old"
+    FAULT_DESC="vdot / vdotacc 写回尾部改回旧裁定 S-3（vd[127:32] 全 1）"
+    FAULT_ORIG="                      Cat(0.U((VLEN - 32).W), dotVd(31, 0)))              // 裁定 S-3'"
+    FAULT_BAD="                      Cat(~0.U((VLEN - 32).W), dotVd(31, 0)))             // FAULT-INJECTION T1-F2: tail back to old S-3 (all ones)"
+    ;;
+  *) die "未知 FAULT_KIND=${FAULT_KIND}（可选 bit0 / s3old）" ;;
+esac
 
 run_fault() {
-  banner "[F] 故障注入：${FAULT_FILE} 中 vdot 结果 bit0 翻转"
-  local d; d="$(dirname "$(newlog fault_run.log)")"
+  banner "[F] 故障注入（FAULT_KIND=${FAULT_KIND}）：${FAULT_FILE} 中 ${FAULT_DESC}"
+  local d; d="$(dirname "$(newlog "fault_run${FTAG}.log")")"
   if [ ! -d "${XS_FAULT}" ]; then
     rsync -a --exclude '/out/' --exclude '/build/' "${XS}/" "${XS_FAULT}/"
   fi
@@ -402,17 +418,17 @@ assert s.count(a + "\n") == 1
 open(p, "w").write(s.replace(a + "\n", b + "\n"))
 PY
   fi
-  diff "${XS}/${FAULT_FILE}" "${f}" | tee "${d}/fault_diff.txt" || true
+  diff "${XS}/${FAULT_FILE}" "${f}" | tee "${d}/fault_diff${FTAG}.txt" || true
   if [ ! -x "${XS_FAULT}/build/emu" ] || [ -n "${FORCE_EMU:-}" ]; then
-    build_emu_in "${XS_FAULT}" "$(newlog build_emu_fault.log)"
+    build_emu_in "${XS_FAULT}" "$(newlog "build_emu_fault${FTAG}.log")"
   fi
   local rc=0
-  run_emu "${XS_FAULT}/build/emu" "${BUILD}/wave/vdot_wave.bin" "${d}/fault_wave.log"
-  run_emu "${XS_FAULT}/build/emu" "${BUILD}/dep0/vdot_dep.bin" "${d}/fault_dep.log"
-  run_emu "${XS_FAULT}/build/emu" "${BUILD}/b00/vdot_test.bin" "${d}/fault_corpus_b00.log"
+  run_emu "${XS_FAULT}/build/emu" "${BUILD}/wave/vdot_wave.bin" "${d}/fault_wave${FTAG}.log"
+  run_emu "${XS_FAULT}/build/emu" "${BUILD}/dep0/vdot_dep.bin" "${d}/fault_dep${FTAG}.log"
+  run_emu "${XS_FAULT}/build/emu" "${BUILD}/b00/vdot_test.bin" "${d}/fault_corpus_b00${FTAG}.log"
   {
     local x
-    for x in fault_wave fault_dep fault_corpus_b00; do
+    for x in fault_wave${FTAG} fault_dep${FTAG} fault_corpus_b00${FTAG}; do
       if grep -aq 'HIT GOOD TRAP' "${d}/${x}.log"; then
         echo "${x}: 未检出（HIT GOOD TRAP）"
       else
@@ -427,9 +443,9 @@ s = open(p).read()
 open(p, "w").write(s.replace(a + "\n", b + "\n"))
 PY
     if cmp "${XS}/${FAULT_FILE}" "${f}"; then echo "还原：${FAULT_FILE} 与全核树逐字节一致"; else echo "还原失败"; fi
-  } | tee "${d}/fault_summary.log"
-  if grep -qE '未检出|还原失败' "${d}/fault_summary.log"; then rc=1; fi
-  echo "FAULT-INJECTION: $(grep -c ': 检出' "${d}/fault_summary.log") / 3 个程序检出" | tee -a "${d}/fault_summary.log"
+  } | tee "${d}/fault_summary${FTAG}.log"
+  if grep -qE '未检出|还原失败' "${d}/fault_summary${FTAG}.log"; then rc=1; fi
+  echo "FAULT-INJECTION (${FAULT_KIND}): $(grep -c ': 检出' "${d}/fault_summary${FTAG}.log") / 3 个程序检出" | tee -a "${d}/fault_summary${FTAG}.log"
   return "${rc}"
 }
 

@@ -1,48 +1,48 @@
 ==============================================================
- [1] NEMU 参考共享库（私有副本 work/NEMU-fullcore）   2026-10-25T07:27:00Z UTC
+ [1] NEMU 参考共享库（私有副本 work/NEMU-fullcore）   2026-10-26T16:07:14Z UTC
 ==============================================================
     vdot 补丁已处于已应用状态
     已存在：/data/my/cie2026-vdot-xiangshan/work/NEMU-fullcore/ref/riscv64-nemu-interpreter-so（FORCE_NEMU=1 可强制重建）
--rwxrwxr-x 1 user user 1475824 Oct 25 05:08 /data/my/cie2026-vdot-xiangshan/work/NEMU-fullcore/ref/riscv64-nemu-interpreter-so
+-rwxrwxr-x 1 user user 1475784 Oct 26 15:41 /data/my/cie2026-vdot-xiangshan/work/NEMU-fullcore/ref/riscv64-nemu-interpreter-so
 NEMU commit: 90908390 feat(difftest): support fast shared reference execution (#1247)
 difftest_* 导出符号数: 41
 ==============================================================
- [3] 交叉编译测试镜像（CROSS=/opt/riscv/bin/riscv64-unknown-elf-）   2026-10-25T07:27:01Z UTC
+ [3] 交叉编译测试镜像（CROSS=/opt/riscv/bin/riscv64-unknown-elf-）   2026-10-26T16:07:14Z UTC
 ==============================================================
-n_cases=5127 begin=0 end=5127 total=30758
-n_cases=5127 begin=5127 end=10254 total=30758
-n_cases=5127 begin=10254 end=15381 total=30758
-n_cases=5127 begin=15381 end=20508 total=30758
-n_cases=5127 begin=20508 end=25635 total=30758
-n_cases=5123 begin=25635 end=30758 total=30758
--rwxrwxr-x 1 user user 458664 Oct 25 07:27 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/b00/vdot_test.bin
--rwxrwxr-x 1 user user 458664 Oct 25 07:27 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/b01/vdot_test.bin
--rwxrwxr-x 1 user user 458664 Oct 25 07:27 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/b02/vdot_test.bin
--rwxrwxr-x 1 user user 458664 Oct 25 07:27 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/b03/vdot_test.bin
--rwxrwxr-x 1 user user 458664 Oct 25 07:27 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/b04/vdot_test.bin
--rwxrwxr-x 1 user user 458312 Oct 25 07:27 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/b05/vdot_test.bin
+n_cases=5133 begin=0 end=5133 total=30794
+n_cases=5133 begin=5133 end=10266 total=30794
+n_cases=5133 begin=10266 end=15399 total=30794
+n_cases=5133 begin=15399 end=20532 total=30794
+n_cases=5133 begin=20532 end=25665 total=30794
+n_cases=5129 begin=25665 end=30794 total=30794
+-rwxrwxr-x 1 user user 459192 Oct 26 16:07 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/b00/vdot_test.bin
+-rwxrwxr-x 1 user user 459192 Oct 26 16:07 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/b01/vdot_test.bin
+-rwxrwxr-x 1 user user 459192 Oct 26 16:07 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/b02/vdot_test.bin
+-rwxrwxr-x 1 user user 459192 Oct 26 16:07 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/b03/vdot_test.bin
+-rwxrwxr-x 1 user user 459192 Oct 26 16:07 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/b04/vdot_test.bin
+-rwxrwxr-x 1 user user 458840 Oct 26 16:07 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/b05/vdot_test.bin
 -rwxrwxr-x 1 user user  14280 Oct 25 05:12 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/dep/vdot_dep.bin
--rwxrwxr-x 1 user user  14280 Oct 25 07:27 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/dep0/vdot_dep.bin
--rwxrwxr-x 1 user user  14280 Oct 25 07:27 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/dep1/vdot_dep.bin
--rwxrwxr-x 1 user user  14280 Oct 25 07:27 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/dep2/vdot_dep.bin
--rwxrwxr-x 1 user user  14296 Oct 25 07:27 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/dep3/vdot_dep.bin
--rwxrwxr-x 1 user user    224 Oct 25 07:27 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/wave/vdot_wave.bin
+-rwxrwxr-x 1 user user  14280 Oct 26 16:07 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/dep0/vdot_dep.bin
+-rwxrwxr-x 1 user user  14280 Oct 26 16:07 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/dep1/vdot_dep.bin
+-rwxrwxr-x 1 user user  14280 Oct 26 16:07 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/dep2/vdot_dep.bin
+-rwxrwxr-x 1 user user  14296 Oct 26 16:07 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/dep3/vdot_dep.bin
+-rwxrwxr-x 1 user user    224 Oct 26 16:07 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/wave/vdot_wave.bin
 ==============================================================
- [4] 语料批次（6 批并行，DUT=/data/my/cie2026-vdot-xiangshan/work/XiangShan-fullcore/build/emu）   2026-10-25T07:27:04Z UTC
+ [4] 语料批次（6 批并行，DUT=/data/my/cie2026-vdot-xiangshan/work/XiangShan-fullcore/build/emu）   2026-10-26T16:07:18Z UTC
 ==============================================================
 ==============================================================
- [5] 依赖测试（DEP_ITERS=200，种子：0x20261025cafef00d 0x0000000000c1e026 0x5eed00000000beef 0x0123456789abcdef）   2026-10-25T07:27:04Z UTC
+ [5] 依赖测试（DEP_ITERS=200，种子：0x20261025cafef00d 0x0000000000c1e026 0x5eed00000000beef 0x0123456789abcdef）   2026-10-26T16:07:18Z UTC
 ==============================================================
     第一轮：dep0 与 6 个语料批次同时运行
     第二轮：其余种子并行运行
 batch     cases     pass   fail  must-trap   trapped-ok  emu
-b00        5127     5127      0        811          811  HIT_GOOD_TRAP
-b01        5127     5127      0        788          788  HIT_GOOD_TRAP
-b02        5127     5127      0        759          759  HIT_GOOD_TRAP
-b03        5127     5127      0        863          863  HIT_GOOD_TRAP
-b04        5127     5127      0        774          774  HIT_GOOD_TRAP
-b05        5123     5123      0        839          839  HIT_GOOD_TRAP
-CORPUS TOTAL cases=30758 pass=30758 fail=0 must-trap=4834 trapped-mcause2=4834 batches=6 hit-good-trap=6/6
+b00        5133     5133      0        809          809  HIT_GOOD_TRAP
+b01        5133     5133      0        787          787  HIT_GOOD_TRAP
+b02        5133     5133      0        761          761  HIT_GOOD_TRAP
+b03        5133     5133      0        862          862  HIT_GOOD_TRAP
+b04        5133     5133      0        774          774  HIT_GOOD_TRAP
+b05        5129     5129      0        841          841  HIT_GOOD_TRAP
+CORPUS TOTAL cases=30794 pass=30794 fail=0 must-trap=4834 trapped-mcause2=4834 batches=6 hit-good-trap=6/6
 difftest 失配报告行数（'different at' / 'ABORT'）：0
 --- dep0.log ---
    kernels=10 iters/kernel=200 seed=0x20261025cafef00d
@@ -50,26 +50,30 @@ DEP TOTAL runs=2000x2 fail=0 k8-trap-count-bad=0
 RESULT: PASS
 Core 0: [32mHIT GOOD TRAP at pc = 0x80000042
 [0m[35mCore-0 instrCnt = 4583750, cycleCnt = 4521484, IPC = 1.013771
-end: 2026-10-25T07:51:43Z  wall=1479s  emu-exit=0
+end: 2026-10-26T16:44:56Z  wall=2258s  emu-exit=0
 --- dep1.log ---
    kernels=10 iters/kernel=200 seed=0x0000000000c1e026
 DEP TOTAL runs=2000x2 fail=0 k8-trap-count-bad=0
 RESULT: PASS
 Core 0: [32mHIT GOOD TRAP at pc = 0x80000042
 [0m[35mCore-0 instrCnt = 4580262, cycleCnt = 4522984, IPC = 1.012664
-end: 2026-10-25T08:12:08Z  wall=1225s  emu-exit=0
+end: 2026-10-26T17:07:21Z  wall=1345s  emu-exit=0
 --- dep2.log ---
    kernels=10 iters/kernel=200 seed=0x5eed00000000beef
 DEP TOTAL runs=2000x2 fail=0 k8-trap-count-bad=0
 RESULT: PASS
 Core 0: [32mHIT GOOD TRAP at pc = 0x80000042
 [0m[35mCore-0 instrCnt = 4588451, cycleCnt = 4522883, IPC = 1.014497
-end: 2026-10-25T08:11:58Z  wall=1215s  emu-exit=0
+end: 2026-10-26T17:03:57Z  wall=1141s  emu-exit=0
 --- dep3.log ---
    kernels=10 iters/kernel=200 seed=0x0123456789abcdef
 DEP TOTAL runs=2000x2 fail=0 k8-trap-count-bad=0
 RESULT: PASS
 Core 0: [32mHIT GOOD TRAP at pc = 0x80000042
 [0m[35mCore-0 instrCnt = 4580097, cycleCnt = 4536448, IPC = 1.009622
-end: 2026-10-25T08:11:10Z  wall=1167s  emu-exit=0
+end: 2026-10-26T17:07:47Z  wall=1371s  emu-exit=0
+
+real	60m33.085s
+user	3287m7.553s
+sys	1m27.226s
 exit=0

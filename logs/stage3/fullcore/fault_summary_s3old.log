@@ -1,0 +1,5 @@
+fault_wave_s3old: 检出 —— 178: v3_low different at pc = 0x0080000062, right = 0x00000000ffffff58, wrong = 0xffffffffffffff58 179:v3_high different at pc = 0x0080000062, right = 0x0000000000000000, wrong = 0xffffffffffffffff 180:Core 0: [31mABORT at pc = 0x80000062 
+fault_dep_s3old: 检出 —— 191: v3_low different at pc = 0x0080000cc4, right = 0x0000000000000468, wrong = 0xffffffff00000468 192:v3_high different at pc = 0x0080000cc4, right = 0x0000000000000000, wrong = 0xffffffffffffffff 193:Core 0: [31mABORT at pc = 0x80000cc4 
+fault_corpus_b00_s3old: 检出 —— 201: v3_low different at pc = 0x0080000858, right = 0x00000000000005d8, wrong = 0xffffffff000005d8 202:v3_high different at pc = 0x0080000858, right = 0x0000000000000000, wrong = 0xffffffffffffffff 203:Core 0: [31mABORT at pc = 0x80000858 
+还原：src/main/scala/xiangshan/backend/fu/wrapper/VIMacU.scala 与全核树逐字节一致
+FAULT-INJECTION (s3old): 3 / 3 个程序检出

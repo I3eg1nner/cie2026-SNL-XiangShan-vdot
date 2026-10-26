@@ -1,0 +1,158 @@
+==============================================================
+ P7 基线实现与延迟加速分析 —— 一键复现
+ 开始时间 : 2026-10-26T16:27:40Z UTC
+ 仓库根   : /data/my/cie2026-vdot-xiangshan
+ RTL 工作树: /data/my/cie2026-vdot-xiangshan/work/XiangShan-cosim  (a4eeaabb4c12)
+ NEMU     : /data/my/cie2026-vdot-xiangshan/work/NEMU  (90908390002f)
+ verilator: Verilator 5.024 2024-04-05 rev v5.024
+==============================================================
+    SKIP_NEMU=1，跳过 [1]；沿用已有的 /data/my/cie2026-vdot-xiangshan/logs/stage3/p7_baseline_equiv.log
+    SKIP_RTL=1，跳过 [2][3][4]；沿用已有的 /data/my/cie2026-vdot-xiangshan/logs/stage3/p7_latency_measure.log
+
+[1;34m==> [16:27:40] 5/6 从日志抽取原始数据 -> bench/results/*.csv[0m
+  WROTE equivalence.csv              15 行
+  WROTE latency_fu.csv               13 行
+  WROTE instr_count_loop.csv         24 行
+  WROTE cycles_fullcore.csv          74 行
+  WROTE instr_count_single.csv       12 行
+  WROTE uop_count.csv                10 行
+  WROTE critical_path.csv            8 行
+  WROTE speedup.csv                  23 行
+  WROTE sensitivity.csv              7 行
+  WROTE vstart_control.csv           8 行
+
+  全核实测（MinimalConfig，热态，扣除开销）：
+    cal    empty_window           N=0     net=35       instr=3
+    cal    nop_call               N=0     net=38       instr=6
+    chain  indep_vdot             N=16    net=16       instr=16
+    chain  indep_vdot             N=48    net=48       instr=48
+    chain  vadd                   N=16    net=90       instr=16
+    chain  vadd                   N=48    net=282      instr=48
+    chain  vdotacc                N=16    net=106      instr=16
+    chain  vdotacc                N=48    net=330      instr=48
+    chain  vsetadd                N=16    net=95       instr=32
+    chain  vsetadd                N=48    net=287      instr=96
+    chain  vwaddwv                N=16    net=91       instr=16
+    chain  vwaddwv                N=48    net=283      instr=48
+    chain  vwredsum               N=16    net=121      instr=16
+    chain  vwredsum               N=48    net=345      instr=48
+    chain_slope  indep_vdot       1.000 cycle
+    chain_slope  vadd             6.000 cycle
+    chain_slope  vdotacc          7.000 cycle
+    chain_slope  vsetadd          6.000 cycle
+    chain_slope  vwaddwv          6.000 cycle
+    chain_slope  vwredsum         7.000 cycle
+    loop   seqA                   N=16    net=56       instr=14
+    loop   seqA                   N=64    net=101      instr=44
+    loop   seqA                   N=256   net=290.5    instr=164
+    loop   seqA                   N=1024  net=1098.5   instr=644
+    loop   seqA                   N=4096  net=4341.5   instr=2564
+    loop   seqB                   N=16    net=65       instr=17
+    loop   seqB                   N=64    net=115.5    instr=50
+    loop   seqB                   N=256   net=274      instr=182
+    loop   seqB                   N=1024  net=946      instr=710
+    loop   seqB                   N=4096  net=3644     instr=2822
+    loop   seqD                   N=16    net=62       instr=16
+    loop   seqD                   N=64    net=100.5    instr=46
+    loop   seqD                   N=256   net=243      instr=166
+    loop   seqD                   N=1024  net=848      instr=646
+    loop   seqD                   N=4096  net=3274.5   instr=2566
+    loop   vdot4a                 N=16    net=41       instr=16
+    loop   vdot4a                 N=64    net=78.5     instr=43
+    loop   vdot4a                 N=256   net=146      instr=151
+    loop   vdot4a                 N=1024  net=498      instr=583
+    loop   vdot4a                 N=4096  net=1830.5   instr=2311
+    loop   vdotacc                N=16    net=34       instr=12
+    loop   vdotacc                N=64    net=55       instr=36
+    loop   vdotacc                N=256   net=139      instr=132
+    loop   vdotacc                N=1024  net=476      instr=516
+    loop   vdotacc                N=4096  net=1819.5   instr=2052
+    loop   vdotacc_acc2           N=16    net=39       instr=15
+    loop   vdotacc_acc2           N=64    net=56       instr=39
+    loop   vdotacc_acc2           N=256   net=126      instr=135
+    loop   vdotacc_acc2           N=1024  net=395      instr=519
+    loop   vdotacc_acc2           N=4096  net=1476     instr=2055
+    loop_slope   seqA             16.891 cycle
+    loop_slope   seqB             14.052 cycle
+    loop_slope   seqD             12.638 cycle
+    loop_slope   vdot4a           6.940 cycle
+    loop_slope   vdotacc          6.997 cycle
+    loop_slope   vdotacc_acc2     5.630 cycle
+    single base_body              N=16    net=31       instr=6
+    single base_body_x            N=16    net=38       instr=8
+    single baseline_vdot_single   N=16    net=52       instr=10
+    single vdot_body              N=16    net=6        instr=2
+    single vdot_body_x            N=16    net=13.5     instr=4
+    single vdot_single            N=16    net=30.5     instr=5
+    skel   skel_seqD              N=16    net=15.5     instr=9
+    skel   skel_seqD              N=64    net=37.5     instr=33
+    skel   skel_seqD              N=256   net=111.5    instr=129
+    skel   skel_seqD              N=1024  net=417      instr=513
+    skel   skel_seqD              N=4096  net=1633     instr=2049
+    skel   skel_vdotacc           N=16    net=15.5     instr=8
+    skel   skel_vdotacc           N=64    net=33       instr=29
+    skel   skel_vdotacc           N=256   net=99       instr=113
+    skel   skel_vdotacc           N=1024  net=363.5    instr=449
+    skel   skel_vdotacc           N=4096  net=1419.5   instr=1793
+    skel_slope   skel_seqD        6.333 cycle
+    skel_slope   skel_vdotacc     5.500 cycle
+
+  关键派生量：
+    基线单次点积 FU 延迟关键路径 = 4 cycle
+    vdot 单次点积 FU 延迟关键路径 = 2 cycle
+    baseline_A   每 16 个 int8 实测 10.00 条指令
+    baseline_B   每 16 个 int8 实测 11.00 条指令
+    baseline_D   每 16 个 int8 实测 10.00 条指令
+    vdot4a       每 16 个 int8 实测 9.00 条指令
+    vdotacc      每 16 个 int8 实测 8.00 条指令
+    vdotacc_acc2 每 16 个 int8 实测 8.00 条指令
+total 56
+-rw-rw-r-- 1 user user   636 Oct 26 16:27 critical_path.csv
+-rw-rw-r-- 1 user user 12125 Oct 26 16:27 cycles_fullcore.csv
+-rw-rw-r-- 1 user user   955 Oct 26 16:27 equivalence.csv
+-rw-rw-r-- 1 user user  2131 Oct 26 16:27 instr_count_loop.csv
+-rw-rw-r-- 1 user user  2173 Oct 26 16:27 instr_count_single.csv
+-rw-rw-r-- 1 user user  4722 Oct 26 16:27 latency_fu.csv
+-rw-rw-r-- 1 user user   779 Oct 26 16:27 sensitivity.csv
+-rw-rw-r-- 1 user user  5486 Oct 26 16:27 speedup.csv
+-rw-rw-r-- 1 user user  1332 Oct 26 16:27 uop_count.csv
+-rw-rw-r-- 1 user user   765 Oct 26 16:27 vstart_control.csv
+
+[1;34m==> [16:27:40] 6/6 绘图 -> docs/stage3/figures/*.png[0m
+    绘图 Python：/tmp/vizenv/bin/python（CJK=WenQuanYi Zen Hei）
+findfont: Failed to find font weight normal for WenQuanYi Zen Hei, now using 500.
+findfont: Failed to find font weight normal for WenQuanYi Zen Hei, now using 500.
+findfont: Failed to find font weight normal for WenQuanYi Zen Hei, now using 500.
+findfont: Failed to find font weight normal for WenQuanYi Zen Hei, now using 500.
+findfont: Failed to find font weight normal for WenQuanYi Zen Hei, now using 500.
+findfont: Failed to find font weight normal for WenQuanYi Zen Hei, now using 500.
+findfont: Failed to find font weight normal for WenQuanYi Zen Hei, now using 500.
+findfont: Failed to find font weight normal for WenQuanYi Zen Hei, now using 500.
+findfont: Failed to find font weight normal for WenQuanYi Zen Hei, now using 500.
+findfont: Failed to find font weight normal for WenQuanYi Zen Hei, now using 500.
+  PNG /data/my/cie2026-vdot-xiangshan/docs/stage3/figures/fig1_instr_count.png  (243884 bytes)
+  PNG /data/my/cie2026-vdot-xiangshan/docs/stage3/figures/fig2_speedup.png  (210403 bytes)
+  PNG /data/my/cie2026-vdot-xiangshan/docs/stage3/figures/fig3_latency.png  (141659 bytes)
+  PNG /data/my/cie2026-vdot-xiangshan/docs/stage3/figures/fig4_sensitivity.png  (122766 bytes)
+  PNG /data/my/cie2026-vdot-xiangshan/docs/stage3/figures/fig9_fullcore_cycles.png  (236332 bytes)
+total 1952
+-rw-rw-r-- 1 user user 243884 Oct 26 16:27 fig1_instr_count.png
+-rw-rw-r-- 1 user user 210403 Oct 26 16:27 fig2_speedup.png
+-rw-rw-r-- 1 user user 141659 Oct 26 16:27 fig3_latency.png
+-rw-rw-r-- 1 user user 122766 Oct 26 16:27 fig4_sensitivity.png
+-rw-rw-r-- 1 user user 251231 Oct 26 15:32 fig5_latency_wave_vdot.png
+-rw-rw-r-- 1 user user 251643 Oct 26 15:32 fig6_latency_wave_vdotacc.png
+-rw-rw-r-- 1 user user 258718 Oct 26 15:32 fig7_latency_wave_vdot4a.png
+-rw-rw-r-- 1 user user 265438 Oct 26 16:08 fig8_fullcore_vdot_wave.png
+-rw-rw-r-- 1 user user 236332 Oct 26 16:27 fig9_fullcore_cycles.png
+
+==============================================================
+ 完成  2026-10-26T16:27:43Z UTC
+   /data/my/cie2026-vdot-xiangshan/logs/stage3/p7_baseline_equiv.log
+   /data/my/cie2026-vdot-xiangshan/logs/stage3/p7_latency_measure.log
+   /data/my/cie2026-vdot-xiangshan/logs/stage3/p7_bench_run.log
+   /data/my/cie2026-vdot-xiangshan/bench/results/*.csv
+   /data/my/cie2026-vdot-xiangshan/docs/stage3/figures/*.png
+==============================================================
+[A] TOTAL cases=30794 run=25960 pass=25960 fail=0 skip(illegal-by-spec)=4834 skip(baseline-inexpressible,vstart!=0)=0
+[B] long-vector sizes checked = 24 , mismatches = 0

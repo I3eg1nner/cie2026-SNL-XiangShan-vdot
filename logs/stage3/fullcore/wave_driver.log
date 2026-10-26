@@ -1,26 +1,32 @@
 ==============================================================
- [3] 交叉编译测试镜像（CROSS=/opt/riscv/bin/riscv64-unknown-elf-）   2026-10-25T07:26:40Z UTC
+ [3] 交叉编译测试镜像（CROSS=/opt/riscv/bin/riscv64-unknown-elf-）   2026-10-26T16:07:33Z UTC
 ==============================================================
-n_cases=5127 begin=0 end=5127 total=30758
-n_cases=5127 begin=5127 end=10254 total=30758
-n_cases=5127 begin=10254 end=15381 total=30758
-n_cases=5127 begin=15381 end=20508 total=30758
-n_cases=5127 begin=20508 end=25635 total=30758
-n_cases=5123 begin=25635 end=30758 total=30758
--rwxrwxr-x 1 user user 458664 Oct 25 07:26 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/b00/vdot_test.bin
--rwxrwxr-x 1 user user 458664 Oct 25 07:26 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/b01/vdot_test.bin
--rwxrwxr-x 1 user user 458664 Oct 25 07:26 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/b02/vdot_test.bin
--rwxrwxr-x 1 user user 458664 Oct 25 07:26 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/b03/vdot_test.bin
--rwxrwxr-x 1 user user 458664 Oct 25 07:26 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/b04/vdot_test.bin
--rwxrwxr-x 1 user user 458312 Oct 25 07:26 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/b05/vdot_test.bin
+n_cases=5133 begin=0 end=5133 total=30794
+n_cases=5133 begin=5133 end=10266 total=30794
+n_cases=5133 begin=10266 end=15399 total=30794
+n_cases=5133 begin=15399 end=20532 total=30794
+n_cases=5133 begin=20532 end=25665 total=30794
+n_cases=5129 begin=25665 end=30794 total=30794
+-rwxrwxr-x 1 user user 459192 Oct 26 16:07 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/b00/vdot_test.bin
+-rwxrwxr-x 1 user user 459192 Oct 26 16:07 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/b01/vdot_test.bin
+-rwxrwxr-x 1 user user 459192 Oct 26 16:07 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/b02/vdot_test.bin
+-rwxrwxr-x 1 user user 459192 Oct 26 16:07 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/b03/vdot_test.bin
+-rwxrwxr-x 1 user user 459192 Oct 26 16:07 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/b04/vdot_test.bin
+-rwxrwxr-x 1 user user 458840 Oct 26 16:07 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/b05/vdot_test.bin
 -rwxrwxr-x 1 user user  14280 Oct 25 05:12 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/dep/vdot_dep.bin
--rwxrwxr-x 1 user user  14280 Oct 25 07:26 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/dep0/vdot_dep.bin
--rwxrwxr-x 1 user user  14280 Oct 25 07:26 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/dep1/vdot_dep.bin
--rwxrwxr-x 1 user user  14280 Oct 25 07:26 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/dep2/vdot_dep.bin
--rwxrwxr-x 1 user user  14296 Oct 25 07:26 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/dep3/vdot_dep.bin
--rwxrwxr-x 1 user user    224 Oct 25 07:26 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/wave/vdot_wave.bin
+-rwxrwxr-x 1 user user  14280 Oct 26 16:07 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/dep0/vdot_dep.bin
+-rwxrwxr-x 1 user user  14280 Oct 26 16:07 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/dep1/vdot_dep.bin
+-rwxrwxr-x 1 user user  14280 Oct 26 16:07 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/dep2/vdot_dep.bin
+-rwxrwxr-x 1 user user  14296 Oct 26 16:07 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/dep3/vdot_dep.bin
+-rwxrwxr-x 1 user user    224 Oct 26 16:07 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/wave/vdot_wave.bin
 ==============================================================
- [6] 全核波形（vdot 从译码到 ROB 提交）   2026-10-25T07:26:43Z UTC
+ [6] 全核波形（vdot 从译码到 ROB 提交）   2026-10-26T16:07:38Z UTC
 ==============================================================
--rw-rw-r-- 1 user user 382184891 Oct 25 07:26 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/wave/vdot_wave.vcd
+-rw-rw-r-- 1 user user 382179562 Oct 26 16:07 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/wave/vdot_wave.vcd
     文本轨迹：logs/stage3/fullcore/wave_trace.txt（VCD 体积大，不入库：/data/my/cie2026-vdot-xiangshan/work/build/fullcore/wave/vdot_wave.vcd）
+wrote /data/my/cie2026-vdot-xiangshan/logs/stage3/fullcore/wave_fullcore_vdot.png  (13 行信号, 时刻 #1483..#1516, 200 dpi)
+
+real	0m26.594s
+user	2m23.735s
+sys	0m2.525s
+exit=0

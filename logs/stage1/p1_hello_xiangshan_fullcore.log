@@ -1,5 +1,5 @@
 ==============================================================
- [H] 赛题 1.1：hello 在香山全核 emu（MinimalConfig）上运行，带 difftest   2026-10-25T09:22:14Z UTC
+ [H] 赛题 1.1：hello 在香山全核 emu（MinimalConfig）上运行，带 difftest   2026-10-26T16:26:08Z UTC
 ==============================================================
 ### [0] 宿主机取本机 IP（与 scripts/03_run_hello.sh 同一方法；IP 在编译期写进程序的只读数据）
 $ hostname -I   （本机无 iproute2 的 ip 命令）
@@ -32,13 +32,13 @@ make: Leaving directory '/data/my/cie2026-vdot-xiangshan/tests/riscv/fullcore'
 --- 源码与 tests/riscv/hello 中的同名文件一致（sha256） ---
 82d5896b93538f26ff2e08050f9d9f8983d2964e0ac7a057819ca4224e0ba28b  tests/riscv/hello/hello.c
 49b778a37f26bfadc8b701bf05669628cb645e2bc3673d26a821ef9075470fdf  tests/riscv/hello/start.S
--rwxrwxr-x 1 user user 3328 Oct 25 09:22 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/hello/hello.bin
+-rwxrwxr-x 1 user user 3328 Oct 26 16:26 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/hello/hello.bin
 $ strings -t x hello.bin | grep 'hello xiangshan'
     ca8 hello xiangshan, I am cie2026-vdot, IP address 172.100.0.6
 
 ### [2] 在全核 emu 上运行（DUT = 香山 MinimalConfig + vdot 补丁，REF = NEMU .so，逐条 difftest）
 $ /data/my/cie2026-vdot-xiangshan/work/XiangShan-fullcore/build/emu -i /data/my/cie2026-vdot-xiangshan/work/build/fullcore/hello/hello.bin --diff /data/my/cie2026-vdot-xiangshan/work/NEMU-fullcore/ref/riscv64-nemu-interpreter-so 
-start: 2026-10-25T09:22:14Z
+start: 2026-10-26T16:26:09Z
 （下面先是 emu 的 stdout，再是 stderr；stderr 中 emu 退出时打印的 [PERF ] 性能计数器行已滤掉）
 ======================================================================
  cie2026-vdot / 2026CIE RISC-V vdot  --  Stage-1 environment check
@@ -65,8 +65,8 @@ start: 2026-10-25T09:22:14Z
      result  = PASS (16/16 lanes match the C reference)
 ======================================================================
 hello xiangshan, I am cie2026-vdot, IP address 172.100.0.6
-emu compiled at Oct 25 2026, 06:55:56
-%Warning: System has stack size 8192 kb which may be too small; suggest 'ulimit -s 35430' or larger
+emu compiled at Oct 26 2026, 16:04:36
+%Warning: System has stack size 8192 kb which may be too small; suggest 'ulimit -s 35539' or larger
 Using simulated 1048576B flash
 Core  0's Commit SHA is: a4eeaabb4c, dirty: 1
 Using simulated 8386560MB RAM
@@ -76,10 +76,10 @@ The first instruction of core 0 has commited. Difftest enabled.
 Core 0: [32mHIT GOOD TRAP at pc = 0x80000038
 [0m[35mCore-0 instrCnt = 8369, cycleCnt = 68522, IPC = 0.122136
 [0m[34mSeed=0 Guest cycle spent: 68528 (this will be different from cycleCnt if emu loads a snapshot)
-[0m[34mHost time spent: 20227ms
+[0m[34mHost time spent: 52829ms
 [0m------------------------------ emu stderr ------------------------------
-end: 2026-10-25T09:22:34Z  wall=20s  emu-exit=0
+end: 2026-10-26T16:27:02Z  wall=53s  emu-exit=0
 
 ==============================================================
- 结束   2026-10-25T09:22:34Z UTC
+ 结束   2026-10-26T16:27:02Z UTC
 ==============================================================

@@ -1,0 +1,46 @@
+==============================================================
+ [1] NEMU 参考共享库（私有副本 work/NEMU-fullcore）   2026-10-26T15:43:46Z UTC
+==============================================================
+    vdot 补丁已处于已应用状态
+    已存在：/data/my/cie2026-vdot-xiangshan/work/NEMU-fullcore/ref/riscv64-nemu-interpreter-so（FORCE_NEMU=1 可强制重建）
+-rwxrwxr-x 1 user user 1475784 Oct 26 15:41 /data/my/cie2026-vdot-xiangshan/work/NEMU-fullcore/ref/riscv64-nemu-interpreter-so
+NEMU commit: 90908390 feat(difftest): support fast shared reference execution (#1247)
+difftest_* 导出符号数: 41
+==============================================================
+ [3] 交叉编译测试镜像（CROSS=/opt/riscv/bin/riscv64-unknown-elf-）   2026-10-26T15:43:46Z UTC
+==============================================================
+n_cases=5133 begin=0 end=5133 total=30794
+n_cases=5133 begin=5133 end=10266 total=30794
+n_cases=5133 begin=10266 end=15399 total=30794
+n_cases=5133 begin=15399 end=20532 total=30794
+n_cases=5133 begin=20532 end=25665 total=30794
+n_cases=5129 begin=25665 end=30794 total=30794
+-rwxrwxr-x 1 user user 459192 Oct 26 15:43 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/b00/vdot_test.bin
+-rwxrwxr-x 1 user user 459192 Oct 26 15:43 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/b01/vdot_test.bin
+-rwxrwxr-x 1 user user 459192 Oct 26 15:43 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/b02/vdot_test.bin
+-rwxrwxr-x 1 user user 459192 Oct 26 15:43 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/b03/vdot_test.bin
+-rwxrwxr-x 1 user user 459192 Oct 26 15:43 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/b04/vdot_test.bin
+-rwxrwxr-x 1 user user 458840 Oct 26 15:43 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/b05/vdot_test.bin
+-rwxrwxr-x 1 user user  14280 Oct 25 05:12 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/dep/vdot_dep.bin
+-rwxrwxr-x 1 user user  14280 Oct 26 15:43 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/dep0/vdot_dep.bin
+-rwxrwxr-x 1 user user  14280 Oct 26 15:43 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/dep1/vdot_dep.bin
+-rwxrwxr-x 1 user user  14280 Oct 26 15:43 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/dep2/vdot_dep.bin
+-rwxrwxr-x 1 user user  14296 Oct 26 15:43 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/dep3/vdot_dep.bin
+-rwxrwxr-x 1 user user    224 Oct 26 15:43 /data/my/cie2026-vdot-xiangshan/work/build/fullcore/wave/vdot_wave.bin
+==============================================================
+ [F] 故障注入（FAULT_KIND=s3old）：src/main/scala/xiangshan/backend/fu/wrapper/VIMacU.scala 中 vdot / vdotacc 写回尾部改回旧裁定 S-3（vd[127:32] 全 1）   2026-10-26T15:43:50Z UTC
+==============================================================
+193c193
+<                       Cat(0.U((VLEN - 32).W), dotVd(31, 0)))              // 裁定 S-3'
+---
+>                       Cat(~0.U((VLEN - 32).W), dotVd(31, 0)))             // FAULT-INJECTION T1-F2: tail back to old S-3 (all ones)
+fault_wave_s3old: 检出 —— 178: v3_low different at pc = 0x0080000062, right = 0x00000000ffffff58, wrong = 0xffffffffffffff58 179:v3_high different at pc = 0x0080000062, right = 0x0000000000000000, wrong = 0xffffffffffffffff 180:Core 0: [31mABORT at pc = 0x80000062 
+fault_dep_s3old: 检出 —— 191: v3_low different at pc = 0x0080000cc4, right = 0x0000000000000468, wrong = 0xffffffff00000468 192:v3_high different at pc = 0x0080000cc4, right = 0x0000000000000000, wrong = 0xffffffffffffffff 193:Core 0: [31mABORT at pc = 0x80000cc4 
+fault_corpus_b00_s3old: 检出 —— 201: v3_low different at pc = 0x0080000858, right = 0x00000000000005d8, wrong = 0xffffffff000005d8 202:v3_high different at pc = 0x0080000858, right = 0x0000000000000000, wrong = 0xffffffffffffffff 203:Core 0: [31mABORT at pc = 0x80000858 
+还原：src/main/scala/xiangshan/backend/fu/wrapper/VIMacU.scala 与全核树逐字节一致
+FAULT-INJECTION (s3old): 3 / 3 个程序检出
+
+real	31m31.584s
+user	200m6.215s
+sys	13m33.218s
+exit=0

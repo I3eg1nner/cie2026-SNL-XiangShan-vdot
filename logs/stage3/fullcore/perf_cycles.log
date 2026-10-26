@@ -1,5 +1,5 @@
 $ /data/my/cie2026-vdot-xiangshan/work/XiangShan-fullcore/build/emu -i /data/my/cie2026-vdot-xiangshan/work/build/fullcore/perf/perf_cycles.bin --diff /data/my/cie2026-vdot-xiangshan/work/NEMU-fullcore/ref/riscv64-nemu-interpreter-so 
-start: 2026-10-25T09:22:41Z
+start: 2026-10-26T16:10:42Z
 （下面先是 emu 的 stdout，再是 stderr；stderr 中 emu 退出时打印的 [PERF ] 性能计数器行已滤掉）
 ======================================================================
  cie2026-vdot / T3  full-core cycle measurement (mcycle, MinimalConfig)
@@ -309,8 +309,8 @@ PERF,skel,skel_seqD,4096,4,1671,2055,0,-
 ----------------------------------------------------------------------
 PERF TOTAL measurements=300 result-mismatch=0 unexpected-trap=0
 RESULT: PASS
-emu compiled at Oct 25 2026, 06:55:56
-%Warning: System has stack size 8192 kb which may be too small; suggest 'ulimit -s 35430' or larger
+emu compiled at Oct 26 2026, 16:04:36
+%Warning: System has stack size 8192 kb which may be too small; suggest 'ulimit -s 35539' or larger
 Using simulated 1048576B flash
 Core  0's Commit SHA is: a4eeaabb4c, dirty: 1
 Using simulated 8386560MB RAM
@@ -320,6 +320,6 @@ The first instruction of core 0 has commited. Difftest enabled.
 Core 0: [32mHIT GOOD TRAP at pc = 0x80000042
 [0m[35mCore-0 instrCnt = 622388, cycleCnt = 927651, IPC = 0.670929
 [0m[34mSeed=0 Guest cycle spent: 927657 (this will be different from cycleCnt if emu loads a snapshot)
-[0m[34mHost time spent: 279948ms
+[0m[34mHost time spent: 893265ms
 [0m------------------------------ emu stderr ------------------------------
-end: 2026-10-25T09:27:21Z  wall=280s  emu-exit=0
+end: 2026-10-26T16:25:36Z  wall=894s  emu-exit=0
