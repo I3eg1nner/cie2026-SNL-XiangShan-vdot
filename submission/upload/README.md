@@ -1,4 +1,4 @@
-# submission/upload/ — 评审材料（三册 PDF + 讲解 PPT）
+# submission/upload/ — 评审材料（三册 PDF + 讲解 PPT）与四个上传包
 
 全部由脚本从仓库文档生成，不手工排版；Markdown 与讲稿大纲是唯一来源，生成过程不改动任何数值。
 
@@ -17,7 +17,12 @@
 PYTHON=/tmp/vizenv/bin/python bash submission/upload/build-pdf.sh
 # 讲解 PPT + PDF；PAGES=1 时另把每页转成 PNG（/tmp/deck-pages/）供逐页检查
 PYTHON=/tmp/vizenv/bin/python PAGES=1 bash docs/submission/build/render_deck.sh
+# 四个上传包 + 提交清单.md + SHA256SUMS + bundle-contents.tsv（先提交文档改动；--dry-run 只在临时目录试打包并核验）
+bash submission/upload/build-bundles.sh --dry-run
+bash submission/upload/build-bundles.sh
 ```
+
+顺序固定为「三册 PDF → PPT / 视频（`demo/video/storyboard.md`）→ 四个包」；打包脚本不重建 PDF / PPT / 视频，①②两包只取 `git archive HEAD`。
 
 `PYTHON` 指向装有 `python-pptx`、`Pillow`、`weasyprint` 的解释器（例：`uv venv /tmp/vizenv && uv pip install -p /tmp/vizenv python-pptx pillow weasyprint`）。
 其他依赖：pandoc ≥ 3、LibreOffice（`soffice`，只用 Impress 组件）、poppler-utils（`pdfinfo` / `pdftoppm` / `pdffonts`）、字体 WenQuanYi Zen Hei（`fc-list :lang=zh`）。
@@ -43,9 +48,17 @@ PYTHON=/tmp/vizenv/bin/python PAGES=1 bash docs/submission/build/render_deck.sh
 - **口径断言**：封面三个主结论数字（1.70× / 1.81× / 2.25×）及其周期（52 → 30.5、12.64 → 7.00、5.63）在生成时与 `README.md` §1.2「主结论」逐项比对，
   不一致即终止；低于建模值的两项标「未达建模值」。
 
+- **四个上传包**（`build-bundles.sh` → `pdf/bundles.py`，参照 `riscv-db-opt` 模板的打包方式）：
+  `SNL-XiangShan-vdot-1-source.zip`（`git archive HEAD` 去掉 `logs/`、mp4、pptx 与清单类文件；包内 `MANIFEST-source.md`、逐文件 `SHA256SUMS-source`）、
+  `-2-evidence.zip`（`logs/`、`bench/results/`、`docs/stage*/figures/`；与①同根目录 `SNL-XiangShan-vdot/`，两包解压到一处即完整仓库快照）、
+  `-3-docs.zip`（三册 PDF + pptx + PPT 的 PDF）、`-4-video.zip`（三段 mp4 + srt，不压缩存储）。包内条目时间戳取内容提交的时间，同一内容重打包 sha256 不变；
+  内容提交号取最后一次改动清单类文件（`提交清单.md`、`SHA256SUMS`、`bundle-contents.tsv`）以外内容的提交，所以只提交清单不会改变包。
+  脚本核验：四个包可完整解开；①②逐文件 sha256 通过且合起来与 HEAD 快照逐文件一致；任何包内文本文件不得含工具名称等禁用字符串；`SHA256SUMS` 通过。
+  `提交清单.md` 由脚本生成（四个包的内容、大小、sha256，③④逐文件的来源、页数 / 时长），`bundle-contents.tsv` 逐行列出每个包内每个文件的来源、大小与 sha256。
+
 ## 入库范围
 
 | 入库 | 文件 |
 |---|---|
-| 是 | 本目录 `README.md`、`提交清单.md`、`build-pdf.sh`、`pdf/{assemble.py,template.html,style.css,links.lua}`；`docs/submission/build/{build_deck.py,render_deck.sh}`；`docs/submission/SNL-XiangShan-vdot-slides.pptx` |
-| 否（生成物，`.gitignore`） | 本目录下的 `*.pdf`、`*.html`；随 GitHub Release 发布 |
+| 是 | 本目录 `README.md`、`提交清单.md`、`SHA256SUMS` 与 `bundle-contents.tsv`（正式打包后生成）、`build-pdf.sh`、`build-bundles.sh`、`pdf/{assemble.py,bundles.py,template.html,style.css,links.lua}`；`docs/submission/build/{build_deck.py,render_deck.sh}`；`docs/submission/SNL-XiangShan-vdot-slides.pptx` |
+| 否（生成物，`.gitignore`） | 本目录下的 `*.pdf`、`*.html`、`*.zip`；随 GitHub Release 发布 |

@@ -20,8 +20,8 @@
 | 3.1.2 协同仿真验证 | ✅ Level 1（FU+译码级）+ Level 2（MinimalConfig 全核 difftest） | `docs/stage3/21_*.md`；全核 difftest 已完成（T1），见 `docs/stage3/23_全核difftest验证报告.md`、`logs/stage3/fullcore/` |
 | 3.2 基线功能实现 | ✅ | `bench/baseline/`，NEMU 实测三方比对 0 失配 |
 | 3.3 延迟加速分析 | ✅ 建模 + MinimalConfig 全核实测 | `docs/stage3/22_*.md` §5.5 + 图 9；全核实测主结论：单次点积 1.70×（函数整体）、长向量稳态 1.81× / 2.25×（建模 1.50× / 3.00×）；5.17× / 2.81× 为口径敏感的参考值；只对 MinimalConfig 成立；真实 LLM kernel 见 T3 |
-| 提交要求：三段录屏 | ❌ **未做** | 见 T6，必须由人完成；分镜、命令与口播已写好（`docs/ppt/录屏脚本.md`） |
-| 提交要求：PPT | ❌ **未做** | 见 T6；逐页讲解大纲已写好（`docs/ppt/讲解大纲.md`），提交流程核对见 `docs/ppt/提交清单.md` |
+| 提交要求：三段录屏 | ✅ 已生成（未上传） | 三段演示视频 `demo/video/*.mp4` + `.srt`，由脚本生成（`demo/video/storyboard.md`），视频三因体积不入库；见 T6 |
+| 提交要求：PPT | ✅ 已生成（未上传） | `docs/submission/SNL-XiangShan-vdot-slides.pptx`（PDF 版随上传包提供），由脚本从 `docs/ppt/讲解大纲.md` 生成（`submission/upload/README.md`）；提交流程核对见 `docs/ppt/提交清单.md`；见 T6 |
 
 ### 独立验收预测分数（评分表满分 100）
 
@@ -194,9 +194,9 @@ JDK **17**（JDK 21/25 会失败）、mill **0.12.3**（XiangShan）与 **0.11.1
 
 ---
 
-### T6 — 提交物（必须由人完成）
+### T6 — 提交物（视频、PPT、三册 PDF 已生成；Release、上传与加密提交待做）
 
-**三段录屏**（赛题明文要求，当前完全缺失）：
+**三段录屏**（赛题明文要求）：已由 `demo/video/` 的脚本生成三段演示视频（mp4 + `.srt`，分镜与数据来源见 `demo/video/storyboard.md`；视频三因体积不入库，随上传包提供）。下表为当初规划的素材：
 
 | 录屏 | 内容 | 可依赖的现有产物 |
 |---|---|---|
@@ -204,7 +204,7 @@ JDK **17**（JDK 21/25 会失败）、mill **0.12.3**（XiangShan）与 **0.11.1
 | ② 阶段二解题思路讲解 | vdot 语义（**先讲赛题官方伪代码与本项目的逐行对照、S-3'、`vl=8` 逐位等价**）、微架构、数据通路、RTL、三项测试 | `docs/stage2/10~13`（对照表在 `10` §1 开头）、`docs/_recon/figures/vdot_official_semantics.jpg`（官方语义图）、`logs/stage2/p3_official_pseudocode_equiv.log:40`（PASS 行）、`docs/stage1/figures/` |
 | ③ 阶段三波形仿真与性能分析 | 协同仿真机制（Level 1 + 全核 difftest）、波形、加速比 | `docs/stage3/20~23`、`docs/stage3/figures/`、`logs/stage3/fullcore/`（`summary.log`、`fault_summary.log`、`fault_summary_s3old.log`、`wave_fullcore_vdot.png`；全核运行耗时长，录屏用预先跑好的日志） |
 
-**PPT**：需覆盖三阶段解题思路、赛题官方语义与本项目的对照（`docs/ppt/讲解大纲.md` P5A）、微架构亮点（XOR 蝶形折叠树、三指令共享 16 路乘法阵列、零回退证据）、数据结论。分镜与逐页大纲已按 S-3' 更新（`docs/ppt/录屏脚本.md`、`docs/ppt/讲解大纲.md`），PPT 文件与录屏本身仍未制作。
+**PPT**：需覆盖三阶段解题思路、赛题官方语义与本项目的对照（`docs/ppt/讲解大纲.md` P5A）、微架构亮点（XOR 蝶形折叠树、三指令共享 16 路乘法阵列、零回退证据）、数据结论。分镜与逐页大纲已按 S-3' 更新（`docs/ppt/录屏脚本.md`、`docs/ppt/讲解大纲.md`），讲解 PPT 已由 `docs/submission/build/build_deck.py` 从大纲生成（`docs/submission/SNL-XiangShan-vdot-slides.pptx`，PDF 版随上传包提供），三册技术文档 PDF 由 `submission/upload/build-pdf.sh` 生成，生成命令见 `submission/upload/README.md`；四个上传包由 `submission/upload/build-bundles.sh` 生成。GitHub Release、大赛系统上传与下面的加密提交流程**尚未完成**。
 
 **加密提交流程**（见根目录 PDF 操作手册）：
 1. 本作品仓库转为 **public**（大赛硬性要求）

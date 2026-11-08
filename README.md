@@ -125,7 +125,7 @@ NEMU↔RTL 协同仿真（FU 级 Level 1 + MinimalConfig 全核 difftest Level 2
 | `docs/stage1/` | 环境版本锁定、部署报告、`vadd.vv` 执行过程分析、仿真平台搭建报告；`figures/` 7 张图：6 张 FU 级波形图（fig1–6）+ 图 7 全核 `vadd.vv` 流水图 |
 | `docs/stage2/` | `10` 设计文档、`11` RTL 实现说明、`12` 基础功能测试报告、`13` 参考模型与测试向量说明；`figures/` 3 张 vdot 功能波形图 |
 | `docs/stage3/` | `20` NEMU 指令扩展说明、`21` 协同仿真验证报告（Level 1）、`22` 基线实现与延迟加速分析、`23` 全核 difftest 验证报告（Level 2）；`figures/` 10 张图：5 张数据图（fig1–4、fig9 全核周期实测）+ 5 张波形图（fig5–7 FU 延迟实测、fig8 全核 vdot 波形（`vl=16` 满寄存器版本）、fig10 全核 `vl=8` 主演示） |
-| `docs/ppt/` | 答辩与提交的准备材料：`讲解大纲.md`（逐页要点与证据出处）、`录屏脚本.md`（三段录屏分镜）、`提交清单.md`（加密提交流程与自检项）；PPT 文件与录屏本身尚未制作（见局限性） |
+| `docs/ppt/` | 答辩与提交的准备材料：`讲解大纲.md`（逐页要点与证据出处）、`录屏脚本.md`（三段录屏分镜）、`提交清单.md`（加密提交流程与自检项）；讲解 PPT（`docs/submission/SNL-XiangShan-vdot-slides.pptx`）、三段演示视频（`demo/video/`）与三册技术文档 PDF 已由脚本从文档生成（命令见 `submission/upload/README.md`、`demo/video/storyboard.md`） |
 | `rtl/patch/` | 对上游的正式交付：`0001-xiangshan-vdot.patch`、`0002-yunsuan-vdot.patch` |
 | `rtl/chisel/` | 打完补丁后全部新增/修改 Chisel 源码的只读副本（`MANIFEST.md`），由 `scripts/tools/sync_rtl_sources.sh` 重建与校验 |
 | `rtl/verilog/` | 生成的 Verilog：`vdot/`（`VDotTree.sv`、`VDotTop.sv`、`VIMacU.v`、`DecodeUnit.v` 等）与 `baseline/`（零回归对照） |
@@ -235,7 +235,7 @@ bash scripts/50_run_fullcore_difftest.sh wave-vl8  # vl=8 主演示（与官方�
 4. **周期加速比只在 MinimalConfig 上实测。** 1.50× / 3.00× / 2.00× 是 FU 级模型值；MinimalConfig 全核实测主结论为单次点积 1.70×（函数整体）、
    长向量稳态 1.81×（单累加器）/ 2.25×（2 累加器），5.17× / 2.81× 为口径敏感的参考值；与模型有高有低（`22` §5.5）。默认配置（KunminghuV2Config）的周期未测；
    基线 D 每迭代 12.64 拍的瓶颈、单次点积 31 拍的逐拍构成未用波形确认。`vsetvli` 的 FU 级延迟为声明值；uop 条数为源码推导。
-5. **提交物未完成**：赛题要求的三段录屏、答辩 PPT 与加密提交流程均**未做**；`docs/ppt/` 中已有讲解大纲、录屏分镜脚本与提交清单，PPT 与录屏仍需团队据此制作。
+5. **提交物部分完成**：讲解 PPT（`docs/submission/SNL-XiangShan-vdot-slides.pptx`，PDF 版随上传包提供）、三段演示视频（`demo/video/`，视频三因体积不入库，随上传包提供）与三册技术文档 PDF 已由脚本从仓库文档生成（命令见 `submission/upload/README.md`、`demo/video/storyboard.md`）；GitHub Release、大赛系统上传与加密提交流程（`submit.sh`）**尚未完成**。
 6. 阶段二波形以 VCD + 文本轨迹交付，并已由同一份 VCD 渲染出 3 张波形图（`docs/stage2/figures/fig1-3_*.png`），嵌入 `docs/stage2/12` §10（`:1022,1078,1095`）；`tests/unit/VectorSimTop.scala` 等上游派生文件中保留了上游原有的
    `TODO`/`FIXME` 注释（本项目补丁未新增任何此类注释）。
 

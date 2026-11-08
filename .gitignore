@@ -52,3 +52,5 @@ tests/golden/example_cxx
 !docs/submission/build/
 submission/upload/*.pdf
 submission/upload/*.html
+# 四个上传包（submission/upload/build-bundles.sh 生成，随 GitHub Release 发布）；脚本、提交清单.md、SHA256SUMS、bundle-contents.tsv 入库
+submission/upload/*.zip
