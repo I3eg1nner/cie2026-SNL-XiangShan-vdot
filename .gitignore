@@ -45,3 +45,10 @@ tests/golden/example_cxx
 # 重新生成： bash scripts/40_run_bench.sh
 !logs/stage3/waveform/*.vcd
 !logs/stage3/waveform/*.fst
+
+# ---------------------------------------------------------------------------
+# 评审材料生成（submission/upload/README.md）：生成脚本入库；讲解 PPT（docs/submission/*.pptx，约 3 MB）入库；
+# 三册 PDF 与 PPT 的 PDF 是生成物，不入库（随 GitHub Release 发布）
+!docs/submission/build/
+submission/upload/*.pdf
+submission/upload/*.html

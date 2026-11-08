@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>$pagetitle$</title>
+$for(css)$
+<link rel="stylesheet" href="$css$">
+$endfor$
+</head>
+<body>
+<section class="cover">
+  <div class="cover-track">2026CIE 全国 RISC-V 高水平创新及应用大赛 · 赛题：面向边缘 AI 大语言模型推理的 RISC-V 自定义 vdot 指令设计</div>
+  <div class="cover-project">$project$</div>
+  <div class="cover-vol">技术文档$volno$</div>
+  <div class="cover-doc">$voltitle$</div>
+  <table class="cover-meta">
+    <tr><td>参赛团队</td><td>$team$</td><td>作品</td><td>$work$</td></tr>
+    <tr><td>作品仓库</td><td colspan="3">$repo$</td></tr>
+    <tr><td>目标平台</td><td colspan="3">XiangShan kunminghu-v2 @ a4eeaab（昆明湖 V2），YunSuan @ 9559211，NEMU @ 9090839</td></tr>
+    <tr><td>本册内容</td><td colspan="3">$scope$</td></tr>
+    <tr><td>本册收录</td><td colspan="3">$contents$</td></tr>
+    <tr><td>三册划分</td><td colspan="3">第一册 阶段一（docs/stage1）；第二册 阶段二（docs/stage2）；第三册 阶段三（docs/stage3）。三册可独立阅读</td></tr>
+    <tr><td>主结论</td><td colspan="3">MinimalConfig 全核实测 latency 加速比：单次 16 元素点积 1.70×（函数整体），长向量稳态 1.81× / 2.25×（单累加器 / 2 累加器）；适用范围与其余口径见第三册「基线实现与延迟加速分析」§5.5</td></tr>
+    <tr><td>文档日期</td><td colspan="3">$date$</td></tr>
+  </table>
+  <div class="cover-note">文中 <code>logs/…</code>、<code>docs/…</code>、<code>scripts/…</code>、<code>tests/…</code>、<code>bench/…</code> 等路径均相对于作品仓库根目录；「文件:行号」形式的出处可在仓库中逐行核对。各章正文与仓库 <code>docs/</code> 下的 Markdown 原文一致。</div>
+</section>
+$if(toc)$
+<nav class="toc">
+<h2 class="toc-title">目录</h2>
+$table-of-contents$
+</nav>
+$endif$
+$body$
+</body>
+</html>

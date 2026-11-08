@@ -1,0 +1,57 @@
+@page {
+  size: A4;
+  margin: 16mm 13mm 16mm 13mm;
+  @bottom-center { content: counter(page); font-size: 8pt; color: #666; }
+}
+@page :first { @bottom-center { content: none; } }
+
+html { font-size: 9.6pt; }
+body {
+  font-family: "WenQuanYi Zen Hei", "DejaVu Sans", sans-serif;
+  line-height: 1.55; color: #111; margin: 0;
+}
+code, pre { font-family: "DejaVu Sans Mono", "WenQuanYi Zen Hei Mono", monospace; font-size: 0.86em; }
+code { background: #f3f3f3; padding: 0 2px; border-radius: 2px; word-break: break-all; }
+pre { background: #f6f6f6; border: 1px solid #ddd; padding: 6px 8px; white-space: pre-wrap; word-break: break-all; }
+pre code { background: none; padding: 0; }
+
+h1 { font-size: 17pt; border-bottom: 2px solid #234; padding-bottom: 3px; margin-top: 0; }
+h2 { font-size: 13pt; margin-top: 1.2em; border-bottom: 1px solid #bbb; }
+h3 { font-size: 11pt; margin-top: 1em; }
+h4 { font-size: 10pt; }
+h1, h2, h3, h4 { break-after: avoid; color: #123; }
+
+section.level1 { break-before: page; }
+
+table { border-collapse: collapse; width: 100%; margin: 0.6em 0; font-size: 7.8pt; line-height: 1.35; }
+th, td { border: 1px solid #aaa; padding: 2px 4px; vertical-align: top; word-break: break-word; }
+th { background: #e8edf3; }
+td:first-child, th:first-child { min-width: 3.5em; }
+tr { break-inside: avoid; }
+blockquote { border-left: 3px solid #4a7; background: #f4faf6; margin: 0.6em 0; padding: 3px 10px; }
+img { max-width: 100%; max-height: 225mm; display: block; margin: 0.5em auto; break-inside: avoid; }
+figure { margin: 0.5em 0; break-inside: avoid; }
+figcaption { text-align: center; font-size: 8.5pt; color: #444; }
+a { color: #1a4f8a; text-decoration: none; }
+
+.cover { text-align: center; padding-top: 30mm; page-break-after: always; }
+.cover-track { font-size: 8.5pt; color: #666; }
+.cover-project { font-size: 13pt; margin-top: 7mm; color: #345; letter-spacing: 0.05em; }
+.cover-vol { font-size: 15pt; margin-top: 10mm; color: #345; letter-spacing: 0.3em; }
+.cover-doc { font-size: 22pt; font-weight: 700; margin: 3mm 0 3mm 0; color: #123; letter-spacing: 0.04em; }
+.cover-scope { font-size: 10pt; color: #333; width: 85%; margin: 0 auto; }
+.cover-meta { width: 85%; margin: 6mm auto 0 auto; font-size: 8.5pt; text-align: left; }
+.cover-meta td:nth-child(odd) { width: 13%; background: #eef2f6; white-space: nowrap; }
+.cover-note { width: 85%; margin: 3mm auto 0 auto; font-size: 8pt; color: #555; text-align: left; }
+.cover-note code { background: none; }
+
+nav.toc { margin-top: 0; }
+nav.toc a { color: #111; }
+nav.toc a::after { content: leader('.') target-counter(attr(href), page); }
+nav.toc ul { list-style: none; padding-left: 1.2em; margin: 0; }
+nav.toc > ul { padding-left: 0; }
+nav.toc > ul > li { margin-top: 0.45em; font-weight: 600; }
+nav.toc > ul > li > ul > li { font-weight: normal; font-size: 9pt; }
+.toc-title { border: none; text-align: center; font-size: 13pt; }
+p:has(+ table), p:has(+ figure), p:has(+ p > img) { break-after: avoid; }
+
