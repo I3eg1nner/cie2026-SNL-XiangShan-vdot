@@ -7,7 +7,7 @@
 | `SNL-XiangShan-vdot-vol1-stage1.pdf`　技术文档第一册 阶段一：环境部署与 vadd.vv 执行过程分析 | `docs/stage1/*.md` | `build-pdf.sh` |
 | `SNL-XiangShan-vdot-vol2-stage2.pdf`　技术文档第二册 阶段二：vdot 指令设计、RTL 实现与基础功能测试 | `docs/stage2/*.md` | `build-pdf.sh` |
 | `SNL-XiangShan-vdot-vol3-stage3.pdf`　技术文档第三册 阶段三：NEMU 扩展、协同仿真与延迟加速比分析 | `docs/stage3/*.md` | `build-pdf.sh` |
-| `docs/submission/SNL-XiangShan-vdot-slides.pptx`　讲解 PPT（16:9，正文 25 页 + 备用页 1 页，每页带讲者备注） | `docs/ppt/讲解大纲.md` | `docs/submission/build/build_deck.py` |
+| `docs/submission/SNL-XiangShan-vdot-slides.pptx`　讲解 PPT（16:9，正文 28 页 + 备用页 1 页，每页带讲者备注） | `docs/ppt/讲解大纲.md` | `docs/submission/build/build_deck.py` |
 | `SNL-XiangShan-vdot-slides.pdf`　讲解 PPT 的 PDF 版 | 上面的 pptx | `docs/submission/build/render_deck.sh` |
 
 ## 生成命令
@@ -34,9 +34,12 @@ PYTHON=/tmp/vizenv/bin/python PAGES=1 bash docs/submission/build/render_deck.sh
 - **讲解 PPT**：`build_deck.py` 解析 `docs/ppt/讲解大纲.md` 的每个 `## P…` 小节，取「标题」「要点」「主结论」「证据出处」「讲者备注」与表格，
   脚本本身只决定版式（配图、证据等级、分页）。每页页脚为数据来源行（证据出处中放得下的部分，其余写进讲者备注）与证据等级
   （实测 / 源码推导 / 建模 / 声明值）；讲者备注 = 大纲的讲者备注 + 完整证据出处。所有文字同时写入 `<a:latin>` 与 `<a:ea>`。
-  大纲中的页号（P5A、P17 …）自动换算成本 PPT 的页码；大纲有 22 页正文，其中 P5A、P12A、P17 内容较多，各拆成两页，共 25 页 + 备用页。
+  大纲中的页号（P5A、P17 …）自动换算成本 PPT 的页码；大纲有 22 页正文，其中 P5A 拆成三页，P4、P10、P12A、P17 各拆成两页，共 28 页 + 备用页。
+  波形图页（P4、P5、P5A 续、P12A）以图为主体（图宽 ≥ 页宽 60 %），页面上用压缩后的要点，大纲原文要点移入讲者备注；
+  压缩要点里的每个数字在生成时与大纲该节（或 README §1.2 主结论）逐个比对，找不到即终止。
+  P2（三阶段路线 + 主结论）、P7（复用 / 新增）、P11（NEMU 扩展流程）下方用原生形状绘制示意图。
 - **放得下断言**：每个文本框与表格写入前都用 WenQuanYi Zen Hei 的字形宽度按实际换行估算高度（留 4 % 余量），
-  放不下就在规定下限内逐级缩小字号，到下限仍放不下即抛出 `FitError` 终止生成。
+  放不下就逐级缩小字号，正文与表格不低于 12 pt（`MIN_BODY`），到下限仍放不下即抛出 `FitError` 终止生成（应拆页或压缩要点）。
 - **口径断言**：封面三个主结论数字（1.70× / 1.81× / 2.25×）及其周期（52 → 30.5、12.64 → 7.00、5.63）在生成时与 `README.md` §1.2「主结论」逐项比对，
   不一致即终止；低于建模值的两项标「未达建模值」。
 
