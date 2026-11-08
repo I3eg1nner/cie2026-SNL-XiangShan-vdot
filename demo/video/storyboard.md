@@ -25,6 +25,9 @@
 - 2026-11-08 在本机（Linux x86_64）做了一次正式演练：`asciinema rec -c 'bash demo/video/rehearsal.sh'`，录成 `casts/rehearsal-2026-11-08.cast`（asciinema v2，150×40）。
   `rehearsal.sh` 只跑短命令：`02_build_nemu.sh`、`03_run_hello.sh`、`21_build_nemu_vdot.sh`、`50_run_fullcore_difftest.sh wave-vl8`、官方伪代码等价核对、0x80×0x80 单条 DUT 用例、读存档 VCD；
   长任务（全核构建约 25 分钟、`20` 功能测试约 5 分钟、`30` 协同仿真约 4 分钟、全核 `run` / `perf`）只用 `sed` / `grep` / `tail` 展示仓库里已存档的运行结果，画面上先打印一行「# 已存档的运行结果：…」。
+- 视频一的 v1-env / v1-nemu / v1-hello 三幕另录一次：`bash demo/video/rehearsal.sh stage1`，录成 `casts/rehearsal-stage1-2026-11-08.cast`。
+  这次的 `WORK_DIR=/data/my/cie-stage1-repro/work` 是一套用 `00`/`02`/`03` 在全新目录从零搭好的纯阶段一环境（NEMU 未打 vdot 补丁，见 `logs/stage1/linux_repro/README.md`），
+  所以 `02` 末尾「零 patch」工作区快照为空；`02` 结束时已把 NEMU 恢复为独立解释器配置，录完 `git status --short` 仍为空。其余各幕用仓库默认 `work/`。
 - 演练时 `LOG_ROOT`、`RESULTS_DIR`、`FIG_DIR` 都指向 `/tmp/rec`；录完 `git status --short logs bench docs` 确认仓库存档无变化。
 - `splitcast.py` 按 `rehearsal.sh` 打印的 `################  segment <幕号>` 标记把录像切成 `casts/<幕号>.cast`，时间戳保持原样、输出不改写，标记行本身不显示。
 - 回放规则：有输出时 ×1；超过 1.5 s 没有新输出的等待段按 ×4 延时；字幕锚点处画面定格若干秒供阅读。右上角角标始终显示录制时的实际耗时与当前倍率（或「定格」）。
@@ -97,7 +100,9 @@ cd demo/video
 # 字体：DejaVu Sans Mono（终端 ASCII）、WenQuanYi Zen Hei（中文）
 # 0) （可选）重录终端演练并切片；日志写到 /tmp/rec，不覆盖仓库存档
 asciinema rec --overwrite -q --cols 150 --rows 40 -c 'bash demo/video/rehearsal.sh' casts/rehearsal-2026-11-08.cast   # 在仓库根目录执行
-python3 splitcast.py casts/rehearsal-2026-11-08.cast casts/
+asciinema rec --overwrite -q --cols 150 --rows 40 -c 'bash demo/video/rehearsal.sh stage1' casts/rehearsal-stage1-2026-11-08.cast
+python3 splitcast.py casts/rehearsal-2026-11-08.cast casts/          # 先切主录像
+python3 splitcast.py casts/rehearsal-stage1-2026-11-08.cast casts/   # 再用纯阶段一录像覆盖 v1-env / v1-nemu / v1-hello
 # 1) 预览全部卡片到 build/cards/；文字、表格、tile 溢出或缺字形会直接报错
 python3 make_video.py --cards
 # 2) 渲染并拼接三段视频与 .srt（--video 2 只做第二段；--only v2-05,v2-11 只重渲染这几幕再拼接）

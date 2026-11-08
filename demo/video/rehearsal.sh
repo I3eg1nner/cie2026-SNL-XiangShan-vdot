@@ -2,7 +2,12 @@
 # 三段视频终端画面的正式演练：在本机一次性跑完所有短命令，由 asciinema 录成一份 .cast，
 # 再由 splitcast.py 按「################  segment <名>」标记切成各场景。
 #
-#   asciinema rec --overwrite -q -c 'bash demo/video/rehearsal.sh' --cols 150 --rows 40 demo/video/casts/rehearsal.cast
+#   asciinema rec --overwrite -q --cols 150 --rows 40 -c 'bash demo/video/rehearsal.sh'        demo/video/casts/rehearsal-2026-11-08.cast
+#   asciinema rec --overwrite -q --cols 150 --rows 40 -c 'bash demo/video/rehearsal.sh stage1' demo/video/casts/rehearsal-stage1-2026-11-08.cast
+#
+# 不带参数：视频一的 v1-wave 与视频二、三的全部终端幕（用仓库默认 work/，各树均已构建）。
+# stage1：视频一的 v1-env / v1-nemu / v1-hello，在一套从零搭好的纯阶段一环境里跑（WORK_DIR=/data/my/cie-stage1-repro/work，
+#         NEMU 未打 vdot 补丁），所以 02 的「零 patch」工作区快照为空。
 #
 # 只跑短命令（03 / 02 / 21 / wave-vl8 / 参考模型核对 / 读存档 VCD）；长任务（全核构建、20、30、40、全核 run/perf）
 # 只用 sed / grep 展示仓库里已存档的运行结果，并在画面上写明「已存档的运行结果」。
@@ -13,6 +18,11 @@ export REC=/tmp/rec LOG_ROOT=/tmp/rec/logs RESULTS_DIR=/tmp/rec/results FIG_DIR=
 export NEMU_SYSROOT="${NEMU_SYSROOT:-/data/my/cie2026-vdot-xiangshan-linuxrepro/work/sysroot}"
 export PLOT_PYTHON="${PLOT_PYTHON:-/tmp/vizenv/bin/python}"
 mkdir -p "$LOG_ROOT" "$RESULTS_DIR" "$FIG_DIR"
+PART="${1:-main}"
+if [ "$PART" = stage1 ]; then
+    export WORK_DIR="${STAGE1_WORK:-/data/my/cie-stage1-repro/work}"
+    export NEMU_SYSROOT="$WORK_DIR/sysroot"
+fi
 
 seg()  { sleep 0.3; printf '################  segment %s\n' "$1"; sleep 0.3; }
 note() { printf '\033[33m# %s\033[0m\n' "$*"; sleep 0.8; }
@@ -26,11 +36,12 @@ run()  {   # 打出命令（逐字），再执行
 }
 
 # ============================================================ 视频一：阶段一
+if [ "$PART" = stage1 ]; then
 seg v1-env
-note "录制环境：Linux x86_64；日志写到 /tmp/rec，不覆盖仓库存档"
-run 'export LOG_ROOT=/tmp/rec/logs RESULTS_DIR=/tmp/rec/results FIG_DIR=/tmp/rec/figures'
+note "录制环境：Linux x86_64；纯阶段一工作目录（00_setup_env_host.sh 在全新目录搭建，NEMU 未打补丁）；日志写到 /tmp/rec，不覆盖仓库存档"
+run "export WORK_DIR=$WORK_DIR LOG_ROOT=/tmp/rec/logs RESULTS_DIR=/tmp/rec/results FIG_DIR=/tmp/rec/figures"
 run "sed -n '28p;34p;145p' docs/stage1/00_环境版本锁定.md"
-run 'for d in XiangShan-kmhv2 XiangShan-kmhv2/yunsuan NEMU; do printf "%-26s %s\n" $d $(git -C work/$d rev-parse --short=7 HEAD); done'
+run 'for d in XiangShan-kmhv2 XiangShan-kmhv2/yunsuan NEMU; do printf "%-26s %s\n" $d $(git -C $WORK_DIR/$d rev-parse --short=7 HEAD); done'
 run 'source scripts/env_host.sh >/dev/null && java -version 2>&1 | head -1 && verilator --version'
 note "已存档的运行结果：Linux 全新目录一键部署 00_setup_env_host.sh（216 s）"
 run "sed -n '558,560p;644,645p' logs/stage1/linux_repro/00_setup_env_host.term.log"
@@ -43,6 +54,9 @@ run 'bash scripts/03_run_hello.sh'
 run "grep -n 'hello xiangshan\|HIT GOOD TRAP\|total guest instructions' \$LOG_ROOT/stage1/p1_hello_xiangshan.log"
 note "已存档的运行结果：同一 hello 程序在香山 MinimalConfig 全核 emu + difftest 上（50_run_fullcore_difftest.sh hello）"
 run "grep -an 'hello xiangshan\|HIT GOOD TRAP\|instrCnt' logs/stage1/p1_hello_xiangshan_fullcore.log"
+seg end
+exit 0
+fi
 
 seg v1-wave
 note "读仓库存档 VCD（YunSuan L1 平台，WAVE=1 bash scripts/10_build_yunsuan_sim.sh 生成）"
