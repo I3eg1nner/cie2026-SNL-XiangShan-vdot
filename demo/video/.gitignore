@@ -1,0 +1,4 @@
+# 中间文件（分段 mp4、卡片 PNG、QA 抽帧）
+build/
+# 单个文件 > 10 MB 的成品不入库（挂到 GitHub Release）；video1 / video2 体积小，入库
+SNL-XiangShan-vdot-video3-stage3.mp4
