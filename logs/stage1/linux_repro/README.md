@@ -53,8 +53,8 @@ bash scripts/03_run_hello.sh
 | `log_root/p1_nemu_build.log` | 382 | `02_build_nemu.sh` 写出的构建日志 |
 | `log_root/p1_hello_xiangshan.log` | 122 | `03_run_hello.sh` 写出的 1.1 验证日志 |
 
-耗时取自日志末尾 `### 耗时` 行（`date +%s` 之差，秒级取整）。README「一键复现」表早先填写的 226 s / 29 s / 2 s
-来自之前一次没有归档终端记录的实测；本目录是重新实测并入库的记录，README 已改用本次数值并注明日志位置。
+耗时取自日志末尾 `### 耗时` 行（`date +%s` 之差，秒级取整）。原 README「一键复现」表（现已迁至 `docs/01_复现指南.md` §4「各脚本做什么与实测记录」）早先填写的 226 s / 29 s / 2 s
+来自之前一次没有归档终端记录的实测；本目录是重新实测并入库的记录，该表（现 `docs/01_复现指南.md` §4）已改用本次数值并注明日志位置。
 
 已知的无害输出：`00` 的 `:19-46` 是本机未生成 `en_US.UTF-8` locale，`LOCAL_SYSROOT` 步骤中的 apt/dpkg 工具调用 perl 时打出的警告；
 `:61` 提示默认 `python3` 没有 matplotlib（只影响 `40` 号脚本绘图）；`02` 的 `:38-39` 是 NEMU 首次构建前
