@@ -1,5 +1,16 @@
 # vdot 指令族 RTL 实现说明
 
+> **本文速览**
+> - 结论：三份补丁在 `kunminghu-v2@a4eeaab` / `yunsuan@9559211` 上实现 vdot 指令族；新建 `VDotTree`（161 行）与 `VDotTop`（149 行）。
+> - 集成方式：`VIMacU` 改 +84/−9，复用 `VIMac64b` 乘法阵列；`FuConfig`/`FuType`/Dispatch/IQ/WbArbiter 一行未改（§1、§3）。
+> - 改动规模（`git apply --numstat` 实测）：`0002` 补丁 338 插入 / 0 删除，`0001` 补丁 446 / 13，测试平台补丁 307 / 7（§3）。
+> - 构建（实测）：S-3' 后 `YunSuan.compile` 82 个源文件、`xiangshan.compile` 382 个源文件均通过，证据 `logs/stage2/p4_rtl_build_s3p.log:40-42,59-66,90`。
+> - 零回退：重新生成的 `VIMac.sv` 去掉行号注释后与基线 diff 为 0 行，`vmul`/`vmacc`/`vsmul` 网表不变（§7.1）。
+> - 验证：直驱 `VIMacU` 26060 条执行 0 失配，证据 `logs/stage2/p5_vimacu_equiv.log:86`；译码级 51 条全 PASS，证据 `logs/stage2/p5_decode_illegal.log:123`。
+> - 局限：时序为源码静态估算，13.7% 为结构计数，均无综合结果；LMUL>1 只报非法、不支持执行；全核验证见阶段三（§10）。
+> - 完整功能测试见 `docs/stage2/12_基础功能测试报告.md`；本文只列 RTL 侧的验证证据（§6）。
+> - 阅读指引：只想看模块层次请看 §1 与 §2；只想核对改动行数请看 §3；只想复跑请看 §5；只想看对既有逻辑的影响请看 §7；局限见 §10。
+
 | 项 | 值 |
 |---|---|
 | 对应赛题 | 阶段二 2.2「RTL 实现」 |

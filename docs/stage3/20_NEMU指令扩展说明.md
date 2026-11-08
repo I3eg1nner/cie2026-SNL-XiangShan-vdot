@@ -1,5 +1,14 @@
 # 20 NEMU 指令扩展说明（vdot 指令族）
 
+> **本文速览**
+> - 结论：在 NEMU（commit `9090839`）中以 `CONFIG_CUSTOM_XVDOT` 新增 `vdot.vv` / `vdotacc.vv` / `vdot4a.vv`，
+>   改动 8 个文件、+285/-1 行；独立解释器与 difftest 参考共享库（`.so`）两种形态均实测 0 失配。
+> - 关键数字（实测，S-3' 修订后）：语料 30794 条全部通过，其中 4834 条应 trap 的用例全部以 mcause=2 trap，
+>   证据 `logs/stage3/p5_vdot_tests.log:90-93`；`.so` 侧 HIT GOOD TRAP、trap code 0、vst count = 30794（同日志 `:118-129`）。
+> - 测试有效性：故障注入 7 次，6 次被检出，1 次（#5）为经实测确认的等价变异体，证据 `logs/stage3/p5_fault_injection.log:191-194`。
+> - 局限：仅支持 LMUL=1，语料无 LMUL≠1 用例；本层只验证指令语义，不涉及微架构与周期；汇编器未支持这三条助记符。
+> - 阅读指引：只想核对实测结果请看 §4.4；只想核对故障注入请看 §5；改动清单见 §2，局限见 §8。
+
 > 对应赛题条款：**阶段三 3.1.1 NEMU 指令扩展**
 > 对应总体方案：`docs/_plan/MASTER_PLAN.md` 决策 **D2 / D2.1（S-1…S-9）**、分层验证 **L2**、阶段 **P5**
 > 语义唯一事实来源：`tests/golden/vdot_ref.c`（说明见 `docs/stage2/13_参考模型与测试向量说明.md`）

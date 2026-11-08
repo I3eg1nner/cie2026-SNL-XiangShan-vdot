@@ -9,7 +9,9 @@ The outline is the single source: for every "## P…" section the generator take
 (P17 / P21), the evidence line (**证据出处**) and the speaker notes (**讲者备注**). This file only
 adds layout: which figure goes on which page, the evidence level of the page
 (实测 / 源码推导 / 建模 / 声明值), and the cover. Numbers are not recomputed or retyped, except
-the three headline tiles on the cover, which are asserted against README.md §1.2 below.
+the three headline tiles on the cover, which are asserted below against the 主结论 block of
+docs/00_项目总览.md §5.2 (the detailed version moved there from the old README §1.2) and against the
+主结论 line at the top of README.md.
 
 Every text box and table is measured with the real font metrics before it is written; if the text
 does not fit even at the minimum font size the build stops with an error (FitError) instead of
@@ -31,6 +33,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
 OUTLINE = os.path.join(ROOT, "docs", "ppt", "讲解大纲.md")
 README = os.path.join(ROOT, "README.md")
+OVERVIEW = os.path.join(ROOT, "docs", "00_项目总览.md")
 OUT = os.environ.get("DECK_OUT", os.path.join(ROOT, "docs", "submission", "SNL-XiangShan-vdot-slides.pptx"))
 
 TEAM = "SNL"
@@ -393,19 +396,23 @@ def speaker_notes(d, extra_bullets=()):
 HEADLINE = [("1.70×", "单次 16 元素点积", "函数整体（含装载与取回），52 → 30.5 拍；低于建模 2.00×（未达建模值）"),
             ("1.81×", "长向量稳态 · 单累加器", "vdotacc，12.64 → 7.00 拍 / 16 个 int8；高于建模 1.50×"),
             ("2.25×", "长向量稳态 · 2 累加器", "12.64 → 5.63 拍 / 16 个 int8；低于建模 3.00×（未达建模值）")]
+_overview = open(OVERVIEW, encoding="utf-8").read()
+_sec52 = _overview[_overview.index("### 5.2 延迟与加速比"):]
+_main = re.search(r"\*\*主结论\*\*.*?\n>.*?\n", _sec52, re.S).group(0)
 _readme = open(README, encoding="utf-8").read()
-_main = re.search(r"\*\*主结论\*\*.*?\n>.*?\n", _readme, re.S).group(0)
-for num, _, sub in HEADLINE:
-    assert num.replace("×", "") in _main, f"headline {num} not in README §1.2 主结论"
-for frag in ("52 → 30.5", "12.64 → 7.00", "5.63"):
-    assert frag in _main, frag
+_main_readme = re.search(r"\*\*主结论\*\*.*?\n", _readme).group(0)
+for blk, where in ((_main, "docs/00_项目总览.md §5.2 主结论"), (_main_readme, "README.md 主结论")):
+    for num, _, sub in HEADLINE:
+        assert num.replace("×", "") in blk, f"headline {num} not in {where}"
+    for frag in ("52 → 30.5", "12.64 → 7.00", "5.63"):
+        assert frag in blk, (frag, where)
 assert "1.70×" in O["P17"]["主结论"] and "1.81×" in O["P17"]["主结论"] and "2.25×" in O["P17"]["主结论"]
 
 # ----------------------------------------------------------------------------- page layout config
 # Per outline section either one page or `pages=[…]`. Page keys:
 #   keep   indices of the outline bullets covered by the page (the rest go to the notes of the last page)
 #   items  condensed on-slide wording of the kept bullets; every number in it must occur in the outline
-#          section (or README §1.2 主结论) — checked by check_numbers(); the outline wording of the kept
+#          section (or the 主结论 block of docs/00_项目总览.md §5.2) — checked by check_numbers(); the outline wording of the kept
 #          bullets is then put into the speaker notes
 #   figs / fig_w / layout   figures; layout="figmain" puts one large figure on the right (≥ 60 % width)
 #   code   show the pseudocode block of the section;  diagram  name of a native-shape drawing below the text
@@ -487,7 +494,7 @@ NUM = re.compile(r"\d[\d,.]*\d|\d")
 
 
 def check_numbers(pid, txt):
-    """Every number written on a condensed page must occur in the outline section or README §1.2."""
+    """Every number written on a condensed page must occur in the outline section or the 主结论 block (docs/00 §5.2)."""
     src = O[pid]["raw"] + "\n" + md_plain(_main)
     for n in NUM.findall(txt):
         if n not in src:
@@ -528,7 +535,7 @@ def arrow(slide, x, y, w=Inches(0.42), h=Inches(0.42)):
 
 
 def diagram_stages(s, pid, y, h):
-    """Three-stage route (numbers from the P2 bullets) + the headline box (README §1.2)."""
+    """Three-stage route (numbers from the P2 bullets) + the headline box (README.md 主结论 / docs/00_项目总览.md §5.2)."""
     cols = [("阶段一　环境与 vadd 分析", ["NEMU 上 hello，HIT GOOD TRAP", "vadd.vv 执行过程：FU 级波形 + 源码级论证"]),
             ("阶段二　vdot 设计与测试", ["三条指令，与官方伪代码 vl=8 逐位等价（20570 条 0 失配）", "功能测试 290175 条执行、0 失败"]),
             ("阶段三　NEMU / 协同仿真 / 加速比", ["NEMU 30794 条 0 失配；协同仿真 55960/55960",
@@ -682,7 +689,7 @@ for i, (num, label, sub) in enumerate(HEADLINE):
 text(s, Inches(0.6), Inches(6.45), Inches(12.1), Inches(0.5),
      [f"其余口径（指令条数 3.00× 实测、uop 4.67× 源码推导、关键路径 2.00× 与吞吐 1.50× / 3.00× 建模）量纲不同，不替代主结论，见第 {P17_PAGE} 页。"],
      size=12, color=INK2, what="cover note")
-footer(s, "README.md §1.2 主结论；docs/stage3/22_基线实现与延迟加速分析.md §5.5；bench/results/speedup.csv；"
+footer(s, "README.md §1.2；docs/00_项目总览.md §5.2；docs/stage3/22_基线实现与延迟加速分析.md §5.5；bench/results/speedup.csv；"
           "bench/results/cycles_fullcore.csv；版本号 README.md:4", "实测")
 notes(s, speaker_notes(d))
 

@@ -95,7 +95,7 @@ JDK **17**（JDK 21/25 会失败）、mill **0.12.3**（XiangShan）与 **0.11.1
 | `scripts/20_run_func_tests.sh` | ✅ 317 s | 合计 290103 / 290103 通过，失败 suite 0，与存档 `p5_summary.log` 数字相同 |
 | `scripts/21_build_nemu_vdot.sh`（含 `verify-patch`、`fault`） | ✅ 21 s / 10 s / 21 s | 30758 / 0，must-trap 4834/4834，`.so` HIT GOOD TRAP；故障注入 5/5（21103 / 12079 / 10173 / 3202 / 1584，与存档相同） |
 | `scripts/30_run_cosim.sh`（含 `fault`） | ✅ 251 s / 96 s | 72758 条，值比对 0 失配、判定分歧 0；分 suite 汇总与存档 `p6_cosim_run.log:22-52` 逐行相同。故障注入 6/6：5116 / **6378（新增 T3-RTL-1b）** / 586 / 4944 / 分歧 162 / 分歧 74 |
-| `scripts/40_run_bench.sh` | ✅ 126 s | [A] 25924/0、[B] 24 个长度 0 失配；9 个 CSV 中 6 个与仓库逐字节相同，`instr_count_loop` / `instr_count_single` / `speedup` 因 GCC 15 的 `minstret` 绝对值 +2 而不同（斜率不变；原补充日志 `p7_baseline_gcc15_supplement.log` 已删除，见 git 历史，现存档本身即 GCC 15.2 的运行，见 `docs/stage3/22_基线实现与延迟加速分析.md:632-639`）。绘图需 matplotlib + CJK 字体，缺失时跳过并告警 |
+| `scripts/40_run_bench.sh` | ✅ 126 s | [A] 25924/0、[B] 24 个长度 0 失配；9 个 CSV 中 6 个与仓库逐字节相同，`instr_count_loop` / `instr_count_single` / `speedup` 因 GCC 15 的 `minstret` 绝对值 +2 而不同（斜率不变；原补充日志 `p7_baseline_gcc15_supplement.log` 已删除，见 git 历史，现存档本身即 GCC 15.2 的运行，见 `docs/stage3/22_基线实现与延迟加速分析.md:643-650`）。绘图需 matplotlib + CJK 字体，缺失时跳过并告警 |
 | `scripts/50_run_fullcore_difftest.sh`（T1 新增，`build`/`run`/`wave`/`fault`） | ✅ `build` 从零 23:31（独立 `WORK_DIR`；该日志 `build_scripted_driver.log` 已删除，见 git 历史（提交 4674e08））；`run` 约 45 分钟。S-3' 后重建：`make emu` 24:31.63（`logs/stage3/fullcore/build_emu.log:2429`），`run` 60m33s（`run_driver.log:76`，与其他任务并行） | MinimalConfig 全核 emu + NEMU 私有副本 `.so`；当时语料 30758/30758、24,517,314 条提交 0 失配；S-3' 后为 30794/30794、24,524,262 条提交 0 失配，故障注入 bit0 3/3、`s3old` 3/3（`logs/stage3/fullcore/summary.log`、`fault_summary.log`、`fault_summary_s3old.log`）。默认用 clang++，缺失时退回 g++ 并告警 |
 | `scripts/tools/*` | ✅（随 20 / 30 / 40 间接实测） | `run_vimacu_tb` / `run_decode_tb` / `verify_patches` / `capture_vdot_waves` / `sync_rtl_sources` 已改为支持 `WORK_DIR`、GNU `mktemp`、`md5sum`。`fault_inject_vdot.sh`（改为 `md5sum`/`md5` 自动选择、支持 `WORK_DIR`/`YS_DIR`）与 `run_vecfu_latency.sh`（支持 `WORK_DIR`/`XS_DIR`）也已改完，`40` 不再要求 `WORK_DIR` 等于 `<仓库根>/work`；在独立 `WORK_DIR` 上复测：`40` 通过，`WITH_FAULT=1 bash scripts/20_run_func_tests.sh` 357 s，故障注入 5/5，各故障检出项数 10/9/5/9/5（/13）与存档 `p5_fault_injection.log` 相同 |
 
@@ -206,7 +206,7 @@ JDK **17**（JDK 21/25 会失败）、mill **0.12.3**（XiangShan）与 **0.11.1
 
 **PPT**：需覆盖三阶段解题思路、赛题官方语义与本项目的对照（`docs/ppt/讲解大纲.md` P5A）、微架构亮点（XOR 蝶形折叠树、三指令共享 16 路乘法阵列、零回退证据）、数据结论。分镜与逐页大纲已按 S-3' 更新（`docs/ppt/录屏脚本.md`、`docs/ppt/讲解大纲.md`），讲解 PPT 已由 `docs/submission/build/build_deck.py` 从大纲生成（`docs/submission/SNL-XiangShan-vdot-slides.pptx`，PDF 版随上传包提供），三册技术文档 PDF 由 `submission/upload/build-pdf.sh` 生成，生成命令见 `submission/upload/README.md`；四个上传包由 `submission/upload/build-bundles.sh` 生成。GitHub Release、大赛系统上传与下面的加密提交流程**尚未完成**。
 
-**加密提交流程**（见根目录 PDF 操作手册）：
+**加密提交流程**（见大赛提交指南（上游 `OpenXiangShan/XiangShanLab` 仓库 `2026-CIE-RISC-V-Contest-Application-Track/SUBMISSION_GUIDE.md`，及大赛官网 https://rv.cie.org.cn））：
 1. 本作品仓库转为 **public**（大赛硬性要求）
 2. Fork `OpenXiangShan/XiangShanLab`
 3. 在 `2026-CIE-RISC-V-Contest-Application-Track/` 下写 `my_submission.txt`（团队名、repo-url、GitHub 用户名、邮箱、项目描述 ≤100 字）

@@ -1,5 +1,17 @@
 # 23 全核 difftest 验证报告（HANDOFF T1）
 
+> **本文速览**
+> - 结论：打了 vdot 补丁的昆明湖V2 全核（MinimalConfig，Verilator emu）与 NEMU `.so` 逐条提交比对 0 失配，
+>   Level 1（`21`）等价性论证的缺口 G1–G4 在全核上实测闭合；未发现 RTL / NEMU 补丁缺陷。
+> - 关键数字（实测）：语料 30794 条全部通过，4834 条应 trap 用例全部 mcause=2，6 批均 HIT GOOD TRAP，
+>   证据 `logs/stage3/fullcore/summary.log:8-9`；10 个依赖内核 × 4 个种子 0 失败（`logs/stage3/fullcore/summary.log:10-37`）。
+> - 合计 24,524,262 条提交、27,104,437 个周期，difftest 失配 0，10/10 次 HIT GOOD TRAP（各次 `instrCnt` 之和，见 §5.4）。
+> - 故障注入：`VIMacU` 结果 bit0 翻转 3/3、写回尾部退回旧语义 3/3 检出，证据 `logs/stage3/fullcore/fault_summary.log:5`、
+>   `logs/stage3/fullcore/fault_summary_s3old.log:5`。
+> - vl=8 主演示：`vdot` 得 0xcc（204），`vdotacc` 得 0x4b4（1204 = 1000 + 204），证据 `logs/stage3/fullcore/wave_vl8_trace.txt:79-80`。
+> - 局限：只构建 MinimalConfig，默认配置未运行；只测 LMUL=1；依赖测试为 10 个固定模板，不是随机指令流。
+> - 阅读指引：只想核对结果数字请看 §5；只想核对故障注入请看 §6；波形与 vl=8 演示见 §7，局限见 §9。
+
 | 项 | 值 |
 |---|---|
 | 对应赛题 | **阶段三 3.1.2 NEMU 与 RTL 协同仿真**（全核层级，Level 2） |
@@ -278,7 +290,7 @@ emu -i vdot_wave.bin --diff <ref .so> --dump-wave -b 0 -e 2000 --wave-path work/
 emu 在 `--dump-wave`（不加 `--dump-wave-full`）下每个周期只写一个时间点，VCD 时刻即周期号。整核 1594 个周期的 VCD 为 382 MB（`wave_dump.log:19`），**不入库**；入库的是：
 
 * `logs/stage3/fullcore/wave_trace.txt`：`tests/riscv/fullcore/wave_trace.py` 从 VCD 抽取 162 个信号（译码、重命名、ROB 入队、向量发射队列入/出、VialuFix 与 Vimac 的输入输出、ROB 提交）后得到的事件轨迹；
-* `logs/stage3/fullcore/wave_fullcore_vdot.png`：用 `scripts/tools/vcd_plot.py` 从同一 VCD 渲染的 13 路信号时序图（周期 1483–1516），文档内嵌的图 8 是它的逐字节副本 `docs/stage3/figures/fig8_fullcore_vdot_wave.png`； ![图 8　全核 MinimalConfig 中 vadd → vdot → vdotacc → vdot4a 背靠背的时序图](figures/fig8_fullcore_vdot_wave.png) 图 8　全核时序图（周期 1483–1516；`vl = 16` 的满寄存器版本，16 项求和，与官方伪代码逐位等价的 `vl = 8` 主演示见 §7.3 图 10）。四条竖线标出 vdot（robIdx=22）的发射 1494、进 VIMacU 1497、写回 1499、提交 1501；`Vimac.in.valid` → `Vimac.out.valid` 三次都是 2 拍。图由 `scripts/50_run_fullcore_difftest.sh` 的 `run_wave()` 函数在抓完 VCD 后渲染；S-3' 重建后已重新抓取并重画（`wave_driver.log:23-27`），图 8 与 `wave_fullcore_vdot.png` 逐字节相同。VCD 不入库，但只要 `work/build/fullcore/wave/vdot_wave.vcd` 还在，就可以只重画图、不重跑仿真：在 `PYTHON` 带 matplotlib 的环境中执行 `run_wave()` 里那条 `vcd_plot.py` 命令（`--vcd` 指向上述 VCD，`--from 1483 --to 1516`，13 个 `--signal` 原样照抄）。
+* `logs/stage3/fullcore/wave_fullcore_vdot.png`：用 `scripts/tools/vcd_plot.py` 从同一 VCD 生成的 13 路信号时序图（周期 1483–1516），文档内嵌的图 8 是它的逐字节副本 `docs/stage3/figures/fig8_fullcore_vdot_wave.png`； ![图 8　全核 MinimalConfig 中 vadd → vdot → vdotacc → vdot4a 背靠背的时序图](figures/fig8_fullcore_vdot_wave.png) 图 8　全核时序图（周期 1483–1516；`vl = 16` 的满寄存器版本，16 项求和，与官方伪代码逐位等价的 `vl = 8` 主演示见 §7.3 图 10）。四条竖线标出 vdot（robIdx=22）的发射 1494、进 VIMacU 1497、写回 1499、提交 1501；`Vimac.in.valid` → `Vimac.out.valid` 三次都是 2 拍。生成命令：`scripts/50_run_fullcore_difftest.sh` 的 `run_wave()` 函数（抓完 VCD 后出图）；S-3' 重建后已重新抓取并重新出图（`wave_driver.log:23-27`），图 8 与 `wave_fullcore_vdot.png` 逐字节相同。VCD 不入库，但只要 `work/build/fullcore/wave/vdot_wave.vcd` 还在，就可以只重画图、不重跑仿真：在 `PYTHON` 带 matplotlib 的环境中执行 `run_wave()` 里那条 `vcd_plot.py` 命令（`--vcd` 指向上述 VCD，`--from 1483 --to 1516`，13 个 `--signal` 原样照抄）。
 * `logs/stage3/fullcore/wave_run.log`：同一程序带 `--dump-commit-trace` 的逐条提交记录，`wave_run.log:34,35,37` 是三条 vdot 族指令的提交，`:46` 为 `HIT GOOD TRAP`。
 
 ### 7.2 关键信号与时刻（`wave_trace.txt:155-192`）
@@ -354,7 +366,7 @@ vdotacc.vv v4, v9, v8
 
 ![图 10　全核 MinimalConfig 中 vl=8 主演示的时序图](figures/fig10_fullcore_vdot_vl8_wave.png)
 
-图 10　全核时序图（周期 1492–1504，`docs/stage3/figures/fig10_fullcore_vdot_vl8_wave.png`）。自上而下：IQ0 发射（robIdx 20 / 21）、Vimac 输入（`valid`、`fuOpType` 0e7 / 177、`vl = 8`、`vta = 1`、vs1 / vs2 分两行显示高 64 位与低 64 位：高 8 字节为无关值，低 8 字节为参与求和的 1..8、vd 旧值）、Vimac 输出（`res` = `…000000cc` / `…000004b4`）、ROB 提交。四条竖线：vdot 进 VIMacU 1497、出 VIMacU 1499、vdot 提交 1501、vdotacc 提交 1502。图由 `run_wave_vl8()` 在抓完 VCD 后直接渲染，窗口与竖线时刻从文本轨迹中取（`wave_vl8_driver.log:13`）。
+图 10　全核时序图（周期 1492–1504，`docs/stage3/figures/fig10_fullcore_vdot_vl8_wave.png`）。自上而下：IQ0 发射（robIdx 20 / 21）、Vimac 输入（`valid`、`fuOpType` 0e7 / 177、`vl = 8`、`vta = 1`、vs1 / vs2 分两行显示高 64 位与低 64 位：高 8 字节为无关值，低 8 字节为参与求和的 1..8、vd 旧值）、Vimac 输出（`res` = `…000000cc` / `…000004b4`）、ROB 提交。四条竖线：vdot 进 VIMacU 1497、出 VIMacU 1499、vdot 提交 1501、vdotacc 提交 1502。复现：`run_wave_vl8()`（抓完 VCD 后出图），窗口与竖线时刻从文本轨迹中取（`wave_vl8_driver.log:13`）。
 
 ---
 

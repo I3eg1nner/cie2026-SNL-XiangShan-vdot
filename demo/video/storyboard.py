@@ -131,15 +131,15 @@ V2 = [
                ('290175 条 0 失败', 'FU 级功能测试合计', '正数 132、负数 144、边界 436；随机差分 235348', 'ok'),
                ('零新增乘法阵列', '最大限度复用 VIMacU', 'FuConfig / FuType / Dispatch / IQ 一行未改，延迟保持 2 拍', 'ours'),
                ('6/6 检出', 'RTL 故障注入', '含「回退 S-3\'」；撤掉 LMUL 守卫 13 条立刻变红', 'acc')],
-        notes=['数字出处：README.md §1.1；docs/stage2/10_vdot指令设计文档.md §1；docs/stage2/12_基础功能测试报告.md §0.1。',
+        notes=['数字出处：docs/00_项目总览.md §5.1；docs/stage2/10_vdot指令设计文档.md §1；docs/stage2/12_基础功能测试报告.md §0.1。',
                '终端画面为本机一次完整演练的录制；功能测试全集（约 5 分钟）不在片中重跑，只展示已存档的运行结果，画面中注明。'],
-        src='README.md §1.1'),
+        src='docs/00_项目总览.md §5.1'),
         [(0, '视频二：阶段二解题思路。讲 vdot 的语义、与官方伪代码的对照、微架构、数据通路和三项测试'),
          (6, '核心思路两条：最大限度复用昆明湖 V2 的向量实现；每个数字都能在仓库日志里按行号找到')],
         '片头：四个结果 tile', kind='title'),
 
     card('v2-02', 16, dict(
-        title='从 vadd 到 vdot：「切断跨段进位」与「打通跨段求和」', src='docs/stage1/02:1230-1233；docs/stage2/10 落点理由表',
+        title='从 vadd 到 vdot：「切断跨段进位」与「打通跨段求和」', src='docs/stage1/02:1240-1243；docs/stage2/10 落点理由表',
         figs=['docs/stage1/figures/fig3_sew_carry_boundary.png'], split=0.44,
         bullets=['vadd.vv 的 64 位加法链按 SEW 在段边界切断进位；vdot 恰好相反，要跨 16 个元素打通求和',
                  '译码 → 拆分 → 重命名 → 分发 → 发射 → 写回这条控制骨架，vdot 可以完全复用',
@@ -411,7 +411,7 @@ V3 = [
          'logs/stage3/p7_latency_measure.log:232-236；p7_baseline_equiv.log:110-117；perf_cycles.log:310-311；bench/results/speedup.csv'),
 
     card('v3-13', 22, dict(
-        title='3.3 加速比：主结论与参考口径分开，各口径不可互相替代', src='README.md §1.2；docs/stage3/22 §5、§5.5、§12；bench/results/speedup.csv',
+        title='3.3 加速比：主结论与参考口径分开，各口径不可互相替代', src='README.md §1.2；docs/00_项目总览.md §5.2；docs/stage3/22 §5、§5.5、§12；bench/results/speedup.csv',
         tiles=[('1.70×', '主结论 · 单次 16 元素点积（函数整体）', '实测（全核 MinimalConfig）：52 → 30.5 拍，含 2 条装载与结果取回', 'ours'),
                ('1.81×', '主结论 · 长向量稳态（vdotacc 单累加器）', '实测（全核 MinimalConfig）：12.64 → 7.00 拍 / 16 个 int8', 'ours'),
                ('2.25×', '主结论 · 长向量稳态（2 路累加器展开）', '实测（全核 MinimalConfig）：12.64 → 5.63 拍 / 16 个 int8', 'ours')], tile_h=180,

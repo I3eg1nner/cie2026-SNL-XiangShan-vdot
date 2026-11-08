@@ -55,8 +55,8 @@
 
 | # | 分镜 | 画面 | 数据来源 |
 |---|---|---|---|
-| 1 | v2-01 | 片头：四个结果 tile | README.md §1.1 |
-| 2 | v2-02 | 卡片：fig3 SEW 进位切断 + 落点理由 | docs/stage1/02:1230-1233；docs/stage2/10 落点理由表 |
+| 1 | v2-01 | 片头：四个结果 tile | docs/00_项目总览.md §5.1 |
+| 2 | v2-02 | 卡片：fig3 SEW 进位切断 + 落点理由 | docs/stage1/02:1240-1243；docs/stage2/10 落点理由表 |
 | 3 | v2-03 | 卡片：官方语义图原图 + 逐行对照七条 | docs/stage2/10 §1「赛题官方语义与逐行对照」；docs/_recon/figures/vdot_official_semantics.jpg |
 | 4 | v2-04 | 终端：check_official_pseudocode.py 现场运行；sed 存档阴性对照行 | logs/stage2/p3_official_pseudocode_equiv.log:40,62 |
 | 5 | v2-05 | 卡片：三条指令表 + 溢出证明、编码证明、参考模型 | docs/stage2/10 §1.0、§1.6、溢出证明；logs/stage2/check_funct6.log |
@@ -86,7 +86,7 @@
 | 10 | v3-10 | 卡片：fig5 延迟波形、fig3 声明 vs 实测 + 要点 | docs/stage3/22 §4.2–§4.4；logs/stage3/p7_latency_measure.log:232-264；fig5、fig3 |
 | 11 | v3-11 | 卡片：fig1 指令条数 + 基线序列与等价性 | docs/stage3/22 §2–§3；logs/stage3/p7_baseline_equiv.log:114-117,146；fig1 |
 | 12 | v3-12 | 终端：sed 存档 p7_latency_measure.log、p7_baseline_equiv.log；grep perf_cycles.log；grep speedup.csv 主结论三行 | logs/stage3/p7_latency_measure.log:232-236；p7_baseline_equiv.log:110-117；perf_cycles.log:310-311；bench/results/speedup.csv |
-| 13 | v3-13 | 卡片：主结论三个 tile + 参考口径表 + 适用范围 | README.md §1.2；docs/stage3/22 §5、§5.5、§12；bench/results/speedup.csv |
+| 13 | v3-13 | 卡片：主结论三个 tile + 参考口径表 + 适用范围 | README.md §1.2；docs/00_项目总览.md §5.2；docs/stage3/22 §5、§5.5、§12；bench/results/speedup.csv |
 | 14 | v3-14 | 卡片：fig9 全核周期 + 实测对模型 | docs/stage3/22 §5.5.1–§5.5.5；logs/stage3/fullcore/perf_csrr_probe.log:4-9；fig9 |
 | 15 | v3-15 | 卡片：fig4 敏感性 + 不利发现与全核检验 | docs/stage3/22 §6、§5.5.3–§5.5.5；bench/results/sensitivity.csv；fig4 |
 | 16 | v3-16 | 卡片：局限性五条 | README.md 局限性；docs/stage3/22 §12；docs/stage3/23 §10 |
