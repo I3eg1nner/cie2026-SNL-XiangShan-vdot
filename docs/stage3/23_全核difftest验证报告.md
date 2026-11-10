@@ -399,7 +399,7 @@ vdotacc.vv v4, v9, v8
 5. **随机性**：依赖测试的随机性在数据、vl、vta/vma 上；指令序列是 10 个固定模板，不是随机指令流生成器。乱序调度的交错由真实流水线自然产生，但没有刻意制造发射队列满、ROB 满等压力场景（K9 的 8 条独立 vdot 只部分覆盖）。
 6. **语料程序的标题**：复用的 `vdot_test.c` 打印「NEMU vdot instruction-family conformance test」，在全核上运行时这行标题字面不准确；`nemu_config.h` 的 `NEMU_DEFCONFIG` 字段已改写为「XiangShan MinimalConfig emu (DUT) / riscv64-xs-kmhv2-ref_defconfig (REF)」以免误读（`corpus_b00.log:7`）。
 7. **emu 输出**：emu 把 `HIT GOOD TRAP` 等写到 stdout、把数万行 `[PERF ]` 性能计数器写到 stderr；若用 `2>&1 | grep` 合并过滤，两路交错可能把结果行吞掉。脚本改为 stdout/stderr 分开收集，只过滤 stderr 中的 `[PERF ]` 行。
-8. **NEMU 构建依赖**：本机无 `libreadline-dev`/`libsdl2-dev`，复用了 `/tmp/audit3/sysroot` 的解包（`NEMU_SYSROOT=/tmp/audit3/sysroot`）；`.so` 已存在时脚本不会重建。
+8. **NEMU 构建依赖**：本机无 `libreadline-dev`/`libsdl2-dev`，复用了 `/tmp/audit3/sysroot` 的解包（`NEMU_SYSROOT=/tmp/audit3/sysroot`；脚本默认值为 `${WORK_DIR}/sysroot`，由 `00_setup_env_host.sh` 在 `LOCAL_SYSROOT=1` 时生成，`scripts/lib/common.sh:50`）；`.so` 已存在时脚本不会重建。
 
 ---
 

@@ -214,7 +214,7 @@ for n in vdot vdotacc vdot4a; do
   echo ""
   echo "--- DUT 内部：io_fire -> VDotTree 的 S1/S2 流水寄存器 -> io_vd 成形 ---"
   echo "    （L1 平台的 io_out_valid 由平台计数器 counter>=VDOT_latency 产生"
-  echo "      [VectorSimTop.scala:117-124]，因此这里再看一遍 DUT 自己的信号："
+  echo "      [VectorSimTop.scala:104-127,421]，因此这里再看一遍 DUT 自己的信号："
   echo "      VDotTop.scala:44 fireS1 = GatedValidRegNext(fire)，"
   echo "      VDotTree.scala:127-129 sumRegS2/carRegS2 = RegEnable(..., io.fire)，"
   echo "      io.vd 由 S2 寄存器组合产生 -> 结果应在 fire 后第 2 个上升沿可见）"
